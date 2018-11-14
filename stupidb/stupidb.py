@@ -112,7 +112,8 @@ class Selection(UnaryRelation):
         self.predicate = predicate
 
     def operate(self, row: Tuple[Row]) -> Tuple[Row]:
-        return row if self.predicate(*row) else ({},)
+        result = self.predicate(*row)
+        return row if result else ({},)
 
 
 GroupingKeySpecification = Mapping[str, Callable[[Row], Hashable]]
@@ -292,7 +293,6 @@ class InnerJoin(Join):
 
 
 items = methodcaller("items")
-itemize = toolz.compose(frozenset, functools.partial(map, items))
 
 
 class SetOperation(Relation[Tuple[Row, Row], Tuple[Row]]):
@@ -317,6 +317,7 @@ SetOperand = FrozenSet[Tuple[Tuple[str, Any], ...]]
 
 class InefficientSetOperation(SetOperation, metaclass=abc.ABCMeta):
     def __iter__(self) -> Iterator[Tuple[Row]]:
+        itemize = toolz.compose(frozenset, functools.partial(map, items))
         return (
             (dict(row),)
             for row in self.binary_operation(

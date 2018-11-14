@@ -12,6 +12,7 @@ import toolz
 from stupidb.api import (
     cross_join,
     do,
+    exists,
     group_by,
     inner_join,
     mean,
@@ -189,6 +190,54 @@ def test_left_join():
 @pytest.mark.xfail(raises=AssertionError, reason="Not yet implemented")
 def test_right_join():
     assert False
+
+
+def test_semi_join():
+    rows = [
+        dict(z="a", a=1, b=2),
+        dict(z="b", a=2, b=-1),
+        dict(z="a", a=3, b=4),
+        dict(z="a", a=4, b=-3),
+        dict(z="a", a=1, b=-3),
+        dict(z="b", a=2, b=-3),
+        dict(z="b", a=3, b=-3),
+    ]
+    other_rows = [
+        dict(z="a", a=4, b=-3),
+        dict(z="a", a=1, b=-3),
+        dict(z="b", a=2, b=-3),
+        dict(z="b", a=3, b=-3),
+    ]
+
+    pipeline = table_(rows) >> sift(
+        lambda row: exists(
+            table_(other_rows) >> sift(lambda other: row["z"] == other["z"])
+        )
+    )
+    result = list(pipeline >> do())
+    assert result == rows
+
+
+def test_semi_join_not_all_rows_match():
+    rows = [
+        dict(z="a", a=1, b=2),
+        dict(z="b", a=2, b=-1),
+        dict(z="a", a=3, b=4),
+        dict(z="a", a=4, b=-3),
+        dict(z="a", a=1, b=-3),
+        dict(z="b", a=2, b=-3),
+        dict(z="b", a=3, b=-3),
+    ]
+    other_rows = [dict(z="b", a=2, b=-3), dict(z="b", a=3, b=-3)]
+
+    pipeline = table_(rows) >> sift(
+        lambda row: exists(
+            table_(other_rows) >> sift(lambda other: row["z"] == other["z"])
+        )
+    )
+    result = list(pipeline >> do())
+    expected = [row for row in rows if row["z"] == "b"]
+    assert result == expected
 
 
 def test_right_shiftable(table, right_table):

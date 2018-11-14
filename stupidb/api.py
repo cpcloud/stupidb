@@ -85,6 +85,10 @@ def sift(predicate: Callable[[Row], bool]) -> RightShiftablePartial:
     return RightShiftablePartial(Selection, predicate=predicate)
 
 
+def exists(relation: Relation):
+    return any(row for (row,) in relation)
+
+
 def group_by(
     group_by: GroupingKeySpecification, aggregates: AggregateSpecification
 ) -> RightShiftablePartial:
