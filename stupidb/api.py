@@ -51,6 +51,10 @@ class RightShiftablePartial(functools.partial, Generic[OutputType]):
     def columns(self) -> List[str]:
         return self().columns
 
+    @property
+    def schema(self) -> sch.Schema:
+        return self().schema
+
 
 def table(
     rows: Rows, schema: Optional[sch.Schema] = None
@@ -109,8 +113,14 @@ def difference(right: Relation) -> RightShiftablePartial:
     return RightShiftablePartial(Difference, right=right)
 
 
+# Pull out the first element: all operations should ultimately call this
+
+
 def do() -> RightShiftablePartial:
     return RightShiftablePartial(functools.partial(map, toolz.first))
+
+
+# Aggregations
 
 
 def sum(getter: Callable[[Row], Real]) -> AggregateSpecification:
