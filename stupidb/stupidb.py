@@ -144,12 +144,27 @@ class BinaryAggregate(Generic[Input1, Input2, Output]):
 Aggregate = Union_[UnaryAggregate, BinaryAggregate]
 
 
+class Window:
+    pass
+
+
+class WindowAggregateSpecification:
+    def __init__(
+        self, specfication: "AggregateSpecification", window: Window
+    ) -> None:
+        self.specfication = specfication
+        self.window = window
+
+
 class AggregateSpecification:
     def __init__(
         self, aggregate: Type[Aggregate], *getters: Callable[[Row], Any]
     ) -> None:
         self.aggregate = aggregate
         self.getters = getters
+
+    def over(self, window: Window) -> WindowAggregateSpecification:
+        return WindowAggregateSpecification(self, window)
 
 
 class Sum(UnaryAggregate[Real, Real]):
