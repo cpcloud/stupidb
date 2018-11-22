@@ -3,8 +3,8 @@
 """The stupidest database.
 
 This is project designed to illustate the concepts that underly a typical
-relational database implementation, starting at naive execution of the
-table-stakes features up to rule-based query optimization.
+relational database implementation, starting at naive execution of table-stakes
+features up to rule-based query optimization.
 
 Please do not use this for any other reason than learning. There are no
 guarantees here except that there will be bugs.
