@@ -289,16 +289,6 @@ class InnerJoin(Join):
         yield {}
 
 
-class LeftJoin(Join):
-    def failed_match_action(self, left: Row, right: Row) -> Row:
-        yield left
-
-
-class RightJoin(Join):
-    def failed_match_action(self, left: Row, right: Row) -> Row:
-        yield right
-
-
 class RightShiftablePartial(functools.partial):
     def __rshift__(self, other):
         return other(self)

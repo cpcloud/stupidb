@@ -176,15 +176,6 @@ def test_inner_join(left_table, right_table, left):
 
 @pytest.mark.xfail
 def test_left_join():
-    right = [{"z": "a"}]
-    join = LeftJoin(
-        left_table, right_table, lambda left, right: left["z"] == right["z"]
-    )
-    result = list(join.produce(left, right))
-    assert len(result) == len(left)
-    assert len(result) == len(right)
-    assert_rowset_equal(result, left)
-    assert_rowset_equal(result, right)
     assert False
 
 
