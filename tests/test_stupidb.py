@@ -16,8 +16,6 @@ from stupidb.stupidb import (
     GroupBy,
     CrossJoin,
     InnerJoin,
-    LeftJoin,
-    RightJoin,
     Sum,
     Mean,
     table as table_,
