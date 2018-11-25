@@ -1,6 +1,6 @@
 import functools
 from numbers import Real
-from typing import Callable, Iterable, Iterator, Tuple
+from typing import Callable, Generic, Iterable, Iterator, Tuple
 from typing import Union as Union_
 
 from .stupidb import (
@@ -13,6 +13,7 @@ from .stupidb import (
     Intersection,
     JoinPredicate,
     Mean,
+    OutputType,
     PopulationCovariance,
     Projection,
     Relation,
@@ -30,14 +31,14 @@ Projector = Callable[[Row], Row]
 JoinProjector = Callable[[Row, Row], Row]
 
 
-class RightShiftablePartial(functools.partial):
+class RightShiftablePartial(functools.partial, Generic[OutputType]):
     def __rshift__(self, other: "RightShiftablePartial") -> Relation:
         return other(self)
 
     def __rrshift__(self, other: Relation) -> Relation:
         return self(other)
 
-    def __iter__(self) -> Iterator[Union_[Tuple[Row], Tuple[Row, Row]]]:
+    def __iter__(self) -> Iterator[OutputType]:
         # XXX: Assumes all arguments have been bound
         # TODO: This seems a bit hacky. Refactor shifting.
         return iter(self())
