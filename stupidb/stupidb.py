@@ -333,6 +333,9 @@ class Union(SetOperation):
         )
 
 
+SetOperand = FrozenSet[Tuple[Tuple[str, Any], ...]]
+
+
 class InefficientSetOperation(SetOperation):
     def __iter__(self) -> Iterator[Tuple[Row]]:
         return (
@@ -344,26 +347,20 @@ class InefficientSetOperation(SetOperation):
 
     @abc.abstractmethod
     def binary_operation(
-        self,
-        left: FrozenSet[Tuple[Tuple[str, Any], ...]],
-        right: FrozenSet[Tuple[Tuple[str, Any], ...]],
-    ) -> FrozenSet[Tuple[Tuple[str, Any], ...]]:
+        self, left: SetOperand, right: SetOperand
+    ) -> SetOperand:
         ...
 
 
 class Intersection(InefficientSetOperation):
     def binary_operation(
-        self,
-        left: FrozenSet[Tuple[Tuple[str, Any], ...]],
-        right: FrozenSet[Tuple[Tuple[str, Any], ...]],
-    ) -> FrozenSet[Tuple[Tuple[str, Any], ...]]:
+        self, left: SetOperand, right: SetOperand
+    ) -> SetOperand:
         return left & right
 
 
 class Difference(InefficientSetOperation):
     def binary_operation(
-        self,
-        left: FrozenSet[Tuple[Tuple[str, Any], ...]],
-        right: FrozenSet[Tuple[Tuple[str, Any], ...]],
-    ) -> FrozenSet[Tuple[Tuple[str, Any], ...]]:
+        self, left: SetOperand, right: SetOperand
+    ) -> SetOperand:
         return left - right
