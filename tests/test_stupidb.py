@@ -155,16 +155,28 @@ def test_cross_join(left_table, right_table, left, right):
 def test_inner_join(left_table, right_table, left):
     join = (
         left_table
-        >> inner_join(right_table, lambda left, right: left["z"] == right["z"])
-        >> select(lambda left, right: dict(z=left["z"]))
+        >> inner_join(
+            right_table,
+            lambda left, right: left["z"] == "a" and left["a"] == right["a"],
+        )
+        >> select(
+            lambda left, right: dict(
+                left_a=left["a"],
+                right_a=right["a"],
+                right_z=right["z"],
+                left_z=left["z"],
+            )
+        )
     )
     pipeline = join >> do()
     result = list(pipeline)
-    assert result
-    # assert len(result) == len(left)
-    # assert len(result) == len(right)
-    # assert_rowset_equal(result, left)
-    # assert_rowset_equal(result, right)
+    expected = [
+        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
+        {"left_a": 3, "left_z": "a", "right_a": 3, "right_z": "b"},
+        {"left_a": 4, "left_z": "a", "right_a": 4, "right_z": "a"},
+        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
+    ]
+    assert_rowset_equal(result, expected)
 
 
 @pytest.mark.xfail
@@ -177,9 +189,9 @@ def test_right_join():
     assert False
 
 
-def test_right_shiftable(group_by, rows, right_table):
+def test_right_shiftable(group_by, table, right_table):
     pipeline = (
-        table_(rows)
+        table
         >> select(lambda r: dict(c=r["a"], d=r["b"], z=r["z"]))
         >> sift(lambda r: True)
         >> group_by_(
@@ -190,13 +202,6 @@ def test_right_shiftable(group_by, rows, right_table):
                 "my_cov": samp_cov(lambda r: r["d"], lambda r: r["d"]),
             },
         )
-        # >> inner_join(right_table, lambda left, right: left["z"] == right["z"])
-        # >> select(
-        # lambda left, right: dict(
-        # z=right["z"], c=left["c"], total=left["total"]
-        # )
-        # )
-        # >> select(lambda row: row)
     )
 
     expected = [
