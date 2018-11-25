@@ -14,10 +14,8 @@ stupidb
         :alt: Documentation Status
 
 
-
-
-A really slow database
-
+A really slow database built to try to understand how a relational database
+might be implemented.
 
 * Free software: Apache Software License 2.0
 * Documentation: https://stupidb.readthedocs.io.
@@ -26,7 +24,7 @@ A really slow database
 Features
 --------
 
-* TODO
+* Bugs
 
 Credits
 -------
