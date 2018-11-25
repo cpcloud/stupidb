@@ -21,9 +21,10 @@
 import os
 import sys
 
+import stupidb
+
 sys.path.insert(0, os.path.abspath(".."))
 
-import stupidb
 
 # -- General configuration ---------------------------------------------
 
