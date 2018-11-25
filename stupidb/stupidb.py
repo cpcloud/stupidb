@@ -48,7 +48,6 @@ from typing import (
     Iterator,
     Mapping,
     Optional,
-    Sequence,
     Set,
     Tuple,
     Type,
@@ -153,10 +152,6 @@ Output = TypeVar("Output")
 
 
 class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def __init__(self, *args: Any):
-        ...
-
     def step(self, input1: Optional[Input1]) -> None:
         ...
 
@@ -165,10 +160,6 @@ class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
 
 
 class BinaryAggregate(Generic[Input1, Input2, Output]):
-    @abc.abstractmethod
-    def __init__(self, *args: Any):
-        ...
-
     def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
         ...
 
@@ -181,7 +172,7 @@ Aggregate = Union_[UnaryAggregate, BinaryAggregate]
 
 class AggregateSpecification:
     def __init__(
-        self, aggregate: Aggregate, *getters: Callable[[Row], Any]
+        self, aggregate: Type[Aggregate], *getters: Callable[[Row], Any]
     ) -> None:
         self.aggregate = aggregate
         self.getters = getters
