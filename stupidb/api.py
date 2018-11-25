@@ -1,5 +1,5 @@
 import functools
-from typing import Callable, Iterable, Iterator, Tuple
+from typing import Any, Callable, Iterable, Iterator, Tuple
 from typing import Union as Union_
 
 from .stupidb import (
@@ -98,17 +98,21 @@ def do() -> RightShiftablePartial:
     return RightShiftablePartial(lambda child: (row for row, in child))
 
 
-def sum(getter):
+def sum(getter: Callable[[Row], Any]) -> AggregateSpecification:
     return AggregateSpecification(Sum, getter)
 
 
-def mean(getter):
+def mean(getter: Callable[[Row], Any]) -> AggregateSpecification:
     return AggregateSpecification(Mean, getter)
 
 
-def samp_cov(arg1, arg2):
+def samp_cov(
+    arg1: Callable[[Row], Any], arg2: Callable[[Row], Any]
+) -> AggregateSpecification:
     return AggregateSpecification(SampleCovariance, arg1, arg2)
 
 
-def pop_cov(arg1, arg2):
+def pop_cov(
+    arg1: Callable[[Row], Any], arg2: Callable[[Row], Any]
+) -> AggregateSpecification:
     return AggregateSpecification(PopulationCovariance, arg1, arg2)
