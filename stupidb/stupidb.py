@@ -30,9 +30,8 @@ Requirements
 """
 
 import abc
-import ast
 import collections
-import inspect
+import functools
 import itertools
 import operator
 import typing
@@ -48,7 +47,6 @@ from typing import (
     Iterator,
     Mapping,
     Optional,
-    Set,
     Tuple,
     Type,
     TypeVar,
@@ -57,10 +55,8 @@ from typing import Union as Union_
 
 try:
     import cytoolz as toolz
-    import cytoolz.curried
 except ImportError:
     import toolz as toolz
-    import toolz.curried
 
 
 Row = Mapping[str, Any]  # A mapping from column name to anything
@@ -317,7 +313,7 @@ class InnerJoin(Join):
 
 
 items = methodcaller("items")
-itemize = toolz.compose(frozenset, toolz.curried.map(items))
+itemize = toolz.compose(frozenset, functools.partial(map, items))
 
 
 class SetOperation(Relation[Tuple[Row, Row], Tuple[Row]]):
