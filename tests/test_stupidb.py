@@ -9,9 +9,18 @@ import operator
 import pytest
 import toolz
 
-from stupidb.api import cross_join, do
-from stupidb.api import group_by
-from stupidb.api import inner_join, mean, pop_cov, samp_cov, select, sift, sum
+from stupidb.api import (
+    cross_join,
+    do,
+    group_by,
+    inner_join,
+    mean,
+    pop_cov,
+    samp_cov,
+    select,
+    sift,
+    sum,
+)
 from stupidb.stupidb import GroupBy, Projection, Selection, Table
 
 
