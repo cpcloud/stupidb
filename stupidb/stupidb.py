@@ -115,14 +115,6 @@ GroupingKeySpecification = Mapping[str, Callable[[Row], Hashable]]
 GroupingKey = Tuple[str, Hashable]
 GroupingKeys = Tuple[GroupingKey, ...]
 
-T = TypeVar("T")
-
-
-def make_tuple(item: Union_[T, Tuple[T, ...]]) -> Tuple[T, ...]:
-    """Make item into a single element tuple if it is not already a tuple."""
-    return (item,) if not isinstance(item, tuple) else item
-
-
 Input1 = TypeVar("Input1")
 Input2 = TypeVar("Input2")
 Output = TypeVar("Output")
