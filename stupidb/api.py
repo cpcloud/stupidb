@@ -13,11 +13,9 @@ from .stupidb import (
     Join,
     JoinPredicate,
     JoinProjection,
-    JoinProjector,
     Mean,
     PopulationCovariance,
     Projection,
-    Projector,
     Relation,
     Row,
     Rows,
@@ -28,6 +26,10 @@ from .stupidb import (
     UnaryRelation,
     Union,
 )
+
+
+Projector = Callable[[Row], Row]
+JoinProjector = Callable[[Row, Row], Row]
 
 
 class RightShiftablePartial(

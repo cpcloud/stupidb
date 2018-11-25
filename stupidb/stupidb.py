@@ -99,10 +99,6 @@ class BaseProjection(Relation[InputType, Tuple[Row]]):
     def operate(self, args: InputType) -> Tuple[Row]:
         return (self.projector(*args),)
 
-
-Projector = Callable[[Row], Row]
-JoinProjector = Callable[[Row, Row], Row]
-
 Projection = BaseProjection[Tuple[Row]]
 JoinProjection = BaseProjection[Tuple[Row, Row]]
 
