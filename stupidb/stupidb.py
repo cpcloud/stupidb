@@ -82,7 +82,7 @@ class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
         # apply the relation's operation
         operated_rows = map(self.operate, self.child)
         # filter out empty rows
-        non_empty_rows: Iterator[OutputType] = filter(all, operated_rows)
+        non_empty_rows = filter(all, operated_rows)
         return non_empty_rows
 
 
