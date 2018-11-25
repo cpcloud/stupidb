@@ -65,14 +65,13 @@ InputType = TypeVar("InputType", Tuple[Row], Tuple[Row, Row])
 OutputType = TypeVar("OutputType", Tuple[Row], Tuple[Row, Row])
 
 
-class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
+class Relation(Generic[InputType, OutputType]):
     """A relation."""
 
     child: Iterable[InputType]
 
-    @abc.abstractmethod
     def operate(self, args: InputType) -> OutputType:
-        ...
+        raise NotImplementedError(f"{type(self)} must implement the operate method")
 
     def __iter__(self) -> Iterator[OutputType]:
         return filter(all, map(self.operate, self.child))
@@ -253,7 +252,7 @@ class GroupBy(UnaryRelation):
 JoinPredicate = Callable[[Row, Row], bool]
 
 
-class Join(Relation[Tuple[Row, Row], Tuple[Row, Row]]):
+class Join(Relation[Tuple[Row, Row], Tuple[Row, Row]], metaclass=abc.ABCMeta):
     def __init__(
         self,
         left: UnaryRelation,
@@ -313,7 +312,7 @@ class Union(SetOperation):
 SetOperand = FrozenSet[Tuple[Tuple[str, Any], ...]]
 
 
-class InefficientSetOperation(SetOperation):
+class InefficientSetOperation(SetOperation, metaclass=abc.ABCMeta):
     def __iter__(self) -> Iterator[Tuple[Row]]:
         return (
             (dict(row),)
