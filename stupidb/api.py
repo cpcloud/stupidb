@@ -13,7 +13,6 @@ from .stupidb import (
     Intersection,
     Join,
     JoinPredicate,
-    JoinProjection,
     Mean,
     PopulationCovariance,
     Projection,
@@ -63,14 +62,7 @@ def inner_join(
 
 
 def select(columns: Union_[Projector, JoinProjector]) -> RightShiftablePartial:
-    return RightShiftablePartial(
-        lambda child, columns: (
-            JoinProjection(child, columns)
-            if isinstance(child, Join)
-            else Projection(child, columns)
-        ),
-        columns=columns,
-    )
+    return RightShiftablePartial(Projection, projector=columns)
 
 
 def sift(predicate: Callable[[Row], bool]) -> RightShiftablePartial:

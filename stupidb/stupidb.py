@@ -91,16 +91,13 @@ class Table(UnaryRelation):
         return ((row,) for row in self.rows)
 
 
-class BaseProjection(Relation[InputType, Tuple[Row]]):
+class Projection(Relation[InputType, Tuple[Row]]):
     def __init__(self, child: Relation, projector: Callable[..., Row]) -> None:
         self.child = child
         self.projector = projector
 
     def operate(self, args: InputType) -> Tuple[Row]:
         return (self.projector(*args),)
-
-Projection = BaseProjection[Tuple[Row]]
-JoinProjection = BaseProjection[Tuple[Row, Row]]
 
 
 class Selection(UnaryRelation):
