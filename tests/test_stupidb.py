@@ -10,7 +10,7 @@ import pytest
 import toolz
 
 from stupidb.api import cross_join, do
-from stupidb.api import group_by as group_by_
+from stupidb.api import group_by
 from stupidb.api import inner_join, mean, pop_cov, samp_cov, select, sift, sum
 from stupidb.stupidb import GroupBy, Projection, Selection, Table
 
@@ -71,7 +71,7 @@ def selection(projection):
 
 
 @pytest.fixture
-def group_by(selection):
+def group_by_(selection):
     return GroupBy(
         selection,
         {"c": lambda row: row["c"], "z": lambda row: row["z"]},
@@ -118,7 +118,7 @@ def test_selection(selection, rows):
     assert_rowset_equal(result, expected)
 
 
-def test_group_by(group_by, rows):
+def test_group_by(group_by_, rows):
     expected = [
         {"c": 1, "mean": -0.5, "total": -1, "z": "a"},
         {"c": 2, "mean": -2.0, "total": -4, "z": "b"},
@@ -126,7 +126,7 @@ def test_group_by(group_by, rows):
         {"c": 4, "mean": -3.0, "total": -3, "z": "a"},
         {"c": 3, "mean": -3.0, "total": -3, "z": "b"},
     ]
-    result = list(group_by >> do())
+    result = list(group_by_ >> do())
     assert_rowset_equal(result, expected)
 
 
@@ -180,12 +180,12 @@ def test_right_join():
     assert False
 
 
-def test_right_shiftable(group_by, table, right_table):
+def test_right_shiftable(table, right_table):
     pipeline = (
         table
         >> select(lambda r: dict(c=r["a"], d=r["b"], z=r["z"]))
         >> sift(lambda r: True)
-        >> group_by_(
+        >> group_by(
             {"c": lambda r: r["c"], "z": lambda r: r["z"]},
             {
                 "total": sum(lambda r: r["d"]),
