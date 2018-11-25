@@ -91,28 +91,20 @@ class Table(UnaryRelation):
         return ((row,) for row in self.rows)
 
 
-Projector = Callable[[Row], Row]
-
-
-class Projection(UnaryRelation):
-    def __init__(self, child: UnaryRelation, projector: Projector) -> None:
+class BaseProjection(Relation[InputType, Tuple[Row]]):
+    def __init__(self, child: Relation, projector: Callable[..., Row]) -> None:
         self.child = child
         self.projector = projector
 
-    def operate(self, row: Tuple[Row]) -> Tuple[Row]:
-        return (self.projector(*row),)
+    def operate(self, args: InputType) -> Tuple[Row]:
+        return (self.projector(*args),)
 
 
+Projector = Callable[[Row], Row]
 JoinProjector = Callable[[Row, Row], Row]
 
-
-class JoinProjection(Relation[Tuple[Row, Row], Tuple[Row]]):
-    def __init__(self, child: "Join", projector: JoinProjector) -> None:
-        self.child = child
-        self.projector = projector
-
-    def operate(self, pair: Tuple[Row, Row]) -> Tuple[Row]:
-        return (self.projector(*pair),)
+Projection = BaseProjection[Tuple[Row]]
+JoinProjection = BaseProjection[Tuple[Row, Row]]
 
 
 class Selection(UnaryRelation):
