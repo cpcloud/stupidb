@@ -12,16 +12,7 @@ import toolz
 from stupidb.api import cross_join, do
 from stupidb.api import group_by as group_by_
 from stupidb.api import inner_join, mean, pop_cov, samp_cov, select, sift, sum
-from stupidb.api import table as table_
-from stupidb.stupidb import (
-    GroupBy,
-    Mean,
-    Projection,
-    SampleCovariance,
-    Selection,
-    Sum,
-    Table,
-)
+from stupidb.stupidb import GroupBy, Projection, Selection, Table
 
 
 @pytest.fixture
@@ -179,12 +170,12 @@ def test_inner_join(left_table, right_table, left):
     assert_rowset_equal(result, expected)
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(raises=AssertionError, reason="Not yet implemented")
 def test_left_join():
     assert False
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(raises=AssertionError, reason="Not yet implemented")
 def test_right_join():
     assert False
 
@@ -199,17 +190,53 @@ def test_right_shiftable(group_by, table, right_table):
             {
                 "total": sum(lambda r: r["d"]),
                 "mean": mean(lambda r: r["d"]),
-                "my_cov": samp_cov(lambda r: r["d"], lambda r: r["d"]),
+                "my_samp_cov": samp_cov(lambda r: r["d"], lambda r: r["d"]),
+                "my_pop_cov": samp_cov(lambda r: r["d"], lambda r: r["d"]),
             },
         )
     )
 
     expected = [
-        {"c": 1, "mean": -0.5, "my_cov": 15.0, "total": -1, "z": "a"},
-        {"c": 2, "mean": -2.0, "my_cov": 3.0, "total": -4, "z": "b"},
-        {"c": 3, "mean": 4.0, "my_cov": None, "total": 4, "z": "a"},
-        {"c": 4, "mean": -3.0, "my_cov": None, "total": -3, "z": "a"},
-        {"c": 3, "mean": -3.0, "my_cov": None, "total": -3, "z": "b"},
+        {
+            "c": 1,
+            "mean": -0.5,
+            "my_samp_cov": 15.0,
+            "my_pop_cov": 15,
+            "total": -1,
+            "z": "a",
+        },
+        {
+            "c": 2,
+            "mean": -2.0,
+            "my_samp_cov": 3.0,
+            "my_pop_cov": 3.0,
+            "total": -4,
+            "z": "b",
+        },
+        {
+            "c": 3,
+            "mean": 4.0,
+            "my_samp_cov": None,
+            "my_pop_cov": None,
+            "total": 4,
+            "z": "a",
+        },
+        {
+            "c": 4,
+            "mean": -3.0,
+            "my_samp_cov": None,
+            "my_pop_cov": None,
+            "total": -3,
+            "z": "a",
+        },
+        {
+            "c": 3,
+            "mean": -3.0,
+            "my_samp_cov": None,
+            "my_pop_cov": None,
+            "total": -3,
+            "z": "b",
+        },
     ]
     result = list(pipeline >> do())
     assert_rowset_equal(result, expected)
