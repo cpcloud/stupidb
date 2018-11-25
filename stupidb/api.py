@@ -82,16 +82,16 @@ def group_by(
     )
 
 
-def union(left: Relation, right: Relation) -> RightShiftablePartial:
-    return RightShiftablePartial(Union, left)
+def union(right: Relation) -> RightShiftablePartial:
+    return RightShiftablePartial(Union, right=right)
 
 
-def intersection(left: Relation, right: Relation) -> RightShiftablePartial:
-    return RightShiftablePartial(Intersection, left)
+def intersection(right: Relation) -> RightShiftablePartial:
+    return RightShiftablePartial(Intersection, right=right)
 
 
-def difference(left: Relation, right: Relation) -> RightShiftablePartial:
-    return RightShiftablePartial(Difference, left)
+def difference(right: Relation) -> RightShiftablePartial:
+    return RightShiftablePartial(Difference, right=right)
 
 
 def do() -> RightShiftablePartial:
