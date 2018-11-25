@@ -79,11 +79,7 @@ class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
         ...
 
     def __iter__(self) -> Iterator[OutputType]:
-        # apply the relation's operation
-        operated_rows = map(self.operate, self.child)
-        # filter out empty rows
-        non_empty_rows = filter(all, operated_rows)
-        return non_empty_rows
+        return filter(all, map(self.operate, self.child))
 
 
 class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
