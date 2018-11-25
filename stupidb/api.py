@@ -1,6 +1,6 @@
 import functools
 from numbers import Real
-from typing import Any, Callable, Iterable, Iterator, Tuple
+from typing import Callable, Iterable, Iterator, Tuple
 from typing import Union as Union_
 
 from .stupidb import (
@@ -11,7 +11,6 @@ from .stupidb import (
     GroupingKeySpecification,
     InnerJoin,
     Intersection,
-    Join,
     JoinPredicate,
     Mean,
     PopulationCovariance,
@@ -27,14 +26,11 @@ from .stupidb import (
     Union,
 )
 
-
 Projector = Callable[[Row], Row]
 JoinProjector = Callable[[Row, Row], Row]
 
 
-class RightShiftablePartial(
-    functools.partial, Iterable[Union_[Tuple[Row], Tuple[Row, Row]]]
-):
+class RightShiftablePartial(functools.partial):
     def __rshift__(self, other: "RightShiftablePartial") -> Relation:
         return other(self)
 
