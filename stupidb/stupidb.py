@@ -30,106 +30,109 @@ Requirements
 """
 
 import abc
+import ast
 import collections
-import functools
+import inspect
 import itertools
+import operator
 import typing
-
 from numbers import Real
+from operator import methodcaller
 from typing import (
     Any,
     Callable,
+    FrozenSet,
     Generic,
     Hashable,
     Iterable,
     Iterator,
     Mapping,
     Optional,
+    Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
-    Union,
 )
+from typing import Union as Union_
 
-import toolz
+try:
+    import cytoolz as toolz
+    import cytoolz.curried
+except ImportError:
+    import toolz as toolz
+    import toolz.curried
 
 
-Row = Mapping[str, Any]
-Rows = Iterable[Row]
+Row = Mapping[str, Any]  # A mapping from column name to anything
+Rows = Iterable[Row]  # Rows are an Iterable of Row
+InputType = TypeVar("InputType", Tuple[Row], Tuple[Row, Row])
+OutputType = TypeVar("OutputType", Tuple[Row], Tuple[Row, Row])
 
 
-class Relation(abc.ABC):
+class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
+    """A relation."""
+
+    child: Iterable[InputType]
+
     @abc.abstractmethod
-    def operate(self, row: Row) -> Row:
+    def operate(self, args: InputType) -> OutputType:
         ...
 
-    @abc.abstractmethod
-    def produce(self, rows: Rows) -> Iterator[Row]:
-        ...
-
-
-class SimpleRelation(Relation):
-    """A relation with a single child relation.
-
-    Child classes must implement either
-    :meth:`~stupidb.stupidb.Relation.operate` or
-    :meth:`~stupidb.stupidb.Relation.produce`.
-
-    If a Relation's operation can be described in terms of an operation on a
-    single row, such projection, then implement
-    :meth:`~stupidb.stupidb.Relation.operate`. Otherwise, implement
-    :meth:`~stupidb.stupidb.Relation.produce`.
-
-    See :class:`~stupidb.stupidb.GroupBy` for an example of a relation that
-    cannot be defined in terms of single row operations and therefore must
-    :meth:`~stupidb.stupidb.Relation.produce`.
-
-    """
-
-    child: Relation
-
-    def operate(self, row: Row) -> Row:
-        # empty rows (empty dicts) are ignored
-        return toolz.identity(row)
-
-    def produce(self, rows: Rows) -> Iterator[Row]:
-        # get an iterator of rows from the child
-        rowterator = self.child.produce(rows)
-        # apply the current relation's operation
-        operated_rows = map(self.operate, rowterator)
+    def __iter__(self) -> Iterator[OutputType]:
+        # apply the relation's operation
+        operated_rows = map(self.operate, self.child)
         # filter out empty rows
-        non_empty_rows = filter(None, operated_rows)
+        non_empty_rows: Iterator[OutputType] = filter(all, operated_rows)
         return non_empty_rows
 
 
-class Table(SimpleRelation):
-    def produce(self, rows: Rows) -> Iterator[Row]:
-        """Produce the input."""
-        return iter(rows)
+class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
+    def operate(self, row: Tuple[Row]) -> Tuple[Row]:
+        return row
 
 
-class Projection(SimpleRelation):
-    def __init__(
-        self,
-        child: SimpleRelation,
-        columns: Mapping[str, Callable[[Row], Any]],
-    ) -> None:
+class Table(UnaryRelation):
+    def __init__(self, rows: Iterable[Row]) -> None:
+        self.rows = rows
+
+    def __iter__(self) -> Iterator[Tuple[Row]]:
+        return ((row,) for row in self.rows)
+
+
+Projector = Callable[[Row], Row]
+
+
+class Projection(UnaryRelation):
+    def __init__(self, child: UnaryRelation, projector: Projector) -> None:
         self.child = child
-        self.columns = columns
+        self.projector = projector
 
-    def operate(self, row: Row) -> Row:
-        return {column: func(row) for column, func in self.columns.items()}
+    def operate(self, row: Tuple[Row]) -> Tuple[Row]:
+        return (self.projector(*row),)
 
 
-class Selection(SimpleRelation):
+JoinProjector = Callable[[Row, Row], Row]
+
+
+class JoinProjection(Relation[Tuple[Row, Row], Tuple[Row]]):
+    def __init__(self, child: "Join", projector: JoinProjector) -> None:
+        self.child = child
+        self.projector = projector
+
+    def operate(self, pair: Tuple[Row, Row]) -> Tuple[Row]:
+        return (self.projector(*pair),)
+
+
+class Selection(UnaryRelation):
     def __init__(
-        self, child: SimpleRelation, predicate: Callable[[Row], bool]
+        self, child: UnaryRelation, predicate: Callable[[Row], bool]
     ) -> None:
         self.child = child
         self.predicate = predicate
 
-    def operate(self, row: Row) -> Row:
-        return row if self.predicate(row) else {}
+    def operate(self, row: Tuple[Row]) -> Tuple[Row]:
+        return row if self.predicate(*row) else ({},)
 
 
 GroupingKeySpecification = Mapping[str, Callable[[Row], Hashable]]
@@ -139,18 +142,21 @@ GroupingKeys = Tuple[GroupingKey, ...]
 T = TypeVar("T")
 
 
-def make_tuple(item: Union[T, Tuple[T, ...]]) -> Tuple[T, ...]:
+def make_tuple(item: Union_[T, Tuple[T, ...]]) -> Tuple[T, ...]:
     """Make item into a single element tuple if it is not already a tuple."""
     return (item,) if not isinstance(item, tuple) else item
 
 
 Input1 = TypeVar("Input1")
 Input2 = TypeVar("Input2")
-
 Output = TypeVar("Output")
 
 
-class UnaryAggregate(Generic[Input1, Output]):
+class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def __init__(self, *args: Any):
+        ...
+
     def step(self, input1: Optional[Input1]) -> None:
         ...
 
@@ -159,6 +165,10 @@ class UnaryAggregate(Generic[Input1, Output]):
 
 
 class BinaryAggregate(Generic[Input1, Input2, Output]):
+    @abc.abstractmethod
+    def __init__(self, *args: Any):
+        ...
+
     def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
         ...
 
@@ -166,13 +176,15 @@ class BinaryAggregate(Generic[Input1, Input2, Output]):
         ...
 
 
-Aggregate = Union[UnaryAggregate, BinaryAggregate]
-AggFuncPair = Tuple[Aggregate, Callable[[Row], Any]]
+Aggregate = Union_[UnaryAggregate, BinaryAggregate]
 
 
-AggregateSpecification = Mapping[
-    str, Tuple[Type[Aggregate], Callable[[Row], Any]]
-]
+class AggregateSpecification:
+    def __init__(
+        self, aggregate: Aggregate, *getters: Callable[[Row], Any]
+    ) -> None:
+        self.aggregate = aggregate
+        self.getters = getters
 
 
 class Sum(UnaryAggregate[Real, Real]):
@@ -204,116 +216,210 @@ class Mean(UnaryAggregate[Real, float]):
         return self.total / count if count > 0 else None
 
 
-class GroupBy(SimpleRelation):
+class Covariance(BinaryAggregate[Real, Real, float]):
+    def __init__(self, denom: int):
+        self.meanx: float = 0.0
+        self.meany: float = 0.0
+        self.count: int = 0
+        self.cov: float = 0.0
+        self.denom = denom
+
+    def step(self, x: Optional[Real], y: Optional[Real]) -> None:
+        if x is not None and y is not None:
+            self.count += 1
+            count = self.count
+            delta_x = x - self.meanx
+            self.meanx += delta_x + count
+            self.meany += (y - self.meany) / count
+            self.cov += delta_x * (y - self.meany)
+
+    def finalize(self) -> Optional[float]:
+        denom = self.count - self.denom
+        return self.cov / denom if denom > 0 else None
+
+
+class SampleCovariance(Covariance):
+    def __init__(self) -> None:
+        super().__init__(1)
+
+
+class PopulationCovariance(Covariance):
+    def __init__(self) -> None:
+        super().__init__(0)
+
+
+class GroupBy(UnaryRelation):
     def __init__(
         self,
-        child: SimpleRelation,
+        child: UnaryRelation,
         group_by: GroupingKeySpecification,
-        aggregates: AggregateSpecification,
+        aggregates: Mapping[str, AggregateSpecification],
     ) -> None:
         self.child = child
         self.group_by = group_by
         self.aggregates = aggregates
 
-    def produce(self, rows: Rows) -> Iterator[Row]:
+    def __iter__(self) -> Iterator[Tuple[Row]]:
+        aggregates = self.aggregates
         aggs: Mapping[
-            GroupingKeys, Mapping[str, Tuple[Aggregate, Callable[[Row], Any]]]
+            GroupingKeys,
+            Mapping[str, Tuple[Aggregate, AggregateSpecification]],
         ] = collections.defaultdict(
             lambda: {
-                name: (agg(), func)
-                for name, (agg, func) in self.aggregates.items()
+                name: (spec.aggregate(), spec)
+                for name, spec in aggregates.items()
             }
         )
-        aggregates = self.aggregates
-        for row in self.child.produce(rows):
+
+        for row in self.child:
             keys: GroupingKeys = tuple(
-                (name, func(row)) for name, func in self.group_by.items()
+                (name, keyfunc(*row))
+                for name, keyfunc in self.group_by.items()
             )
             keyed_agg = aggs[keys]
             for name in aggregates.keys():
-                agg, func = keyed_agg[name]
-                agg.step(*make_tuple(func(row)))
+                agg, aggspec = keyed_agg[name]
+                agg.step(*(getter(*row) for getter in aggspec.getters))
 
-        for key, aggspec in aggs.items():
+        for key, topagg in aggs.items():
             agg_values = {
                 agg_name: subagg.finalize()
-                for agg_name, (subagg, _) in aggspec.items()
+                for agg_name, (subagg, _) in topagg.items()
             }
             res = toolz.merge(dict(key), agg_values)
-            yield res
+            yield (res,)
 
 
-class Join(Relation):
-    left: Relation
-    right: Relation
+JoinPredicate = Callable[[Row, Row], bool]
 
+
+class Join(Relation[Tuple[Row, Row], Tuple[Row, Row]]):
     def __init__(
         self,
-        left: Relation,
-        right: Relation,
-        predicate: Callable[[Row, Row], bool],
+        left: UnaryRelation,
+        right: UnaryRelation,
+        predicate: JoinPredicate,
     ) -> None:
-        self.left = left
-        self.right = right
+        self.child = itertools.starmap(
+            operator.add, itertools.product(left, right)
+        )
         self.predicate = predicate
 
-    def operate(self, left: Row, right: Row) -> Row:
+    def operate(self, pair: Tuple[Row, Row]) -> Tuple[Row, Row]:
+        left, right = pair
         if self.predicate(left, right):
-            yield toolz.merge(left, right)
-        else:
-            yield from self.failed_match_action(left, right)
-
-    def produce(self, left: Rows, right: Rows) -> Iterator[Row]:
-        return filter(
-            None,
-            toolz.concat(
-                itertools.starmap(self.operate, itertools.product(left, right))
-            ),
-        )
+            return left, right
+        return self.failed_match_action(left, right)
 
     @abc.abstractmethod
-    def failed_match_action(self, left: Row, right: Row) -> Row:
+    def failed_match_action(self, left: Row, right: Row) -> Tuple[Row, Row]:
         ...
 
 
 class CrossJoin(Join):
-    def __init__(self, left: Relation, right: Relation) -> None:
+    def __init__(self, left: UnaryRelation, right: UnaryRelation) -> None:
         super().__init__(left, right, lambda left, right: True)
 
-    def failed_match_action(self, left: Row, right: Row) -> Row:
+    def failed_match_action(self, left: Row, right: Row) -> Tuple[Row, Row]:
         raise RuntimeError("CrossJoin should always match")
 
 
 class InnerJoin(Join):
-    def failed_match_action(self, left: Row, right: Row) -> Row:
-        yield {}
+    def failed_match_action(self, left: Row, right: Row) -> Tuple[Row, Row]:
+        return {}, {}
 
 
-class RightShiftablePartial(functools.partial):
-    def __rshift__(self, other):
-        return other(self)
+class AttributeFinder(ast.NodeVisitor):
+    def __init__(self) -> None:
+        self.keys: Set[str] = set()
 
-    def __rrshift__(self, other):
-        return self(other)
-
-    def produce(self, rows):
-        # TODO: This seems a bit hacky. Refactor shifting.
-        return self.func().produce(rows)
+    def visit_Subscript(self, node: ast.Subscript) -> None:
+        index: ast.Index = typing.cast(ast.Index, node.slice)
+        value: ast.Str = typing.cast(ast.Str, index.value)
+        self.keys.add(value.s)
 
 
-def table():
-    return RightShiftablePartial(Table)
+def find_attributes(predicate: JoinPredicate) -> Set[str]:
+    finder = AttributeFinder()
+    finder.visit(ast.parse(inspect.getsource(predicate)))
+    return finder.keys
 
 
-def select(**columns):
-    return RightShiftablePartial(Projection, columns=columns)
+def merge(
+    left: Rows, right: Rows, predicate: JoinPredicate
+) -> Iterator[Tuple[Row, Row]]:
+    # Assume that left and right are already sorted
+    attributes = find_attributes(predicate)
+    sorter = toolz.flip(toolz.pluck)(attributes)
+    left_sorted = sorted(left, key=sorter)
+    right_sorted = sorted(right, key=sorter)
+    left_iter = iter(left_sorted)
+    right_iter = iter(right_sorted)
+    while True:
+        left_row = next(left_iter)
+        right_row = next(right_iter)
+        if predicate(left_row, right_row):
+            yield left_row, right_row
+            left_row = next(left_iter)
+            right_row = next(right_iter)
+        elif toolz.pluck(left, attributes) < toolz.pluck(right, attributes):
+            left_row = next(left_iter)
+        else:  # if left.Key > right.Key
+            right_row = next(right_iter)
 
 
-def sift(predicate):
-    return RightShiftablePartial(Selection, predicate=predicate)
+items = methodcaller("items")
+itemize = toolz.compose(frozenset, toolz.curried.map(items))
 
 
-def group_by(group_by, aggregates):
-    return RightShiftablePartial(
-        GroupBy, group_by=group_by, aggregates=aggregates
-    )
+class SetOperation(Relation[Tuple[Row, Row], Tuple[Row]]):
+    def __init__(self, left: UnaryRelation, right: UnaryRelation) -> None:
+        self.left = left
+        self.right = right
+
+
+class Union(SetOperation):
+    def __iter__(self) -> Iterator[Tuple[Row]]:
+        return (
+            (row,)
+            for row in toolz.unique(
+                toolz.concatv(self.left, self.right),
+                key=toolz.compose(frozenset, items),
+            )
+        )
+
+
+class InefficientSetOperation(SetOperation):
+    def __iter__(self) -> Iterator[Tuple[Row]]:
+        return (
+            (dict(row),)
+            for row in self.binary_operation(
+                itemize(self.left), itemize(self.right)
+            )
+        )
+
+    @abc.abstractmethod
+    def binary_operation(
+        self,
+        left: FrozenSet[Tuple[Tuple[str, Any], ...]],
+        right: FrozenSet[Tuple[Tuple[str, Any], ...]],
+    ) -> FrozenSet[Tuple[Tuple[str, Any], ...]]:
+        ...
+
+
+class Intersection(InefficientSetOperation):
+    def binary_operation(
+        self,
+        left: FrozenSet[Tuple[Tuple[str, Any], ...]],
+        right: FrozenSet[Tuple[Tuple[str, Any], ...]],
+    ) -> FrozenSet[Tuple[Tuple[str, Any], ...]]:
+        return left & right
+
+
+class Difference(InefficientSetOperation):
+    def binary_operation(
+        self,
+        left: FrozenSet[Tuple[Tuple[str, Any], ...]],
+        right: FrozenSet[Tuple[Tuple[str, Any], ...]],
+    ) -> FrozenSet[Tuple[Tuple[str, Any], ...]]:
+        return left - right
