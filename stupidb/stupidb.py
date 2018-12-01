@@ -71,7 +71,9 @@ class Relation(Generic[InputType, OutputType]):
     child: Iterable[InputType]
 
     def operate(self, args: InputType) -> OutputType:
-        raise NotImplementedError(f"{type(self)} must implement the operate method")
+        raise NotImplementedError(
+            f"{type(self)} must implement the operate method"
+        )
 
     def __iter__(self) -> Iterator[OutputType]:
         return filter(all, map(self.operate, self.child))
@@ -176,7 +178,7 @@ class Mean(UnaryAggregate[Real, float]):
 
 
 class Covariance(BinaryAggregate[Real, Real, float]):
-    def __init__(self, denom: int):
+    def __init__(self, denom: int) -> None:
         self.meanx: float = 0.0
         self.meany: float = 0.0
         self.count: int = 0
