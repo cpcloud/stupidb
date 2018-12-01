@@ -1,7 +1,12 @@
 import functools
 from numbers import Real
-from typing import Callable, Generic, Iterable, Iterator, Tuple
+from typing import Callable, Generic, Iterator, List, Optional
 from typing import Union as Union_
+
+import toolz
+
+import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
 
 from .stupidb import (
     AggregateSpecification,
@@ -22,7 +27,6 @@ from .stupidb import (
     SampleCovariance,
     Selection,
     Sum,
-    Table,
     UnaryRelation,
     Union,
 )
@@ -43,9 +47,24 @@ class RightShiftablePartial(functools.partial, Generic[OutputType]):
         # TODO: This seems a bit hacky. Refactor shifting.
         return iter(self())
 
+    @property
+    def columns(self) -> List[str]:
+        return self().columns
 
-def table(rows: Iterable[Rows]) -> RightShiftablePartial:
-    return RightShiftablePartial(Table, rows=rows)
+
+def table(
+    rows: Rows, schema: Optional[sch.Schema] = None
+) -> RightShiftablePartial:
+    first, rows = toolz.peek(rows)
+    return RightShiftablePartial(
+        UnaryRelation,
+        child=((row,) for row in rows),
+        schema=(
+            sch.Schema.from_dict(toolz.valmap(dt.infer, first))
+            if schema is None
+            else schema
+        ),
+    )
 
 
 def cross_join(right: UnaryRelation) -> RightShiftablePartial:
@@ -87,7 +106,7 @@ def difference(right: Relation) -> RightShiftablePartial:
 
 
 def do() -> RightShiftablePartial:
-    return RightShiftablePartial(lambda child: (row for row, in child))
+    return RightShiftablePartial(functools.partial(map, toolz.first))
 
 
 def sum(getter: Callable[[Row], Real]) -> AggregateSpecification:

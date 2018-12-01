@@ -40,11 +40,13 @@ from operator import methodcaller
 from typing import (
     Any,
     Callable,
+    Dict,
     FrozenSet,
     Generic,
     Hashable,
     Iterable,
     Iterator,
+    List,
     Mapping,
     Optional,
     Tuple,
@@ -52,6 +54,10 @@ from typing import (
     TypeVar,
 )
 from typing import Union as Union_
+
+from typing_extensions import DefaultDict, NoReturn
+
+import ibis.expr.schema as sch
 
 try:
     import cytoolz as toolz
@@ -65,15 +71,20 @@ InputType = TypeVar("InputType", Tuple[Row], Tuple[Row, Row])
 OutputType = TypeVar("OutputType", Tuple[Row], Tuple[Row, Row])
 
 
-class Relation(Generic[InputType, OutputType]):
+class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
     """A relation."""
 
-    child: Iterable[InputType]
+    def __init__(self, child: Iterable[InputType], schema: sch.Schema) -> None:
+        self.child: Iterable[InputType] = child
+        self.schema = schema
 
+    @property
+    def columns(self) -> List[str]:
+        return list(self.schema.names)
+
+    @abc.abstractmethod
     def operate(self, args: InputType) -> OutputType:
-        raise NotImplementedError(
-            f"{type(self)} must implement the operate method"
-        )
+        ...
 
     def __iter__(self) -> Iterator[OutputType]:
         return filter(all, map(self.operate, self.child))
@@ -82,14 +93,6 @@ class Relation(Generic[InputType, OutputType]):
 class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
     def operate(self, row: Tuple[Row]) -> Tuple[Row]:
         return row
-
-
-class Table(UnaryRelation):
-    def __init__(self, rows: Iterable[Row]) -> None:
-        self.rows = rows
-
-    def __iter__(self) -> Iterator[Tuple[Row]]:
-        return ((row,) for row in self.rows)
 
 
 class Projection(Relation[InputType, Tuple[Row]]):
@@ -222,9 +225,8 @@ class GroupBy(UnaryRelation):
 
     def __iter__(self) -> Iterator[Tuple[Row]]:
         aggregates = self.aggregates
-        aggs: Mapping[
-            GroupingKeys,
-            Mapping[str, Tuple[Aggregate, AggregateSpecification]],
+        aggs: DefaultDict[
+            GroupingKeys, Dict[str, Tuple[Aggregate, AggregateSpecification]]
         ] = collections.defaultdict(
             lambda: {
                 name: (spec.aggregate(), spec)
@@ -232,15 +234,14 @@ class GroupBy(UnaryRelation):
             }
         )
 
-        for row in self.child:
+        for (row,) in self.child:
             keys: GroupingKeys = tuple(
-                (name, keyfunc(*row))
-                for name, keyfunc in self.group_by.items()
+                (name, keyfunc(row)) for name, keyfunc in self.group_by.items()
             )
             keyed_agg = aggs[keys]
             for name in aggregates.keys():
                 agg, aggspec = keyed_agg[name]
-                agg.step(*(getter(*row) for getter in aggspec.getters))
+                agg.step(*(getter(row) for getter in aggspec.getters))
 
         for key, topagg in aggs.items():
             agg_values = {
@@ -281,8 +282,8 @@ class CrossJoin(Join):
     def __init__(self, left: UnaryRelation, right: UnaryRelation) -> None:
         super().__init__(left, right, lambda left, right: True)
 
-    def failed_match_action(self, left: Row, right: Row) -> Tuple[Row, Row]:
-        raise RuntimeError("CrossJoin should always match")
+    def failed_match_action(self, left: Row, right: Row) -> NoReturn:
+        raise ValueError("CrossJoin should always match")
 
 
 class InnerJoin(Join):

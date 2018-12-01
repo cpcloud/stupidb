@@ -21,7 +21,8 @@ from stupidb.api import (
     sift,
     sum,
 )
-from stupidb.stupidb import GroupBy, Projection, Selection, Table
+from stupidb.api import table as table_
+from stupidb.stupidb import GroupBy, Projection, Selection
 
 
 @pytest.fixture
@@ -54,7 +55,7 @@ def assert_rowset_equal(left, right):
 
 @pytest.fixture
 def table(rows):
-    return Table(rows)
+    return table_(rows)
 
 
 @pytest.fixture
@@ -64,7 +65,7 @@ def left_table(table):
 
 @pytest.fixture
 def right_table(right):
-    return Table(right)
+    return table_(right)
 
 
 @pytest.fixture
@@ -93,9 +94,10 @@ def group_by_(selection):
 
 def test_table(table, rows):
     expected = rows[:]
-    op = Table(rows) >> do()
+    op = table_(rows) >> do()
     result = list(op)
     assert_rowset_equal(result, expected)
+    assert set(table_(rows).columns) == set(rows[0].keys())
 
 
 def test_projection(projection, rows):
