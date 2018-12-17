@@ -62,13 +62,16 @@ class RightShiftablePartial(functools.partial, Generic[OutputType]):
         return self().schema
 
 
+V = TypeVar("V")
+
+
 def table(
-    rows: Rows, schema: Optional[sch.Schema] = None
+    rows: Iterable[Mapping[str, V]], schema: Optional[sch.Schema] = None
 ) -> RightShiftablePartial:
     first, rows = toolz.peek(rows)
     return RightShiftablePartial(
         UnaryRelation,
-        child=((Row(row, id=id),) for id, row in enumerate(rows)),
+        child=((Row.from_mapping(row, id=id),) for id, row in enumerate(rows)),
         schema=(
             sch.Schema.from_dict(toolz.valmap(dt.infer, first))
             if schema is None
@@ -95,7 +98,7 @@ def select(
     return RightShiftablePartial(Projection, projectors=projectors)
 
 
-def sift(predicate: Callable[[Row], bool]) -> RightShiftablePartial:
+def sift(predicate: Predicate) -> RightShiftablePartial:
     return RightShiftablePartial(Selection, predicate=predicate)
 
 
