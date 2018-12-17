@@ -60,7 +60,13 @@ from typing_extensions import DefaultDict, NoReturn
 
 import ibis.expr.schema as sch
 from stupidb.row import Row
-from stupidb.typehints import Following, OrderBy, PartitionBy, Preceding
+from stupidb.typehints import (
+    Following,
+    OrderBy,
+    PartitionBy,
+    Preceding,
+    Predicate,
+)
 
 try:
     import cytoolz as toolz
@@ -115,9 +121,7 @@ class Projection(Relation[InputType, Tuple[Row]]):
 
 
 class Selection(UnaryRelation):
-    def __init__(
-        self, child: UnaryRelation, predicate: Callable[[Row], bool]
-    ) -> None:
+    def __init__(self, child: UnaryRelation, predicate: Predicate) -> None:
         self.child = child
         self.predicate = predicate
 

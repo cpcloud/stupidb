@@ -1,14 +1,5 @@
 import collections
-from typing import (
-    Callable,
-    Hashable,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import Hashable, Iterator, List, Optional, Sequence, Tuple
 
 import toolz
 from typing_extensions import DefaultDict
@@ -47,7 +38,7 @@ def compute_window_frame(
 
 
 def window_agg(
-    rows: Iterable[Row],
+    rows: Sequence[Row],
     partition_by: Sequence[PartitionBy],
     order_by: Sequence[OrderBy],
     preceding: Preceding,

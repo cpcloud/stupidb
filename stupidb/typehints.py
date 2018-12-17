@@ -7,3 +7,8 @@ PartitionBy = Callable[[Row], Hashable]
 OrderBy = Callable[[Row], Comparable]
 Preceding = Callable[[Row], int]
 Following = Preceding
+
+Predicate = Callable[[Row], bool]
+
+Projector = Callable[[Row], Row]
+JoinProjector = Callable[[Row, Row], Row]
