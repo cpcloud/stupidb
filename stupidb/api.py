@@ -62,7 +62,7 @@ def table(
     first, rows = toolz.peek(rows)
     return RightShiftablePartial(
         UnaryRelation,
-        child=((row,) for row in rows),
+        child=((Row(row, id=id),) for id, row in enumerate(rows)),
         schema=(
             sch.Schema.from_dict(toolz.valmap(dt.infer, first))
             if schema is None

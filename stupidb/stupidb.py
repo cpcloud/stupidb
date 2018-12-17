@@ -31,6 +31,7 @@ Requirements
 
 import abc
 import collections
+import enum
 import functools
 import itertools
 import operator
@@ -65,7 +66,24 @@ except ImportError:
     import toolz as toolz
 
 
-Row = Mapping[str, Any]  # A mapping from column name to anything
+class Row(collections.abc.Mapping):
+    def __init__(self, data: Mapping[str, Any], id: int = -1) -> None:
+        self.data = data
+        self.id = id
+
+    def __getitem__(self, column: str) -> Any:
+        return self.data[column]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.data)
+
+    def __len__(self) -> int:
+        return len(self.data)
+
+    def __repr__(self) -> str:
+        return f'Row({self.data}, id={self.id:d})'
+
+
 Rows = Iterable[Row]  # Rows are an Iterable of Row
 InputType = TypeVar("InputType", Tuple[Row], Tuple[Row, Row])
 OutputType = TypeVar("OutputType", Tuple[Row], Tuple[Row, Row])
@@ -87,7 +105,10 @@ class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
         ...
 
     def __iter__(self) -> Iterator[OutputType]:
-        return filter(all, map(self.operate, self.child))
+        for id, row in enumerate(
+            filter(all, map(self.operate, self.child))
+        ):
+            yield tuple(map(functools.partial(Row, id=id), row))
 
 
 class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
@@ -133,6 +154,14 @@ class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
         ...
 
 
+class UnaryWindowAggregate(UnaryAggregate[Input1, Output]):
+    def inverse(self, input1: Optional[Input1]) -> None:
+        ...
+
+    def value(self) -> Optional[Output]:
+        ...
+
+
 class BinaryAggregate(Generic[Input1, Input2, Output]):
     def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
         ...
@@ -163,11 +192,13 @@ class AggregateSpecification:
         self.aggregate = aggregate
         self.getters = getters
 
-    def over(self, window: Window) -> WindowAggregateSpecification:
-        return WindowAggregateSpecification(self, window)
+    def over(self, window: FrameClause) -> WindowAggregateSpecification:
+        return WindowAggregateSpecification(
+            window, self.aggregate, *self.getters
+        )
 
 
-class Sum(UnaryAggregate[Real, Real]):
+class Sum(UnaryWindowAggregate[Real, Real]):
     def __init__(self) -> None:
         self.total = typing.cast(Real, 0)
         self.count = 0
@@ -177,11 +208,19 @@ class Sum(UnaryAggregate[Real, Real]):
             self.total += input1
             self.count += 1
 
+    def inverse(self, input1: Optional[Real]) -> None:
+        if input1 is not None:
+            self.total -= input1
+            self.count -= 1
+
     def finalize(self) -> Optional[Real]:
         return self.total if self.count else None
 
+    def value(self) -> Optional[Real]:
+        return self.finalize()
 
-class Mean(UnaryAggregate[Real, float]):
+
+class Mean(UnaryWindowAggregate[Real, float]):
     def __init__(self) -> None:
         self.total: float = 0.0
         self.count: int = 0
@@ -191,9 +230,17 @@ class Mean(UnaryAggregate[Real, float]):
             self.total += typing.cast(float, value)
             self.count += 1
 
+    def inverse(self, input1: Optional[Real]) -> None:
+        if input1 is not None:
+            self.total -= input1
+            self.count -= 1
+
     def finalize(self) -> Optional[float]:
         count = self.count
         return self.total / count if count > 0 else None
+
+    def value(self) -> Optional[float]:
+        return self.finalize()
 
 
 class Covariance(BinaryAggregate[Real, Real, float]):
@@ -334,9 +381,9 @@ class InefficientSetOperation(SetOperation, metaclass=abc.ABCMeta):
     def __iter__(self) -> Iterator[Tuple[Row]]:
         itemize = toolz.compose(frozenset, functools.partial(map, items))
         return (
-            (dict(row),)
-            for row in self.binary_operation(
-                itemize(self.left), itemize(self.right)
+            (Row(row, id=id),)
+            for id, row in enumerate(
+                self.binary_operation(itemize(self.left), itemize(self.right))
             )
         )
 
