@@ -89,7 +89,7 @@ def sift(predicate: Callable[[Row], bool]) -> RightShiftablePartial:
     return RightShiftablePartial(Selection, predicate=predicate)
 
 
-def exists(relation: Relation):
+def exists(relation: Relation) -> bool:
     return any(row for (row,) in relation)
 
 
