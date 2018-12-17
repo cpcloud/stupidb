@@ -44,28 +44,6 @@ class Comparable(Protocol):
 V = TypeVar("V")
 
 
-class Row(Mapping[str, V]):
-    def __init__(self, id: int, data: Mapping[str, V]) -> None:
-        self.id = id
-        self.data = data
-
-    def __hash__(self) -> int:
-        return hash(tuple(tuple(item) for item in self.data.items()))
-
-    def __repr__(self) -> str:
-        joined_items = ", ".join(f"{k}={v!r}" for k, v in self.data.items())
-        return f"{self.__class__.__name__}({joined_items})"
-
-    def __getitem__(self, key: str) -> Any:
-        return self.data[key]
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self.data)
-
-    def __len__(self) -> int:
-        return len(self.data)
-
-
 PartitionBy = Callable[[Row], Hashable]
 OrderBy = Callable[[Row], Comparable]
 Preceding = Optional[Callable[[Row], int]]
