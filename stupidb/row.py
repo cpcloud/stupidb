@@ -4,7 +4,11 @@ V = TypeVar("V")
 
 
 class Row(Mapping[str, V]):
-    def __init__(self, data: Mapping[str, V], id: int) -> None:
+    def __init__(self, data: Mapping[str, V], id: int = -1) -> None:
+        # an id of -1 is never used since rows are always reconstructed with
+        # their ids in the core loop. See the Relation class
+        #
+        # this needs to be tested
         assert not isinstance(data, type(self))
         self.data = data
         self.id = id

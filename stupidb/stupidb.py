@@ -110,7 +110,7 @@ class Projection(Relation[InputType, Tuple[Row]]):
             name: projector(*args)
             for name, projector in self.projectors.items()
         }
-        row = Row(mapping, id=-1)
+        row = Row(mapping)
         return (row,)
 
 
