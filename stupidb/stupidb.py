@@ -190,9 +190,8 @@ class RangeMode(FrameClause):
 
 
 class Window:
-    @classmethod
+    @staticmethod
     def rows(
-        self,
         order_by: Sequence[OrderBy] = (),
         partition_by: Sequence[PartitionBy] = (),
         preceding: Optional[Preceding] = None,
@@ -200,9 +199,8 @@ class Window:
     ) -> FrameClause:
         return RowsMode(order_by, partition_by, preceding, following)
 
-    @classmethod
+    @staticmethod
     def range(
-        self,
         order_by: Sequence[OrderBy] = (),
         partition_by: Sequence[PartitionBy] = (),
         preceding: Optional[Preceding] = None,
