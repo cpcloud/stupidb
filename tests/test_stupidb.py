@@ -23,7 +23,6 @@ from stupidb.api import (
     sum,
 )
 from stupidb.api import table as table_
-from stupidb.row import Row
 from stupidb.stupidb import GroupBy, Projection, Selection, Window
 
 
