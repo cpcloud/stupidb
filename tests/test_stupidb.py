@@ -24,18 +24,19 @@ from stupidb.api import (
 )
 from stupidb.api import table as table_
 from stupidb.stupidb import GroupBy, Projection, Selection
+from stupidb.window import window_agg, Row
 
 
 @pytest.fixture
 def rows():
     return [
-        dict(z="a", a=1, b=2),
-        dict(z="b", a=2, b=-1),
-        dict(z="a", a=3, b=4),
-        dict(z="a", a=4, b=-3),
-        dict(z="a", a=1, b=-3),
-        dict(z="b", a=2, b=-3),
-        dict(z="b", a=3, b=-3),
+        dict(z="a", a=1, b=2, e=1),
+        dict(z="b", a=2, b=-1, e=2),
+        dict(z="a", a=3, b=4, e=3),
+        dict(z="a", a=4, b=-3, e=4),
+        dict(z="a", a=1, b=-3, e=5),
+        dict(z="b", a=2, b=-3, e=6),
+        dict(z="b", a=3, b=-3, e=7),
     ]
 
 
@@ -300,3 +301,17 @@ def test_right_shiftable(table, right_table):
     ]
     result = list(pipeline >> do())
     assert_rowset_equal(result, expected)
+
+
+def test_window(rows):
+    aggspec = sum(lambda r: r["e"])
+    preceding = lambda r: 2
+    following = lambda r: 0
+    new_rows = [Row(id=i, data=row) for i, row in enumerate(rows)]
+    partition_by = []
+    order_by = [lambda r: r["e"]]
+    result = window_agg(
+        new_rows, partition_by, order_by, preceding, following, aggspec
+    )
+    res = list(result)
+    assert res is not None
