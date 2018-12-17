@@ -1,14 +1,22 @@
 import functools
 from numbers import Real
-from typing import Callable, Generic, Iterator, List, Optional
+from typing import (
+    Callable,
+    Generic,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    TypeVar,
+)
 from typing import Union as Union_
 
 import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-
-from .stupidb import (
+from stupidb.stupidb import (
     AbstractAggregateSpecification,
     AggregateSpecification,
     CrossJoin,
@@ -24,16 +32,13 @@ from .stupidb import (
     Projection,
     Relation,
     Row,
-    Rows,
     SampleCovariance,
     Selection,
     Sum,
     UnaryRelation,
     Union,
 )
-
-Projector = Callable[[Row], Row]
-JoinProjector = Callable[[Row, Row], Row]
+from stupidb.typehints import JoinProjector, Predicate, Projector
 
 
 class RightShiftablePartial(functools.partial, Generic[OutputType]):
