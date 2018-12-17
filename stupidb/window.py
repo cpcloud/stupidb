@@ -1,53 +1,21 @@
-import abc
 import collections
-
 from typing import (
-    Any,
     Callable,
     Hashable,
+    Iterable,
     Iterator,
     List,
-    Mapping,
     Optional,
     Sequence,
     Tuple,
-    TypeVar,
 )
-from typing_extensions import Protocol, DefaultDict
 
 import toolz
+from typing_extensions import DefaultDict
 
+from stupidb.row import Row
 from stupidb.stupidb import AggregateSpecification
-
-C = TypeVar("C", bound="Comparable")
-
-
-class Comparable(Protocol):
-    @abc.abstractmethod
-    def __eq__(self, other: Any) -> bool:
-        ...
-
-    @abc.abstractmethod
-    def __lt__(self: C, other: C) -> bool:
-        ...
-
-    def __gt__(self: C, other: C) -> bool:
-        return (not self < other) and self != other
-
-    def __le__(self: C, other: C) -> bool:
-        return self < other or self == other
-
-    def __ge__(self: C, other: C) -> bool:
-        return not self < other
-
-
-V = TypeVar("V")
-
-
-PartitionBy = Callable[[Row], Hashable]
-OrderBy = Callable[[Row], Comparable]
-Preceding = Optional[Callable[[Row], int]]
-Following = Optional[Callable[[Row], int]]
+from stupidb.typehints import Following, OrderBy, PartitionBy, Preceding
 
 
 def compute_partition_key(
@@ -114,4 +82,4 @@ def window_agg(
             args = [getter(peer) for getter in aggspec.getters]
             agg.step(*args)
         result = agg.finalize()
-        yield toolz.merge(row, {"agg": result})
+        yield Row(toolz.merge(row, {"agg": result}), id=row.id)

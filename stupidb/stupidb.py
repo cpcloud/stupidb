@@ -31,7 +31,6 @@ Requirements
 
 import abc
 import collections
-import enum
 import functools
 import itertools
 import operator
@@ -50,6 +49,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -59,29 +59,13 @@ from typing import Union as Union_
 from typing_extensions import DefaultDict, NoReturn
 
 import ibis.expr.schema as sch
+from stupidb.row import Row
+from stupidb.typehints import Following, OrderBy, PartitionBy, Preceding
 
 try:
     import cytoolz as toolz
 except ImportError:
     import toolz as toolz
-
-
-class Row(collections.abc.Mapping):
-    def __init__(self, data: Mapping[str, Any], id: int = -1) -> None:
-        self.data = data
-        self.id = id
-
-    def __getitem__(self, column: str) -> Any:
-        return self.data[column]
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self.data)
-
-    def __len__(self) -> int:
-        return len(self.data)
-
-    def __repr__(self) -> str:
-        return f'Row({self.data}, id={self.id:d})'
 
 
 Rows = Iterable[Row]  # Rows are an Iterable of Row
@@ -351,7 +335,7 @@ class CrossJoin(Join):
 
 class InnerJoin(Join):
     def failed_match_action(self, left: Row, right: Row) -> Tuple[Row, Row]:
-        return {}, {}
+        return Row({}, id=left.id), Row({}, id=right.id)
 
 
 items = methodcaller("items")
@@ -381,7 +365,7 @@ class InefficientSetOperation(SetOperation, metaclass=abc.ABCMeta):
     def __iter__(self) -> Iterator[Tuple[Row]]:
         itemize = toolz.compose(frozenset, functools.partial(map, items))
         return (
-            (Row(row, id=id),)
+            (Row.from_mapping(dict(row), id=id),)
             for id, row in enumerate(
                 self.binary_operation(itemize(self.left), itemize(self.right))
             )
