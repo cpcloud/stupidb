@@ -9,6 +9,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 
 from .stupidb import (
+    AbstractAggregateSpecification,
     AggregateSpecification,
     CrossJoin,
     Difference,
@@ -81,8 +82,12 @@ def inner_join(
     return RightShiftablePartial(InnerJoin, right=right, predicate=predicate)
 
 
-def select(columns: Union_[Projector, JoinProjector]) -> RightShiftablePartial:
-    return RightShiftablePartial(Projection, projector=columns)
+def select(
+    **projectors: Union_[
+        Projector, JoinProjector, AbstractAggregateSpecification
+    ]
+) -> RightShiftablePartial:
+    return RightShiftablePartial(Projection, projectors=projectors)
 
 
 def sift(predicate: Callable[[Row], bool]) -> RightShiftablePartial:

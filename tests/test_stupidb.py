@@ -23,8 +23,8 @@ from stupidb.api import (
     sum,
 )
 from stupidb.api import table as table_
-from stupidb.stupidb import GroupBy, Projection, Selection
-from stupidb.window import window_agg, Row
+from stupidb.row import Row
+from stupidb.stupidb import GroupBy, Projection, Selection, Window
 
 
 @pytest.fixture
@@ -164,12 +164,10 @@ def test_inner_join(left_table, right_table, left):
             lambda left, right: left["z"] == "a" and left["a"] == right["a"],
         )
         >> select(
-            lambda left, right: dict(
-                left_a=left["a"],
-                right_a=right["a"],
-                right_z=right["z"],
-                left_z=left["z"],
-            )
+            left_a=lambda l, r: l["a"],
+            right_a=lambda l, r: r["a"],
+            right_z=lambda l, r: r["z"],
+            left_z=lambda l, r: left["z"],
         )
     )
     pipeline = join >> do()
@@ -303,15 +301,22 @@ def test_right_shiftable(table, right_table):
     assert_rowset_equal(result, expected)
 
 
-def test_window(rows):
-    aggspec = sum(lambda r: r["e"])
+def test_window(table, rows):
     preceding = lambda r: 2
     following = lambda r: 0
-    new_rows = [Row(id=i, data=row) for i, row in enumerate(rows)]
     partition_by = []
     order_by = [lambda r: r["e"]]
-    result = window_agg(
-        new_rows, partition_by, order_by, preceding, following, aggspec
+    pipeline = table >> select(
+        a=lambda r: r["a"],
+        my_agg=sum(lambda r: r["e"]).over(
+            Window.rows(
+                order_by=order_by,
+                partition_by=partition_by,
+                preceding=preceding,
+                following=following,
+            )
+        ),
     )
-    res = list(result)
-    assert res is not None
+    result = list(pipeline >> do())
+    # import pdb; pdb.set_trace()  # noqa
+    assert result is not None

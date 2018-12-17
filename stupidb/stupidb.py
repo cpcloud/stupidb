@@ -89,10 +89,8 @@ class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
         ...
 
     def __iter__(self) -> Iterator[OutputType]:
-        for id, row in enumerate(
-            filter(all, map(self.operate, self.child))
-        ):
-            yield tuple(map(functools.partial(Row, id=id), row))
+        for id, row in enumerate(filter(all, map(self.operate, self.child))):
+            yield tuple(Row.from_mapping(element, id=id) for element in row)
 
 
 class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
@@ -101,12 +99,19 @@ class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
 
 
 class Projection(Relation[InputType, Tuple[Row]]):
-    def __init__(self, child: Relation, projector: Callable[..., Row]) -> None:
+    def __init__(
+        self, child: Relation, projectors: Mapping[str, Callable[..., Row]]
+    ) -> None:
         self.child = child
-        self.projector = projector
+        self.projectors = projectors
 
     def operate(self, args: InputType) -> Tuple[Row]:
-        return (self.projector(*args),)
+        mapping = {
+            name: projector(*args)
+            for name, projector in self.projectors.items()
+        }
+        row = Row(mapping, id=-1)
+        return (row,)
 
 
 class Selection(UnaryRelation):
@@ -118,7 +123,7 @@ class Selection(UnaryRelation):
 
     def operate(self, row: Tuple[Row]) -> Tuple[Row]:
         result = self.predicate(*row)
-        return row if result else ({},)
+        return row if result else (Row({}, id=row[0].id),)
 
 
 GroupingKeySpecification = Mapping[str, Callable[[Row], Hashable]]
@@ -157,25 +162,72 @@ class BinaryAggregate(Generic[Input1, Input2, Output]):
 Aggregate = Union_[UnaryAggregate, BinaryAggregate]
 
 
-class Window:
+class FrameClause:
+    def __init__(
+        self,
+        order_by: Sequence[OrderBy],
+        partition_by: Sequence[PartitionBy],
+        preceding: Optional[Preceding],
+        following: Optional[Following],
+    ) -> None:
+        self._order_by = order_by
+        self._partition_by = partition_by
+        self._preceding = preceding
+        self._following = following
+        ...
+
+
+class RowsMode(FrameClause):
     pass
 
 
-class WindowAggregateSpecification:
-    def __init__(
-        self, specfication: "AggregateSpecification", window: Window
-    ) -> None:
-        self.specfication = specfication
-        self.window = window
+class RangeMode(FrameClause):
+    pass
 
 
-class AggregateSpecification:
-    def __init__(
-        self, aggregate: Type[Aggregate], *getters: Callable[[Row], Any]
-    ) -> None:
+class Window:
+    @classmethod
+    def rows(
+        self,
+        order_by: Sequence[OrderBy] = (),
+        partition_by: Sequence[PartitionBy] = (),
+        preceding: Optional[Preceding] = None,
+        following: Optional[Following] = None,
+    ) -> FrameClause:
+        return RowsMode(order_by, partition_by, preceding, following)
+
+    @classmethod
+    def range(
+        self,
+        order_by: Sequence[OrderBy] = (),
+        partition_by: Sequence[PartitionBy] = (),
+        preceding: Optional[Preceding] = None,
+        following: Optional[Following] = None,
+    ) -> FrameClause:
+        return RangeMode(order_by, partition_by, preceding, following)
+
+
+Getter = Callable[[Row], Any]
+
+
+class AbstractAggregateSpecification:
+    def __init__(self, aggregate: Type[Aggregate], *getters: Getter) -> None:
         self.aggregate = aggregate
         self.getters = getters
 
+
+class WindowAggregateSpecification(AbstractAggregateSpecification):
+    def __init__(
+        self,
+        frame_clause: FrameClause,
+        aggregate: Type[Aggregate],
+        *getters: Getter
+    ) -> None:
+        super().__init__(aggregate, *getters)
+        self.frame_clause = frame_clause
+
+
+class AggregateSpecification(AbstractAggregateSpecification):
     def over(self, window: FrameClause) -> WindowAggregateSpecification:
         return WindowAggregateSpecification(
             window, self.aggregate, *self.getters

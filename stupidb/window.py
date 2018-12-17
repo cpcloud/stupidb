@@ -34,20 +34,20 @@ def compute_window_frame(
     following: Following,
 ) -> List[Row]:
     npeers = len(possible_peers)
-    if preceding is None:
-        start = None
+    if preceding is not None:
+        start: Optional[int] = max(current_row.id - preceding(current_row), 0)
     else:
-        start = max(current_row.id - preceding(current_row), 0)
+        start = 0
 
-    if following is None:
-        stop = None
-    else:
+    if following is not None:
         stop = min(current_row.id + following(current_row), npeers)
+    else:
+        stop = npeers
     return possible_peers[start:stop]
 
 
 def window_agg(
-    rows: Sequence[Row],
+    rows: Iterable[Row],
     partition_by: Sequence[PartitionBy],
     order_by: Sequence[OrderBy],
     preceding: Preceding,
