@@ -291,7 +291,7 @@ def test_right_shiftable(table, right_table):
     assert_rowset_equal(result, expected)
 
 
-@pytest.mark.xfail(raises=TypeError, reason='Not yet implemented')
+@pytest.mark.xfail(raises=TypeError, reason="Not yet implemented")
 def test_window(table, rows):
     preceding = lambda r: 2
     following = lambda r: 0
