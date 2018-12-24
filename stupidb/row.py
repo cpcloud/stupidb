@@ -9,7 +9,7 @@ class Row(Mapping[str, V]):
         # their ids in the core loop. See the Relation class
         #
         # this needs to be tested
-        assert not isinstance(data, type(self)), f'data is {type(self)}'
+        assert not isinstance(data, type(self)), f"data is {type(self)}"
         self._data = data
         self._id = _id
 
