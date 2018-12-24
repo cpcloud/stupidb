@@ -10,6 +10,7 @@ import pytest
 import toolz
 
 from stupidb.api import (
+    count,
     cross_join,
     do,
     exists,
@@ -23,7 +24,7 @@ from stupidb.api import (
     sum,
 )
 from stupidb.api import table as table_
-from stupidb.stupidb import GroupBy, Projection, Selection, Window
+from stupidb.stupidb import Window
 
 
 @pytest.fixture
@@ -70,29 +71,6 @@ def right_table(right):
 
 
 @pytest.fixture
-def projection(table):
-    return Projection(
-        table, lambda row: dict(c=row["a"], d=row["b"], z=row["z"])
-    )
-
-
-@pytest.fixture
-def selection(projection):
-    return Selection(projection, lambda row: True)
-
-
-@pytest.fixture
-def group_by_(selection):
-    return GroupBy(
-        selection,
-        {"c": lambda row: row["c"], "z": lambda row: row["z"]},
-        {
-            "total": sum(lambda row: row["d"]),
-            "mean": mean(lambda row: row["d"]),
-        },
-    )
-
-
 def test_table(table, rows):
     expected = rows[:]
     op = table_(rows) >> do()
@@ -101,7 +79,7 @@ def test_table(table, rows):
     assert set(table_(rows).columns) == set(rows[0].keys())
 
 
-def test_projection(projection, rows):
+def test_projection(table, rows):
     expected = [
         dict(z="a", c=1, d=2),
         dict(z="b", c=2, d=-1),
@@ -111,12 +89,16 @@ def test_projection(projection, rows):
         dict(z="b", c=2, d=-3),
         dict(z="b", c=3, d=-3),
     ]
-    pipeline = projection >> do()
+    pipeline = (
+        table
+        >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
+        >> do()
+    )
     result = list(pipeline)
     assert_rowset_equal(result, expected)
 
 
-def test_selection(selection, rows):
+def test_selection(table, rows):
     expected = [
         dict(z="a", c=1, d=2),
         dict(z="a", c=1, d=-3),
@@ -126,11 +108,16 @@ def test_selection(selection, rows):
         dict(z="b", c=2, d=-3),
         dict(z="b", c=3, d=-3),
     ]
-    result = selection >> do()
-    assert_rowset_equal(result, expected)
+    selection = (
+        table
+        >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
+        >> sift(lambda r: True)
+        >> do()
+    )
+    assert_rowset_equal(selection, expected)
 
 
-def test_group_by(group_by_, rows):
+def test_group_by(table, rows):
     expected = [
         {"c": 1, "mean": -0.5, "total": -1, "z": "a"},
         {"c": 2, "mean": -2.0, "total": -4, "z": "b"},
@@ -138,16 +125,21 @@ def test_group_by(group_by_, rows):
         {"c": 4, "mean": -3.0, "total": -3, "z": "a"},
         {"c": 3, "mean": -3.0, "total": -3, "z": "b"},
     ]
-    result = list(group_by_ >> do())
+    gb = (
+        table
+        >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
+        >> sift(lambda r: True)
+        >> group_by(
+            {"c": lambda r: r["c"], "z": lambda r: r["z"]},
+            {"total": sum(lambda r: r["d"]), "mean": mean(lambda r: r["d"])},
+        )
+    )
+    result = list(gb >> do())
     assert_rowset_equal(result, expected)
 
 
 def test_cross_join(left_table, right_table, left, right):
-    join = (
-        left_table
-        >> cross_join(right_table)
-        >> select(lambda left, right: left)
-    )
+    join = left_table >> cross_join(right_table)
     result = list(join >> do())
     assert len(result) == len(left) * len(right)
     expected = list(map(toolz.first, itertools.product(left, right)))
@@ -159,14 +151,13 @@ def test_inner_join(left_table, right_table, left):
     join = (
         left_table
         >> inner_join(
-            right_table,
-            lambda left, right: left["z"] == "a" and left["a"] == right["a"],
+            right_table, lambda l, r: l["z"] == "a" and l["a"] == r["a"]
         )
         >> select(
             left_a=lambda l, r: l["a"],
             right_a=lambda l, r: r["a"],
             right_z=lambda l, r: r["z"],
-            left_z=lambda l, r: left["z"],
+            left_z=lambda l, r: l["z"],
         )
     )
     pipeline = join >> do()
@@ -208,8 +199,8 @@ def test_semi_join():
     ]
 
     pipeline = table_(rows) >> sift(
-        lambda row: exists(
-            table_(other_rows) >> sift(lambda other: row["z"] == other["z"])
+        lambda r: exists(
+            table_(other_rows) >> sift(lambda o: r["z"] == o["z"])
         )
     )
     result = list(pipeline >> do())
@@ -229,8 +220,8 @@ def test_semi_join_not_all_rows_match():
     other_rows = [dict(z="b", a=2, b=-3), dict(z="b", a=3, b=-3)]
 
     pipeline = table_(rows) >> sift(
-        lambda row: exists(
-            table_(other_rows) >> sift(lambda other: row["z"] == other["z"])
+        lambda r: exists(
+            table_(other_rows) >> sift(lambda o: r["z"] == o["z"])
         )
     )
     result = list(pipeline >> do())
@@ -241,7 +232,7 @@ def test_semi_join_not_all_rows_match():
 def test_right_shiftable(table, right_table):
     pipeline = (
         table
-        >> select(lambda r: dict(c=r["a"], d=r["b"], z=r["z"]))
+        >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
         >> sift(lambda r: True)
         >> group_by(
             {"c": lambda r: r["c"], "z": lambda r: r["z"]},
@@ -300,6 +291,7 @@ def test_right_shiftable(table, right_table):
     assert_rowset_equal(result, expected)
 
 
+@pytest.mark.xfail(raises=TypeError, reason='Not yet implemented')
 def test_window(table, rows):
     preceding = lambda r: 2
     following = lambda r: 0
@@ -317,5 +309,25 @@ def test_window(table, rows):
         ),
     )
     result = list(pipeline >> do())
-    # import pdb; pdb.set_trace()  # noqa
     assert result is not None
+
+
+def test_agg(table, rows):
+    pipeline = table >> select(
+        sum=sum(lambda r: r["e"]),
+        mean=mean(lambda r: r["e"]),
+        count=count(lambda r: r["e"]),
+    )
+    result, = list(pipeline >> do())
+    assert result["sum"] == 28
+    assert result["mean"] == result["sum"] / result["count"]
+
+
+def test_invalid_agg(table, rows):
+    with pytest.raises(TypeError, match="Invalid projection"):
+        select(
+            not_an_agg=lambda r: r["e"],
+            my_agg=sum(lambda r: r["e"]),
+            my_agg2=mean(lambda r: r["e"]),
+            my_count=count(lambda r: r["e"]),
+        )
