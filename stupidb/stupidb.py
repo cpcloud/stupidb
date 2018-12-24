@@ -261,39 +261,60 @@ class AggregateSpecification(AbstractAggregateSpecification):
         )
 
 
-class Sum(UnaryWindowAggregate[Real, Real]):
+Input = TypeVar("Input")
+R = TypeVar("R", bound=Real)
+
+
+class Count(UnaryWindowAggregate[Input, int]):
     def __init__(self) -> None:
-        self.total = typing.cast(Real, 0)
         self.count = 0
 
-    def step(self, input1: Optional[Real]) -> None:
+    def step(self, input1: Optional[Input]) -> None:
+        if input1 is not None:
+            self.count += 1
+
+    def finalize(self) -> Optional[int]:
+        return self.count
+
+
+class Sum(UnaryWindowAggregate[R, R]):
+    def __init__(self) -> None:
+        self.total = typing.cast(R, 0)
+        self.count = 0
+
+    def step(self, input1: Optional[R]) -> None:
         if input1 is not None:
             self.total += input1
             self.count += 1
 
-    def inverse(self, input1: Optional[Real]) -> None:
+    def inverse(self, input1: Optional[R]) -> None:
         if input1 is not None:
             self.total -= input1
             self.count -= 1
 
-    def finalize(self) -> Optional[Real]:
+    def finalize(self) -> Optional[R]:
         return self.total if self.count else None
 
-    def value(self) -> Optional[Real]:
+    def value(self) -> Optional[R]:
         return self.finalize()
 
 
-class Mean(UnaryWindowAggregate[Real, float]):
+class Total(Sum[R]):
+    def finalize(self) -> Optional[R]:
+        return self.total if self.count else typing.cast(R, 0)
+
+
+class Mean(UnaryWindowAggregate[R, float]):
     def __init__(self) -> None:
         self.total: float = 0.0
         self.count: int = 0
 
-    def step(self, value: Optional[Real]) -> None:
+    def step(self, value: Optional[R]) -> None:
         if value is not None:
             self.total += typing.cast(float, value)
             self.count += 1
 
-    def inverse(self, input1: Optional[Real]) -> None:
+    def inverse(self, input1: Optional[R]) -> None:
         if input1 is not None:
             self.total -= input1
             self.count -= 1
@@ -306,7 +327,7 @@ class Mean(UnaryWindowAggregate[Real, float]):
         return self.finalize()
 
 
-class Covariance(BinaryAggregate[Real, Real, float]):
+class Covariance(BinaryAggregate[R, R, float]):
     def __init__(self, denom: int) -> None:
         self.meanx: float = 0.0
         self.meany: float = 0.0
@@ -314,7 +335,7 @@ class Covariance(BinaryAggregate[Real, Real, float]):
         self.cov: float = 0.0
         self.denom = denom
 
-    def step(self, x: Optional[Real], y: Optional[Real]) -> None:
+    def step(self, x: Optional[R], y: Optional[R]) -> None:
         if x is not None and y is not None:
             self.count += 1
             count = self.count

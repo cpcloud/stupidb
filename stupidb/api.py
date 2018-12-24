@@ -1,5 +1,4 @@
 import functools
-from numbers import Real
 from typing import (
     Callable,
     Generic,
@@ -10,16 +9,17 @@ from typing import (
     Optional,
     TypeVar,
 )
-from typing import Union as Union_
 
 import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+from stupidb.row import V
 from stupidb.stupidb import (
     AbstractAggregateSpecification,
     AggregateProjection,
     AggregateSpecification,
+    Count,
     CrossJoin,
     Difference,
     GroupBy,
@@ -31,11 +31,13 @@ from stupidb.stupidb import (
     OutputType,
     PopulationCovariance,
     Projection,
+    R,
     Relation,
     Row,
     SampleCovariance,
     Selection,
     Sum,
+    Total,
     UnaryRelation,
     Union,
 )
@@ -61,9 +63,6 @@ class RightShiftablePartial(functools.partial, Generic[OutputType]):
     @property
     def schema(self) -> sch.Schema:
         return self().schema
-
-
-V = TypeVar("V")
 
 
 def table(
@@ -167,11 +166,19 @@ def do() -> RightShiftablePartial:
 
 
 # Aggregations
-RealGetter = Callable[[Row], Real]
+RealGetter = Callable[[Row], R]
+
+
+def count(getter: Callable[[Row], V]) -> AggregateSpecification:
+    return AggregateSpecification(Count, getter)
 
 
 def sum(getter: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(Sum, getter)
+
+
+def total(getter: RealGetter) -> AggregateSpecification:
+    return AggregateSpecification(Total, getter)
 
 
 def mean(getter: RealGetter) -> AggregateSpecification:
