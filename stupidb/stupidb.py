@@ -96,7 +96,7 @@ class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
 
     def __iter__(self) -> Iterator[OutputType]:
         for id, row in enumerate(filter(all, map(self.operate, self.child))):
-            yield tuple(Row.from_mapping(element, id=id) for element in row)
+            yield tuple(Row.from_mapping(element, _id=id) for element in row)
 
 
 class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
@@ -152,7 +152,7 @@ class Selection(UnaryRelation):
 
     def operate(self, row: Tuple[Row]) -> Tuple[Row]:
         result = self.predicate(*row)
-        return row if result else (Row({}, id=row[0].id),)
+        return row if result else (Row({}, _id=row[0].id),)
 
 
 GroupingKeySpecification = Mapping[str, Callable[[Row], Hashable]]
@@ -435,7 +435,7 @@ class CrossJoin(Join):
 
 class InnerJoin(Join):
     def failed_match_action(self, left: Row, right: Row) -> Tuple[Row, Row]:
-        return Row({}, id=left.id), Row({}, id=right.id)
+        return Row({}, _id=left.id), Row({}, _id=right.id)
 
 
 items = methodcaller("items")
@@ -465,7 +465,7 @@ class InefficientSetOperation(SetOperation, metaclass=abc.ABCMeta):
     def __iter__(self) -> Iterator[Tuple[Row]]:
         itemize = toolz.compose(frozenset, functools.partial(map, items))
         return (
-            (Row.from_mapping(dict(row), id=id),)
+            (Row.from_mapping(dict(row), _id=id),)
             for id, row in enumerate(
                 self.binary_operation(itemize(self.left), itemize(self.right))
             )
