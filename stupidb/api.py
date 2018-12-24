@@ -68,10 +68,12 @@ V = TypeVar("V")
 def table(
     rows: Iterable[Mapping[str, V]], schema: Optional[sch.Schema] = None
 ) -> RightShiftablePartial:
+    """Construct a relation from an iterable of mappings."""
     first, rows = toolz.peek(rows)
+    child = ((Row.from_mapping(row, _id=id),) for id, row in enumerate(rows))
     return RightShiftablePartial(
         UnaryRelation,
-        child=((Row.from_mapping(row, id=id),) for id, row in enumerate(rows)),
+        child=child,
         schema=(
             sch.Schema.from_dict(toolz.valmap(dt.infer, first))
             if schema is None
@@ -95,14 +97,23 @@ def select(
         Projector, JoinProjector, AbstractAggregateSpecification
     ]
 ) -> RightShiftablePartial:
+    """Compute columns from `projectors`."""
     return RightShiftablePartial(Projection, projectors=projectors)
 
 
 def sift(predicate: Predicate) -> RightShiftablePartial:
+    """Filter in rows according to `predicate`."""
     return RightShiftablePartial(Selection, predicate=predicate)
 
 
 def exists(relation: Relation) -> bool:
+    """Compute whether any of the rows in `relation` are truthy.
+
+    Returns
+    -------
+    bool
+
+    """
     return any(row for (row,) in relation)
 
 
@@ -115,42 +126,47 @@ def group_by(
 
 
 def union(right: Relation) -> RightShiftablePartial:
+    """Compute the set union of the piped input and `right`."""
     return RightShiftablePartial(Union, right=right)
 
 
 def intersection(right: Relation) -> RightShiftablePartial:
+    """Compute the set intersection of the piped input and `right`."""
     return RightShiftablePartial(Intersection, right=right)
 
 
 def difference(right: Relation) -> RightShiftablePartial:
+    """Compute the set difference of the piped input and `right`."""
     return RightShiftablePartial(Difference, right=right)
 
 
-# Pull out the first element: all operations should ultimately call this
-
-
 def do() -> RightShiftablePartial:
+    """Pull the :class:`~stupidb.row.Row` instances out of the child.
+
+    Notes
+    -----
+    All operations should ultimately call this. Call the builtin ``list``
+    function to produce a list of rows.
+
+    """
     return RightShiftablePartial(functools.partial(map, toolz.first))
 
 
 # Aggregations
+RealGetter = Callable[[Row], Real]
 
 
-def sum(getter: Callable[[Row], Real]) -> AggregateSpecification:
+def sum(getter: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(Sum, getter)
 
 
-def mean(getter: Callable[[Row], Real]) -> AggregateSpecification:
+def mean(getter: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(Mean, getter)
 
 
-def samp_cov(
-    arg1: Callable[[Row], Real], arg2: Callable[[Row], Real]
-) -> AggregateSpecification:
+def samp_cov(arg1: RealGetter, arg2: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(SampleCovariance, arg1, arg2)
 
 
-def pop_cov(
-    arg1: Callable[[Row], Real], arg2: Callable[[Row], Real]
-) -> AggregateSpecification:
+def pop_cov(arg1: RealGetter, arg2: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(PopulationCovariance, arg1, arg2)
