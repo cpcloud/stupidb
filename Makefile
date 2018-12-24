@@ -50,7 +50,15 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
-lint: ## check style with flake8
+isort:
+	isort -tc -rc .
+
+black: isort
+	black . --line-length=79 --py36
+
+format: black
+
+lint: format ## check style with flake8
 	flake8 stupidb tests
 
 test: ## run tests quickly with the default Python
