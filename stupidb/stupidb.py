@@ -248,7 +248,7 @@ class WindowAggregateSpecification(AbstractAggregateSpecification):
         self,
         frame_clause: FrameClause,
         aggregate: Type[Aggregate],
-        *getters: Getter
+        *getters: Getter,
     ) -> None:
         super().__init__(aggregate, *getters)
         self.frame_clause = frame_clause
