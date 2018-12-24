@@ -18,6 +18,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from stupidb.stupidb import (
     AbstractAggregateSpecification,
+    AggregateProjection,
     AggregateSpecification,
     CrossJoin,
     Difference,
@@ -92,12 +93,25 @@ def inner_join(
     return RightShiftablePartial(InnerJoin, right=right, predicate=predicate)
 
 
-def select(
-    **projectors: Union_[
-        Projector, JoinProjector, AbstractAggregateSpecification
-    ]
-) -> RightShiftablePartial:
+ProjectorType = TypeVar(
+    "ProjectorType", Projector, JoinProjector, AbstractAggregateSpecification
+)
+
+
+def select(**projectors: ProjectorType) -> RightShiftablePartial:
     """Compute columns from `projectors`."""
+    if any(
+        isinstance(projector, AbstractAggregateSpecification)
+        for projector in projectors.values()
+    ):
+        if not all(
+            isinstance(projector, AbstractAggregateSpecification)
+            for projector in projectors.values()
+        ):
+            raise TypeError("Invalid projection")
+        return RightShiftablePartial(
+            AggregateProjection, projectors=projectors
+        )
     return RightShiftablePartial(Projection, projectors=projectors)
 
 

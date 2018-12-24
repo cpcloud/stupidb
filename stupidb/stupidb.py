@@ -120,6 +120,31 @@ class Projection(Relation[InputType, Tuple[Row]]):
         return (row,)
 
 
+class AggregateProjection(Relation[InputType, Tuple[Row]]):
+    def __init__(
+        self,
+        child: Relation,
+        projectors: Mapping[str, "AggregateSpecification"],
+    ) -> None:
+        self.child = child
+        self.projectors = projectors
+
+    def __iter__(self) -> Iterator[Tuple[Row]]:
+        projectors = self.projectors
+        aggs = {
+            name: aggspec.aggregate() for name, aggspec in projectors.items()
+        }
+        for row in self.child:
+            for name, agg in aggs.items():
+                inputs = [getter(*row) for getter in projectors[name].getters]
+                agg.step(*inputs)
+        result = {name: agg.finalize() for name, agg in aggs.items()}
+        yield (Row(result, _id=0),)
+
+    def operate(self, args: InputType) -> NoReturn:
+        raise TypeError("Should never get here")
+
+
 class Selection(UnaryRelation):
     def __init__(self, child: UnaryRelation, predicate: Predicate) -> None:
         self.child = child
