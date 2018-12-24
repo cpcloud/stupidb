@@ -49,9 +49,9 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"stupidb"
-copyright = u"2018, Charles Phillip Cloud"
-author = u"Charles Phillip Cloud"
+project = "stupidb"
+copyright = "2018, Charles Phillip Cloud"
+author = "Charles Phillip Cloud"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -130,8 +130,8 @@ latex_documents = [
     (
         master_doc,
         "stupidb.tex",
-        u"stupidb Documentation",
-        u"Charles Phillip Cloud",
+        "stupidb Documentation",
+        "Charles Phillip Cloud",
         "manual",
     )
 ]
@@ -141,7 +141,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "stupidb", u"stupidb Documentation", [author], 1)]
+man_pages = [(master_doc, "stupidb", "stupidb Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------
@@ -153,7 +153,7 @@ texinfo_documents = [
     (
         master_doc,
         "stupidb",
-        u"stupidb Documentation",
+        "stupidb Documentation",
         author,
         "stupidb",
         "One line description of project.",
