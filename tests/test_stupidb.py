@@ -238,7 +238,7 @@ def test_right_shiftable(table, right_table):
             total=sum(lambda r: r["d"]),
             mean=mean(lambda r: r["d"]),
             my_samp_cov=samp_cov(lambda r: r["d"], lambda r: r["d"]),
-            my_pop_covd=pop_cov(lambda r: r["d"], lambda r: r["d"]),
+            my_pop_cov=pop_cov(lambda r: r["d"], lambda r: r["d"]),
         )
     )
 

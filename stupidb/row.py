@@ -44,4 +44,4 @@ class Row(Mapping[str, V]):
         return len(self._data)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.data}, _id={self.id:d})"
+        return f"{self.__class__.__name__}({self.data}, _id={self._id:d})"
