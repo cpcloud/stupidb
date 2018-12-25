@@ -10,6 +10,7 @@ import pytest
 import toolz
 
 from stupidb.api import (
+    aggregate,
     count,
     cross_join,
     do,
@@ -129,10 +130,8 @@ def test_group_by(table, rows):
         table
         >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
         >> sift(lambda r: True)
-        >> group_by(
-            {"c": lambda r: r["c"], "z": lambda r: r["z"]},
-            {"total": sum(lambda r: r["d"]), "mean": mean(lambda r: r["d"])},
-        )
+        >> group_by(c=lambda r: r["c"], z=lambda r: r["z"])
+        >> aggregate(total=sum(lambda r: r["d"]), mean=mean(lambda r: r["d"]))
     )
     result = list(gb >> do())
     assert_rowset_equal(result, expected)
@@ -234,14 +233,12 @@ def test_right_shiftable(table, right_table):
         table
         >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
         >> sift(lambda r: True)
-        >> group_by(
-            {"c": lambda r: r["c"], "z": lambda r: r["z"]},
-            {
-                "total": sum(lambda r: r["d"]),
-                "mean": mean(lambda r: r["d"]),
-                "my_samp_cov": samp_cov(lambda r: r["d"], lambda r: r["d"]),
-                "my_pop_cov": pop_cov(lambda r: r["d"], lambda r: r["d"]),
-            },
+        >> group_by(c=lambda r: r["c"], z=lambda r: r["z"])
+        >> aggregate(
+            total=sum(lambda r: r["d"]),
+            mean=mean(lambda r: r["d"]),
+            my_samp_cov=samp_cov(lambda r: r["d"], lambda r: r["d"]),
+            my_pop_covd=pop_cov(lambda r: r["d"], lambda r: r["d"]),
         )
     )
 
@@ -291,29 +288,32 @@ def test_right_shiftable(table, right_table):
     assert_rowset_equal(result, expected)
 
 
-@pytest.mark.xfail(raises=TypeError, reason="Not yet implemented")
+@pytest.mark.xfail(raises=KeyError, reason="Not yet implemented")
 def test_window(table, rows):
     preceding = lambda r: 2
     following = lambda r: 0
     partition_by = []
     order_by = [lambda r: r["e"]]
-    pipeline = table >> select(
-        a=lambda r: r["a"],
-        my_agg=sum(lambda r: r["e"]).over(
-            Window.rows(
-                order_by=order_by,
-                partition_by=partition_by,
-                preceding=preceding,
-                following=following,
+    pipeline = (
+        table
+        >> select(a=lambda r: r["a"])
+        >> aggregate(
+            my_agg=sum(lambda r: r["e"]).over(
+                Window.rows(
+                    order_by=order_by,
+                    partition_by=partition_by,
+                    preceding=preceding,
+                    following=following,
+                )
             )
-        ),
+        )
     )
     result = list(pipeline >> do())
     assert result is not None
 
 
 def test_agg(table, rows):
-    pipeline = table >> select(
+    pipeline = table >> aggregate(
         sum=sum(lambda r: r["e"]),
         mean=mean(lambda r: r["e"]),
         count=count(lambda r: r["e"]),
@@ -323,6 +323,7 @@ def test_agg(table, rows):
     assert result["mean"] == result["sum"] / result["count"]
 
 
+@pytest.mark.xfail(reason="Not yet validating")
 def test_invalid_agg(table, rows):
     with pytest.raises(TypeError, match="Invalid projection"):
         select(

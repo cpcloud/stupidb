@@ -1,4 +1,4 @@
-from typing import Iterator, Mapping, TypeVar
+from typing import Iterator, List, Mapping, TypeVar
 
 V = TypeVar("V")
 
@@ -14,28 +14,34 @@ class Row(Mapping[str, V]):
         self._id = _id
 
     def __getitem__(self, column: str) -> V:
-        return self.data[column]
+        return self._data[column]
+
+    def __getattr__(self, attr: str) -> V:
+        try:
+            return self._data[attr]
+        except KeyError as e:
+            raise AttributeError(attr) from e
 
     @property
-    def id(self) -> int:
-        return self._id
+    def columns(self) -> List[str]:
+        return list(self.keys())
 
     @property
     def data(self) -> Mapping[str, V]:
         return self._data
 
     def __hash__(self) -> int:
-        return hash(tuple(tuple(item) for item in self.data.items()))
+        return hash(tuple(tuple(item) for item in self._data.items()))
 
     @classmethod
     def from_mapping(cls, mapping: Mapping[str, V], _id: int) -> "Row":
         return cls(getattr(mapping, "data", mapping), _id)
 
     def __iter__(self) -> Iterator[str]:
-        return iter(self.data)
+        return iter(self._data)
 
     def __len__(self) -> int:
-        return len(self.data)
+        return len(self._data)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.data}, _id={self.id:d})"

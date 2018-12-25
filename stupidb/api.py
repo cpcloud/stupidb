@@ -2,11 +2,13 @@ import functools
 from typing import (
     Callable,
     Generic,
+    Hashable,
     Iterable,
     Iterator,
     List,
     Mapping,
     Optional,
+    Tuple,
     TypeVar,
 )
 
@@ -17,13 +19,13 @@ import ibis.expr.schema as sch
 from stupidb.row import V
 from stupidb.stupidb import (
     AbstractAggregateSpecification,
-    AggregateProjection,
     AggregateSpecification,
+    Aggregation,
     Count,
     CrossJoin,
     Difference,
     GroupBy,
-    GroupingKeySpecification,
+    GroupingKeyFunction,
     InnerJoin,
     Intersection,
     JoinPredicate,
@@ -64,6 +66,11 @@ class RightShiftablePartial(functools.partial, Generic[OutputType]):
     def schema(self) -> sch.Schema:
         return self().schema
 
+    def partition_key(
+        self, row: Tuple[Row, ...]
+    ) -> Tuple[Tuple[str, Hashable], ...]:
+        return ()
+
 
 def table(
     rows: Iterable[Mapping[str, V]], schema: Optional[sch.Schema] = None
@@ -99,18 +106,6 @@ ProjectorType = TypeVar(
 
 def select(**projectors: ProjectorType) -> RightShiftablePartial:
     """Compute columns from `projectors`."""
-    if any(
-        isinstance(projector, AbstractAggregateSpecification)
-        for projector in projectors.values()
-    ):
-        if not all(
-            isinstance(projector, AbstractAggregateSpecification)
-            for projector in projectors.values()
-        ):
-            raise TypeError("Invalid projection")
-        return RightShiftablePartial(
-            AggregateProjection, projectors=projectors
-        )
     return RightShiftablePartial(Projection, projectors=projectors)
 
 
@@ -130,12 +125,12 @@ def exists(relation: Relation) -> bool:
     return any(row for (row,) in relation)
 
 
-def group_by(
-    group_by: GroupingKeySpecification, aggregates: AggregateSpecification
-) -> RightShiftablePartial:
-    return RightShiftablePartial(
-        GroupBy, group_by=group_by, aggregates=aggregates
-    )
+def aggregate(**aggregations: AggregateSpecification) -> RightShiftablePartial:
+    return RightShiftablePartial(Aggregation, aggregations=aggregations)
+
+
+def group_by(**group_by: GroupingKeyFunction) -> RightShiftablePartial:
+    return RightShiftablePartial(GroupBy, group_by=group_by)
 
 
 def union(right: Relation) -> RightShiftablePartial:

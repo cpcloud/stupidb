@@ -40,7 +40,6 @@ from operator import methodcaller
 from typing import (
     Any,
     Callable,
-    Dict,
     FrozenSet,
     Generic,
     Hashable,
@@ -56,7 +55,7 @@ from typing import (
 )
 from typing import Union as Union_
 
-from typing_extensions import DefaultDict, NoReturn
+from typing_extensions import NoReturn
 
 import ibis.expr.schema as sch
 from stupidb.row import Row
@@ -82,8 +81,8 @@ OutputType = TypeVar("OutputType", Tuple[Row], Tuple[Row, Row])
 class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
     """A relation."""
 
-    def __init__(self, child: Iterable[InputType], schema: sch.Schema) -> None:
-        self.child: Iterable[InputType] = child
+    def __init__(self, child: "Relation", schema: sch.Schema) -> None:
+        self.child: "Relation" = child
         self.schema = schema
 
     @property
@@ -97,6 +96,11 @@ class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
     def __iter__(self) -> Iterator[OutputType]:
         for id, row in enumerate(filter(all, map(self.operate, self.child))):
             yield tuple(Row.from_mapping(element, _id=id) for element in row)
+
+    def partition_key(
+        self, row: InputType
+    ) -> Tuple[Tuple[str, Hashable], ...]:
+        return ()
 
 
 class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
@@ -120,29 +124,42 @@ class Projection(Relation[InputType, Tuple[Row]]):
         return (row,)
 
 
-class AggregateProjection(Relation[InputType, Tuple[Row]]):
+class Aggregation(UnaryRelation):
     def __init__(
         self,
         child: Relation,
-        projectors: Mapping[str, "AggregateSpecification"],
+        aggregations: Mapping[str, "AggregateSpecification"],
     ) -> None:
         self.child = child
-        self.projectors = projectors
+        self.aggregations = aggregations
 
     def __iter__(self) -> Iterator[Tuple[Row]]:
-        projectors = self.projectors
-        aggs = {
-            name: aggspec.aggregate() for name, aggspec in projectors.items()
-        }
-        for row in self.child:
+        aggregations = self.aggregations
+        grouped_aggs: Mapping[
+            Tuple[Tuple[str, Hashable], ...], Mapping[str, Aggregate]
+        ] = collections.defaultdict(
+            lambda: {
+                name: aggspec.aggregate()
+                for name, aggspec in aggregations.items()
+            }
+        )
+        child = self.child
+        for row in child:
+            key = child.partition_key(row)
+            aggs = grouped_aggs[key]
             for name, agg in aggs.items():
-                inputs = [getter(*row) for getter in projectors[name].getters]
+                inputs = [
+                    getter(*row) for getter in aggregations[name].getters
+                ]
                 agg.step(*inputs)
-        result = {name: agg.finalize() for name, agg in aggs.items()}
-        yield (Row(result, _id=0),)
 
-    def operate(self, args: InputType) -> NoReturn:
-        raise TypeError("Should never get here")
+        for id, (grouping_key_pair, aggs) in enumerate(grouped_aggs.items()):
+            grouping_key = dict(grouping_key_pair)
+            finalized_aggregations = {
+                name: agg.finalize() for name, agg in aggs.items()
+            }
+            data = toolz.merge(grouping_key, finalized_aggregations)
+            yield (Row(data, _id=id),)
 
 
 class Selection(UnaryRelation):
@@ -152,12 +169,11 @@ class Selection(UnaryRelation):
 
     def operate(self, row: Tuple[Row]) -> Tuple[Row]:
         result = self.predicate(*row)
-        return row if result else (Row({}, _id=row[0].id),)
+        return row if result else (Row({}, _id=row[0]._id),)
 
 
-GroupingKeySpecification = Mapping[str, Callable[[Row], Hashable]]
-GroupingKey = Tuple[str, Hashable]
-GroupingKeys = Tuple[GroupingKey, ...]
+GroupingKeyFunction = Callable[[Row], Hashable]
+GroupingKeySpecification = Mapping[str, GroupingKeyFunction]
 
 Input1 = TypeVar("Input1")
 Input2 = TypeVar("Input2")
@@ -361,42 +377,17 @@ class PopulationCovariance(Covariance):
 
 class GroupBy(UnaryRelation):
     def __init__(
-        self,
-        child: UnaryRelation,
-        group_by: GroupingKeySpecification,
-        aggregates: Mapping[str, AggregateSpecification],
+        self, child: UnaryRelation, group_by: GroupingKeySpecification
     ) -> None:
         self.child = child
         self.group_by = group_by
-        self.aggregates = aggregates
 
-    def __iter__(self) -> Iterator[Tuple[Row]]:
-        aggregates = self.aggregates
-        aggs: DefaultDict[
-            GroupingKeys, Dict[str, Tuple[Aggregate, AggregateSpecification]]
-        ] = collections.defaultdict(
-            lambda: {
-                name: (spec.aggregate(), spec)
-                for name, spec in aggregates.items()
-            }
+    def partition_key(
+        self, row: Tuple[Row]
+    ) -> Tuple[Tuple[str, Hashable], ...]:
+        return tuple(
+            (name, keyfunc(*row)) for name, keyfunc in self.group_by.items()
         )
-
-        for (row,) in self.child:
-            keys: GroupingKeys = tuple(
-                (name, keyfunc(row)) for name, keyfunc in self.group_by.items()
-            )
-            keyed_agg = aggs[keys]
-            for name in aggregates.keys():
-                agg, aggspec = keyed_agg[name]
-                agg.step(*(getter(row) for getter in aggspec.getters))
-
-        for key, topagg in aggs.items():
-            agg_values = {
-                agg_name: subagg.finalize()
-                for agg_name, (subagg, _) in topagg.items()
-            }
-            res = toolz.merge(dict(key), agg_values)
-            yield (res,)
 
 
 JoinPredicate = Callable[[Row, Row], bool]
@@ -435,7 +426,7 @@ class CrossJoin(Join):
 
 class InnerJoin(Join):
     def failed_match_action(self, left: Row, right: Row) -> Tuple[Row, Row]:
-        return Row({}, _id=left.id), Row({}, _id=right.id)
+        return Row({}, _id=left._id), Row({}, _id=right._id)
 
 
 items = methodcaller("items")
