@@ -35,7 +35,6 @@ import functools
 import itertools
 import operator
 import typing
-from numbers import Real
 from operator import methodcaller
 from typing import (
     Any,
@@ -43,7 +42,6 @@ from typing import (
     FrozenSet,
     Generic,
     Hashable,
-    Iterable,
     Iterator,
     List,
     Mapping,
@@ -51,7 +49,6 @@ from typing import (
     Sequence,
     Tuple,
     Type,
-    TypeVar,
 )
 from typing import Union as Union_
 
@@ -61,21 +58,23 @@ import ibis.expr.schema as sch
 from stupidb.row import Row
 from stupidb.typehints import (
     Following,
+    GroupingKeyFunction,
+    Input1,
+    Input2,
+    InputType,
     OrderBy,
+    Output,
+    OutputType,
     PartitionBy,
     Preceding,
     Predicate,
+    R,
 )
 
 try:
     import cytoolz as toolz
 except ImportError:
     import toolz as toolz
-
-
-Rows = Iterable[Row]  # Rows are an Iterable of Row
-InputType = TypeVar("InputType", Tuple[Row], Tuple[Row, Row])
-OutputType = TypeVar("OutputType", Tuple[Row], Tuple[Row, Row])
 
 
 class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
@@ -94,7 +93,12 @@ class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
 
     def __iter__(self) -> Iterator[OutputType]:
         for id, row in enumerate(filter(all, map(self.operate, self.child))):
-            yield tuple(Row.from_mapping(element, _id=id) for element in row)
+            yield tuple(
+                typing.cast(
+                    OutputType,
+                    (Row.from_mapping(element, _id=id) for element in row),
+                )
+            )
 
     def partition_key(
         self, row: InputType
@@ -151,12 +155,11 @@ class Aggregation(Relation[InputType, Tuple[Row]]):
                 ]
                 agg.step(*inputs)
 
-        for id, (grouping_key_pair, aggs) in enumerate(grouped_aggs.items()):
-            grouping_key = dict(grouping_key_pair)
+        for id, (grouping_key, aggs) in enumerate(grouped_aggs.items()):
             finalized_aggregations = {
                 name: agg.finalize() for name, agg in aggs.items()
             }
-            data = toolz.merge(grouping_key, finalized_aggregations)
+            data = toolz.merge(dict(grouping_key), finalized_aggregations)
             yield (Row(data, _id=id),)
 
 
@@ -170,33 +173,31 @@ class Selection(UnaryRelation):
         return row if result else (Row({}, _id=row[0]._id),)
 
 
-GroupingKeyFunction = Callable[..., Hashable]
-
-Input1 = TypeVar("Input1")
-Input2 = TypeVar("Input2")
-Output = TypeVar("Output")
-
-
 class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     def step(self, input1: Optional[Input1]) -> None:
         ...
 
+    @abc.abstractmethod
     def finalize(self) -> Optional[Output]:
         ...
 
 
 class UnaryWindowAggregate(UnaryAggregate[Input1, Output]):
+    @abc.abstractmethod
     def inverse(self, input1: Optional[Input1]) -> None:
         ...
 
     def value(self) -> Optional[Output]:
-        ...
+        return self.finalize()
 
 
 class BinaryAggregate(Generic[Input1, Input2, Output]):
+    @abc.abstractmethod
     def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
         ...
 
+    @abc.abstractmethod
     def finalize(self) -> Optional[Output]:
         ...
 
@@ -274,17 +275,17 @@ class AggregateSpecification(AbstractAggregateSpecification):
         )
 
 
-Input = TypeVar("Input")
-R = TypeVar("R", bound=Real)
-
-
-class Count(UnaryWindowAggregate[Input, int]):
+class Count(UnaryWindowAggregate[Input1, int]):
     def __init__(self) -> None:
         self.count = 0
 
-    def step(self, input1: Optional[Input]) -> None:
+    def step(self, input1: Optional[Input1]) -> None:
         if input1 is not None:
             self.count += 1
+
+    def inverse(self, input1: Optional[Input1]) -> None:
+        if input1 is not None:
+            self.count -= 1
 
     def finalize(self) -> Optional[int]:
         return self.count
@@ -307,9 +308,6 @@ class Sum(UnaryWindowAggregate[R, R]):
 
     def finalize(self) -> Optional[R]:
         return self.total if self.count else None
-
-    def value(self) -> Optional[R]:
-        return self.finalize()
 
 
 class Total(Sum[R]):
@@ -336,17 +334,14 @@ class Mean(UnaryWindowAggregate[R, float]):
         count = self.count
         return self.total / count if count > 0 else None
 
-    def value(self) -> Optional[float]:
-        return self.finalize()
-
 
 class Covariance(BinaryAggregate[R, R, float]):
-    def __init__(self, denom: int) -> None:
+    def __init__(self, *, ddof: int) -> None:
         self.meanx: float = 0.0
         self.meany: float = 0.0
         self.count: int = 0
         self.cov: float = 0.0
-        self.denom = denom
+        self.ddof = ddof
 
     def step(self, x: Optional[R], y: Optional[R]) -> None:
         if x is not None and y is not None:
@@ -358,18 +353,18 @@ class Covariance(BinaryAggregate[R, R, float]):
             self.cov += delta_x * (y - self.meany)
 
     def finalize(self) -> Optional[float]:
-        denom = self.count - self.denom
+        denom = self.count - self.ddof
         return self.cov / denom if denom > 0 else None
 
 
 class SampleCovariance(Covariance):
     def __init__(self) -> None:
-        super().__init__(1)
+        super().__init__(ddof=1)
 
 
 class PopulationCovariance(Covariance):
     def __init__(self) -> None:
-        super().__init__(0)
+        super().__init__(ddof=0)
 
 
 class GroupBy(Relation[InputType, OutputType]):

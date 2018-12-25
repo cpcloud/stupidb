@@ -33,7 +33,6 @@ from stupidb.stupidb import (
     OutputType,
     PopulationCovariance,
     Projection,
-    R,
     Relation,
     Row,
     SampleCovariance,
@@ -43,7 +42,7 @@ from stupidb.stupidb import (
     UnaryRelation,
     Union,
 )
-from stupidb.typehints import JoinProjector, Predicate, Projector
+from stupidb.typehints import JoinProjector, Predicate, Projector, RealGetter
 
 
 class RightShiftablePartial(functools.partial, Generic[OutputType]):
@@ -161,9 +160,6 @@ def do() -> RightShiftablePartial:
 
 
 # Aggregations
-RealGetter = Callable[[Row], R]
-
-
 def count(getter: Callable[[Row], V]) -> AggregateSpecification:
     return AggregateSpecification(Count, getter)
 
