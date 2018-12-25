@@ -89,9 +89,8 @@ class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
     def columns(self) -> List[str]:
         return list(self.schema.names)
 
-    @abc.abstractmethod
     def operate(self, args: InputType) -> OutputType:
-        ...
+        return typing.cast(OutputType, args)
 
     def __iter__(self) -> Iterator[OutputType]:
         for id, row in enumerate(filter(all, map(self.operate, self.child))):
@@ -104,8 +103,7 @@ class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
 
 
 class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
-    def operate(self, row: Tuple[Row]) -> Tuple[Row]:
-        return row
+    pass
 
 
 class Projection(Relation[InputType, Tuple[Row]]):
@@ -124,7 +122,7 @@ class Projection(Relation[InputType, Tuple[Row]]):
         return (row,)
 
 
-class Aggregation(UnaryRelation):
+class Aggregation(Relation[InputType, Tuple[Row]]):
     def __init__(
         self,
         child: Relation,
@@ -172,8 +170,7 @@ class Selection(UnaryRelation):
         return row if result else (Row({}, _id=row[0]._id),)
 
 
-GroupingKeyFunction = Callable[[Row], Hashable]
-GroupingKeySpecification = Mapping[str, GroupingKeyFunction]
+GroupingKeyFunction = Callable[..., Hashable]
 
 Input1 = TypeVar("Input1")
 Input2 = TypeVar("Input2")
@@ -375,18 +372,27 @@ class PopulationCovariance(Covariance):
         super().__init__(0)
 
 
-class GroupBy(UnaryRelation):
+class GroupBy(Relation[InputType, OutputType]):
     def __init__(
-        self, child: UnaryRelation, group_by: GroupingKeySpecification
+        self,
+        child: Relation[InputType, OutputType],
+        group_by: Mapping[str, GroupingKeyFunction],
     ) -> None:
         self.child = child
-        self.group_by = group_by
+        self.group_by: Mapping[str, GroupingKeyFunction] = group_by
+
+    def operate(self, row: InputType) -> NoReturn:
+        raise TypeError("Should never reach this")
+
+    def __iter__(self) -> Iterator[OutputType]:
+        return iter(self.child)
 
     def partition_key(
-        self, row: Tuple[Row]
+        self, row: InputType
     ) -> Tuple[Tuple[str, Hashable], ...]:
+        group_by = self.group_by
         return tuple(
-            (name, keyfunc(*row)) for name, keyfunc in self.group_by.items()
+            (name, keyfunc(*row)) for name, keyfunc in group_by.items()
         )
 
 
