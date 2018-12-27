@@ -72,6 +72,7 @@ from stupidb.typehints import (
     Predicate,
     R,
     UnaryProjector,
+    PartitionKey,
 )
 
 try:

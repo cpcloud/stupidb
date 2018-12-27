@@ -4,6 +4,8 @@ from typing import Callable, Hashable, Tuple, TypeVar
 from stupidb.comparable import Comparable
 from stupidb.row import Row
 
+PartitionKey = Tuple[Tuple[str, Hashable], ...]
+
 PartitionBy = Callable[[Row], Hashable]
 OrderBy = Callable[[Row], Comparable]
 Preceding = Callable[[Row], int]
