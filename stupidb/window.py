@@ -73,4 +73,4 @@ def window_agg(
             args = [getter(peer) for getter in aggspec.getters]
             agg.step(*args)
         result = agg.finalize()
-        yield Row(toolz.merge(row, {"agg": result}), id=row.id)
+        yield Row(toolz.merge(row, {"agg": result}), _id=row._id)
