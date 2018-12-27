@@ -76,10 +76,8 @@ from stupidb.typehints import (
 
 try:
     import cytoolz as toolz
-    from cytoolz import curry
 except ImportError:
     import toolz as toolz
-    from toolz import curry
 
 
 class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
