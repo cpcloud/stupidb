@@ -42,8 +42,8 @@ from typing import (
     FrozenSet,
     Generic,
     Hashable,
+    Iterable,
     Iterator,
-    List,
     Mapping,
     Optional,
     Sequence,
@@ -55,7 +55,6 @@ from typing import Union as Union_
 
 from typing_extensions import NoReturn
 
-import ibis.expr.schema as sch
 from stupidb.row import Row
 from stupidb.typehints import (
     BinaryProjector,
@@ -81,45 +80,45 @@ except ImportError:
     import toolz as toolz
 
 
-class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
+class Partitionable(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
+    def partition_key(self, row: InputType) -> PartitionKey:
+        return ()
+
+    @abc.abstractmethod
+    def __iter__(self) -> Iterator[OutputType]:
+        ...
+
+
+class PartitionableIterable(Partitionable[InputType, OutputType]):
+    def __init__(self, rows: Iterable[InputType]):
+        self.rows: Iterable[InputType] = rows
+
+    def __iter__(self) -> Iterator[OutputType]:
+        return typing.cast(Iterator[OutputType], iter(self.rows))
+
+
+class Relation(Partitionable[InputType, OutputType], metaclass=abc.ABCMeta):
     """A relation."""
 
-    def __init__(self, child: "Relation", schema: sch.Schema) -> None:
-        self.child: "Relation" = child
-        self.schema = schema
-
-    @property
-    def columns(self) -> List[str]:
-        return list(self.schema.names)
+    def __init__(self, child: Partitionable) -> None:
+        self.child = child
 
     def operate(self, args: InputType) -> OutputType:
         return typing.cast(OutputType, args)
 
     def __iter__(self) -> Iterator[OutputType]:
         for id, row in enumerate(filter(all, map(self.operate, self.child))):
-            yield tuple(
-                typing.cast(
-                    OutputType,
-                    (Row.from_mapping(element, _id=id) for element in row),
-                )
+            yield typing.cast(
+                OutputType,
+                tuple(Row.from_mapping(element, _id=id) for element in row),
             )
-
-    def partition_key(
-        self, row: InputType
-    ) -> Tuple[Tuple[str, Hashable], ...]:
-        return ()
 
 
 class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
     pass
 
 
-Projector = TypeVar(
-    "Projector",
-    UnaryProjector,
-    BinaryProjector,
-    "AbstractAggregateSpecification",
-)
+Projector = TypeVar("Projector", UnaryProjector, BinaryProjector)
 
 
 class Projection(
@@ -152,7 +151,7 @@ class Aggregation(Relation[InputType, Tuple[Row]]):
     def __iter__(self) -> Iterator[Tuple[Row]]:
         aggregations = self.aggregations
         grouped_aggs: Mapping[
-            Tuple[Tuple[str, Hashable], ...], Mapping[str, Aggregate]
+            PartitionKey, Mapping[str, Aggregate]
         ] = collections.defaultdict(
             lambda: {
                 name: aggspec.aggregate()
@@ -415,8 +414,8 @@ class Join(Relation[Tuple[Row, Row], Tuple[Row, Row]], metaclass=abc.ABCMeta):
         right: UnaryRelation,
         predicate: JoinPredicate,
     ) -> None:
-        self.child = itertools.starmap(
-            operator.add, itertools.product(left, right)
+        self.child = PartitionableIterable(
+            itertools.starmap(operator.add, itertools.product(left, right))
         )
         self.predicate = predicate
 

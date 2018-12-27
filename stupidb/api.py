@@ -1,7 +1,5 @@
 from typing import Callable, Iterable, Iterator, Mapping, Optional
 
-import ibis.expr.datatypes as dt
-import ibis.expr.schema as sch
 from stupidb.row import V
 from stupidb.stupidb import (
     AggregateSpecification,
@@ -15,6 +13,7 @@ from stupidb.stupidb import (
     Intersection,
     JoinPredicate,
     Mean,
+    PartitionableIterable,
     PopulationCovariance,
     Projection,
     Projector,
@@ -46,18 +45,13 @@ class shiftable(curry):
 
 
 @shiftable
-def table(
-    rows: Iterable[Mapping[str, V]], schema: Optional[sch.Schema] = None
-) -> Relation:
+def table(rows: Iterable[Mapping[str, V]]) -> Relation:
     """Construct a relation from an iterable of mappings."""
     first, rows = toolz.peek(rows)
     return UnaryRelation(
-        ((Row.from_mapping(row, _id=id),) for id, row in enumerate(rows)),
-        (
-            sch.Schema.from_dict(toolz.valmap(dt.infer, first))
-            if schema is None
-            else schema
-        ),
+        PartitionableIterable(
+            (Row.from_mapping(row, _id=id),) for id, row in enumerate(rows)
+        )
     )
 
 
