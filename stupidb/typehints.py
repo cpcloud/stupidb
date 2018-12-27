@@ -14,7 +14,6 @@ Predicate = Callable[[Row], bool]
 UnaryProjector = Callable[[Row], Row]
 BinaryProjector = Callable[[Row, Row], Row]
 
-Rows = Iterable[Row]  # Rows are an Iterable of Row
 InputType = TypeVar("InputType", Tuple[Row], Tuple[Row, Row])
 OutputType = TypeVar("OutputType", Tuple[Row], Tuple[Row, Row])
 
