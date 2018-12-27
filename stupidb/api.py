@@ -1,24 +1,9 @@
-import functools
-from typing import (
-    Callable,
-    Generic,
-    Hashable,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
-    TypeVar,
-)
-
-import toolz
+from typing import Callable, Iterable, Iterator, Mapping, Optional
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from stupidb.row import V
 from stupidb.stupidb import (
-    AbstractAggregateSpecification,
     AggregateSpecification,
     Aggregation,
     Count,
@@ -30,9 +15,9 @@ from stupidb.stupidb import (
     Intersection,
     JoinPredicate,
     Mean,
-    OutputType,
     PopulationCovariance,
     Projection,
+    Projector,
     Relation,
     Row,
     SampleCovariance,
@@ -42,45 +27,34 @@ from stupidb.stupidb import (
     UnaryRelation,
     Union,
 )
-from stupidb.typehints import JoinProjector, Predicate, Projector, RealGetter
+from stupidb.typehints import Predicate, RealGetter
+
+try:
+    import cytoolz as toolz
+    from cytoolz import curry
+except ImportError:
+    import toolz
+    from toolz import curry
 
 
-class RightShiftablePartial(functools.partial, Generic[OutputType]):
-    def __rshift__(self, other: "RightShiftablePartial") -> Relation:
+class shiftable(curry):
+    def __rshift__(self, other: "shiftable") -> Relation:
         return other(self)
 
     def __rrshift__(self, other: Relation) -> Relation:
         return self(other)
 
-    def __iter__(self) -> Iterator[OutputType]:
-        # XXX: Assumes all arguments have been bound
-        # TODO: This seems a bit hacky. Refactor shifting.
-        return iter(self())
 
-    @property
-    def columns(self) -> List[str]:
-        return self().columns
-
-    @property
-    def schema(self) -> sch.Schema:
-        return self().schema
-
-    def partition_key(
-        self, row: Tuple[Row, ...]
-    ) -> Tuple[Tuple[str, Hashable], ...]:
-        return ()
-
-
+@shiftable
 def table(
     rows: Iterable[Mapping[str, V]], schema: Optional[sch.Schema] = None
-) -> RightShiftablePartial:
+) -> Relation:
     """Construct a relation from an iterable of mappings."""
     first, rows = toolz.peek(rows)
     child = ((Row.from_mapping(row, _id=id),) for id, row in enumerate(rows))
-    return RightShiftablePartial(
-        UnaryRelation,
-        child=child,
-        schema=(
+    return UnaryRelation(
+        child,
+        (
             sch.Schema.from_dict(toolz.valmap(dt.infer, first))
             if schema is None
             else schema
@@ -88,32 +62,39 @@ def table(
     )
 
 
-def cross_join(right: UnaryRelation) -> RightShiftablePartial:
-    return RightShiftablePartial(CrossJoin, right=right)
+@shiftable
+def cross_join(right: UnaryRelation, left: UnaryRelation) -> Relation:
+    """Return the Cartesian product of tuples from `left` and `right`."""
+    return CrossJoin(left, right)
 
 
+@shiftable
 def inner_join(
-    right: UnaryRelation, predicate: JoinPredicate
-) -> RightShiftablePartial:
-    return RightShiftablePartial(InnerJoin, right=right, predicate=predicate)
+    right: UnaryRelation, predicate: JoinPredicate, left: UnaryRelation
+) -> Relation:
+    """Join `left` and `right` relations using `predicate`."""
+    return InnerJoin(left, right, predicate)
 
 
-ProjectorType = TypeVar(
-    "ProjectorType", Projector, JoinProjector, AbstractAggregateSpecification
-)
+@shiftable
+def _select(
+    projectors: Mapping[str, Projector], child: Relation
+) -> Projection:
+    return Projection(child, projectors)
 
 
-def select(**projectors: ProjectorType) -> RightShiftablePartial:
+def select(**projectors: Projector) -> shiftable:
     """Compute columns from `projectors`."""
-    return RightShiftablePartial(Projection, projectors=projectors)
+    return _select(projectors)
 
 
-def sift(predicate: Predicate) -> RightShiftablePartial:
-    """Filter in rows according to `predicate`."""
-    return RightShiftablePartial(Selection, predicate=predicate)
+@shiftable
+def sift(predicate: Predicate, child: UnaryRelation) -> Relation:
+    """Filter rows in `child` according to `predicate`."""
+    return Selection(child, predicate)
 
 
-def exists(relation: Relation) -> bool:
+def exists(relation: UnaryRelation) -> bool:
     """Compute whether any of the rows in `relation` are truthy.
 
     Returns
@@ -121,42 +102,62 @@ def exists(relation: Relation) -> bool:
     bool
 
     """
-    return any(row for (row,) in relation)
+    return any(map(toolz.first, relation))
 
 
-def aggregate(**aggregations: AggregateSpecification) -> RightShiftablePartial:
-    return RightShiftablePartial(Aggregation, aggregations=aggregations)
+@shiftable
+def _aggregate(
+    aggregations: Mapping[str, AggregateSpecification], child: Relation
+) -> Relation:
+    return Aggregation(child, aggregations)
 
 
-def group_by(**group_by: GroupingKeyFunction) -> RightShiftablePartial:
-    return RightShiftablePartial(GroupBy, group_by=group_by)
+def aggregate(**aggregations: AggregateSpecification) -> shiftable:
+    """Aggregate child operator based on `aggregations`."""
+    return _aggregate(aggregations)
 
 
-def union(right: Relation) -> RightShiftablePartial:
-    """Compute the set union of the piped input and `right`."""
-    return RightShiftablePartial(Union, right=right)
+@shiftable
+def _group_by(
+    group_by: Mapping[str, GroupingKeyFunction], child: Relation
+) -> Relation:
+    return GroupBy(child, group_by)
 
 
-def intersection(right: Relation) -> RightShiftablePartial:
-    """Compute the set intersection of the piped input and `right`."""
-    return RightShiftablePartial(Intersection, right=right)
+def group_by(**group_by: GroupingKeyFunction) -> shiftable:
+    """Group the child operator according to `group_by`."""
+    return _group_by(group_by)
 
 
-def difference(right: Relation) -> RightShiftablePartial:
-    """Compute the set difference of the piped input and `right`."""
-    return RightShiftablePartial(Difference, right=right)
+@shiftable
+def union(right: UnaryRelation, left: UnaryRelation) -> Relation:
+    """Compute the set union of `left` and `right`."""
+    return Union(left, right)
 
 
-def do() -> RightShiftablePartial:
-    """Pull the :class:`~stupidb.row.Row` instances out of the child.
+@shiftable
+def intersection(right: UnaryRelation, left: UnaryRelation) -> Relation:
+    """Compute the set intersection of `left` and `right`."""
+    return Intersection(left, right)
+
+
+@shiftable
+def difference(right: UnaryRelation, left: UnaryRelation) -> Relation:
+    """Compute the set difference of `left` and `right`."""
+    return Difference(left, right)
+
+
+@shiftable
+def do(child: UnaryRelation) -> Iterator[Row]:
+    """Pull the :class:`~stupidb.row.Row` instances out of `child`.
 
     Notes
     -----
-    All operations should ultimately call this. Call the builtin ``list``
-    function to produce a list of rows.
+    All operations should call this to materialize rows. Call the builtin
+    ``list`` function on the result of ``do()`` to produce a list of rows.
 
     """
-    return RightShiftablePartial(functools.partial(map, toolz.first))
+    return map(toolz.first, child)
 
 
 # Aggregations

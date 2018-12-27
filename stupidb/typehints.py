@@ -11,8 +11,8 @@ Following = Preceding
 
 Predicate = Callable[[Row], bool]
 
-Projector = Callable[[Row], Row]
-JoinProjector = Callable[[Row, Row], Row]
+UnaryProjector = Callable[[Row], Row]
+BinaryProjector = Callable[[Row, Row], Row]
 
 Rows = Iterable[Row]  # Rows are an Iterable of Row
 InputType = TypeVar("InputType", Tuple[Row], Tuple[Row, Row])

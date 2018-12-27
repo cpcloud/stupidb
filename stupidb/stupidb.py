@@ -49,6 +49,7 @@ from typing import (
     Sequence,
     Tuple,
     Type,
+    TypeVar,
 )
 from typing import Union as Union_
 
@@ -57,6 +58,7 @@ from typing_extensions import NoReturn
 import ibis.expr.schema as sch
 from stupidb.row import Row
 from stupidb.typehints import (
+    BinaryProjector,
     Following,
     GroupingKeyFunction,
     Input1,
@@ -69,12 +71,15 @@ from stupidb.typehints import (
     Preceding,
     Predicate,
     R,
+    UnaryProjector,
 )
 
 try:
     import cytoolz as toolz
+    from cytoolz import curry
 except ImportError:
     import toolz as toolz
+    from toolz import curry
 
 
 class Relation(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
@@ -110,12 +115,22 @@ class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
     pass
 
 
-class Projection(Relation[InputType, Tuple[Row]]):
+Projector = TypeVar(
+    "Projector",
+    UnaryProjector,
+    BinaryProjector,
+    "AbstractAggregateSpecification",
+)
+
+
+class Projection(
+    Generic[InputType, Projector], Relation[InputType, Tuple[Row]]
+):
     def __init__(
-        self, child: Relation, projectors: Mapping[str, Callable[..., Row]]
+        self, child: Relation, projectors: Mapping[str, Projector]
     ) -> None:
         self.child = child
-        self.projectors = projectors
+        self.projectors: Mapping[str, Projector] = projectors
 
     def operate(self, args: InputType) -> Tuple[Row]:
         mapping = {
