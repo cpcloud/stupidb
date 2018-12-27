@@ -127,7 +127,7 @@ class Projection(
     def __init__(
         self, child: Relation, projectors: Mapping[str, Projector]
     ) -> None:
-        self.child = child
+        super().__init__(child)
         self.projectors: Mapping[str, Projector] = projectors
 
     def operate(self, args: InputType) -> Tuple[Row]:
@@ -145,7 +145,7 @@ class Aggregation(Relation[InputType, Tuple[Row]]):
         child: Relation,
         aggregations: Mapping[str, "AggregateSpecification"],
     ) -> None:
-        self.child = child
+        super().__init__(child)
         self.aggregations = aggregations
 
     def __iter__(self) -> Iterator[Tuple[Row]]:
@@ -178,7 +178,7 @@ class Aggregation(Relation[InputType, Tuple[Row]]):
 
 class Selection(UnaryRelation):
     def __init__(self, child: UnaryRelation, predicate: Predicate) -> None:
-        self.child = child
+        super().__init__(child)
         self.predicate = predicate
 
     def operate(self, row: Tuple[Row]) -> Tuple[Row]:
@@ -386,7 +386,7 @@ class GroupBy(Relation[InputType, OutputType]):
         child: Relation[InputType, OutputType],
         group_by: Mapping[str, GroupingKeyFunction],
     ) -> None:
-        self.child = child
+        super().__init__(child)
         self.group_by: Mapping[str, GroupingKeyFunction] = group_by
 
     def operate(self, row: InputType) -> NoReturn:
@@ -414,8 +414,10 @@ class Join(Relation[Tuple[Row, Row], Tuple[Row, Row]], metaclass=abc.ABCMeta):
         right: UnaryRelation,
         predicate: JoinPredicate,
     ) -> None:
-        self.child = PartitionableIterable(
-            itertools.starmap(operator.add, itertools.product(left, right))
+        super().__init__(
+            PartitionableIterable(
+                itertools.starmap(operator.add, itertools.product(left, right))
+            )
         )
         self.predicate = predicate
 
