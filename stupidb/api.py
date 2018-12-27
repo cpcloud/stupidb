@@ -51,9 +51,8 @@ def table(
 ) -> Relation:
     """Construct a relation from an iterable of mappings."""
     first, rows = toolz.peek(rows)
-    child = ((Row.from_mapping(row, _id=id),) for id, row in enumerate(rows))
     return UnaryRelation(
-        child,
+        ((Row.from_mapping(row, _id=id),) for id, row in enumerate(rows)),
         (
             sch.Schema.from_dict(toolz.valmap(dt.infer, first))
             if schema is None
