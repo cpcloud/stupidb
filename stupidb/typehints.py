@@ -1,5 +1,5 @@
 from numbers import Real
-from typing import Callable, Hashable, Iterable, Tuple, TypeVar
+from typing import Callable, Hashable, Tuple, TypeVar
 
 from stupidb.comparable import Comparable
 from stupidb.row import Row
