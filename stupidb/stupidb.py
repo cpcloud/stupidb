@@ -93,17 +93,18 @@ class PartitionableIterable(Partitionable[InputType, OutputType]):
         return typing.cast(Iterator[OutputType], iter(self.rows))
 
 
-class Relation(Partitionable[InputType, OutputType], metaclass=abc.ABCMeta):
+class Relation(Partitionable[InputType, OutputType]):
     """A relation."""
 
     def __init__(self, child: Partitionable) -> None:
         self.child = child
 
-    def operate(self, args: InputType) -> OutputType:
+    @abc.abstractmethod
+    def operate(self, args: InputType) -> Optional[OutputType]:
         return typing.cast(OutputType, args)
 
     def __iter__(self) -> Iterator[OutputType]:
-        for id, row in enumerate(filter(all, map(self.operate, self.child))):
+        for id, row in enumerate(filter(None, map(self.operate, self.child))):
             yield typing.cast(
                 OutputType,
                 tuple(Row.from_mapping(element, _id=id) for element in row),
@@ -111,7 +112,8 @@ class Relation(Partitionable[InputType, OutputType], metaclass=abc.ABCMeta):
 
 
 class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
-    pass
+    def operate(self, args: Tuple[Row]) -> Optional[Tuple[Row]]:
+        return super().operate(args)
 
 
 Projector = TypeVar("Projector", UnaryProjector, BinaryProjector)
@@ -126,7 +128,7 @@ class Projection(
         super().__init__(child)
         self.projectors: Mapping[str, Projector] = projectors
 
-    def operate(self, args: InputType) -> Tuple[Row]:
+    def operate(self, args: InputType) -> Optional[Tuple[Row]]:
         mapping = {
             name: projector(*args)
             for name, projector in self.projectors.items()
@@ -144,8 +146,13 @@ class Aggregation(Relation[InputType, Tuple[Row]]):
         super().__init__(child)
         self.aggregations = aggregations
 
+    def operate(self, row: InputType) -> Optional[Tuple[Row]]:
+        return super().operate(row)
+
     def __iter__(self) -> Iterator[Tuple[Row]]:
         aggregations = self.aggregations
+
+        # initialize aggregates
         grouped_aggs: Mapping[
             PartitionKey, Mapping[str, Aggregate]
         ] = collections.defaultdict(
@@ -177,9 +184,8 @@ class Selection(UnaryRelation):
         super().__init__(child)
         self.predicate = predicate
 
-    def operate(self, row: Tuple[Row]) -> Tuple[Row]:
-        result = self.predicate(*row)
-        return row if result else (Row({}, _id=row[0]._id),)
+    def operate(self, row: Tuple[Row]) -> Optional[Tuple[Row]]:
+        return row if self.predicate(*row) else None
 
 
 class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
@@ -417,14 +423,16 @@ class Join(Relation[Tuple[Row, Row], Tuple[Row, Row]], metaclass=abc.ABCMeta):
         )
         self.predicate = predicate
 
-    def operate(self, pair: Tuple[Row, Row]) -> Tuple[Row, Row]:
+    def operate(self, pair: Tuple[Row, Row]) -> Optional[Tuple[Row, Row]]:
         left, right = pair
         if self.predicate(left, right):
             return left, right
         return self.failed_match_action(left, right)
 
     @abc.abstractmethod
-    def failed_match_action(self, left: Row, right: Row) -> Tuple[Row, Row]:
+    def failed_match_action(
+        self, left: Row, right: Row
+    ) -> Optional[Tuple[Row, Row]]:
         ...
 
 
@@ -437,8 +445,10 @@ class CrossJoin(Join):
 
 
 class InnerJoin(Join):
-    def failed_match_action(self, left: Row, right: Row) -> Tuple[Row, Row]:
-        return Row({}, _id=left._id), Row({}, _id=right._id)
+    def failed_match_action(
+        self, left: Row, right: Row
+    ) -> Optional[Tuple[Row, Row]]:
+        return None
 
 
 items = methodcaller("items")
