@@ -1,4 +1,7 @@
-from typing import Callable, Iterable, Iterator, Mapping, Optional
+from typing import Callable, Iterable, Iterator, Mapping
+
+import toolz
+from toolz import curry
 
 from stupidb.row import V
 from stupidb.stupidb import (
@@ -27,13 +30,6 @@ from stupidb.stupidb import (
     Union,
 )
 from stupidb.typehints import Predicate, RealGetter
-
-try:
-    import cytoolz as toolz
-    from cytoolz import curry
-except ImportError:
-    import toolz
-    from toolz import curry
 
 
 class shiftable(curry):

@@ -53,6 +53,7 @@ from typing import (
 )
 from typing import Union as Union_
 
+import toolz as toolz
 from typing_extensions import NoReturn
 
 from stupidb.row import Row
@@ -67,17 +68,12 @@ from stupidb.typehints import (
     Output,
     OutputType,
     PartitionBy,
+    PartitionKey,
     Preceding,
     Predicate,
     R,
     UnaryProjector,
-    PartitionKey,
 )
-
-try:
-    import cytoolz as toolz
-except ImportError:
-    import toolz as toolz
 
 
 class Partitionable(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
