@@ -11,9 +11,6 @@ class Row(Mapping[str, Any]):
         self._data = data
         self._id = _id
 
-    def renew_id(self, id: int) -> "Row":
-        return type(self)(self.data, _id=id)
-
     def __getitem__(self, column: str) -> Any:
         return self._data[column]
 
