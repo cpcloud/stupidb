@@ -2,7 +2,7 @@ from typing import Any, Iterator, List, Mapping
 
 
 class Row(Mapping[str, Any]):
-    def __init__(self, data: Mapping[str, Any], _id: int = -1) -> None:
+    def __init__(self, data: Mapping[str, Any], _id: int) -> None:
         # an id of -1 is never used since rows are always reconstructed with
         # their ids in the core loop. See the Relation class
         #
