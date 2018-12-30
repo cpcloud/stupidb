@@ -95,7 +95,6 @@ class Relation(Partitionable[InputType, OutputType]):
     def __init__(self, child: Partitionable) -> None:
         self.child = child
 
-    @abc.abstractmethod
     def operate(self, args: InputType) -> Optional[OutputType]:
         return typing.cast(OutputType, args)
 
@@ -108,8 +107,7 @@ class Relation(Partitionable[InputType, OutputType]):
 
 
 class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
-    def operate(self, args: Tuple[Row]) -> Optional[Tuple[Row]]:
-        return super().operate(args)
+    pass
 
 
 class Projection(Relation[InputType, Tuple[Row]]):
@@ -162,9 +160,6 @@ class Projection(Relation[InputType, Tuple[Row]]):
             res = Row(toolz.merge(projrow, aggrow), _id=i)
             yield (res,)
 
-    def operate(self, row: InputType) -> NoReturn:
-        raise TypeError()
-
 
 class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -215,9 +210,6 @@ class Aggregation(Relation[InputType, Tuple[Row]]):
     def __init__(self, child: Relation, aggregations: Aggregations) -> None:
         super().__init__(child)
         self.aggregations = aggregations
-
-    def operate(self, row: InputType) -> NoReturn:
-        raise TypeError()
 
     def __iter__(self) -> Iterator[Tuple[Row]]:
         aggregations = self.aggregations
@@ -424,9 +416,6 @@ class GroupBy(UnaryRelation):
         super().__init__(child)
         self.group_by = group_by
 
-    def operate(self, row: InputType) -> NoReturn:
-        raise TypeError()
-
     def __iter__(self) -> Iterator[OutputType]:
         return iter(self.child)
 
@@ -444,9 +433,6 @@ class SortBy(Relation[InputType, OutputType]):
     ) -> None:
         super().__init__(child)
         self.order_by = order_by
-
-    def operate(self, row: InputType) -> NoReturn:
-        raise TypeError()
 
     def __iter__(self) -> Iterator[OutputType]:
         yield from sorted(
@@ -509,9 +495,6 @@ class SetOperation(Relation[Tuple[Row, Row], Tuple[Row]]):
     def __init__(self, left: UnaryRelation, right: UnaryRelation) -> None:
         self.left = left
         self.right = right
-
-    def operate(self, row: Tuple[Row, Row]) -> NoReturn:
-        raise TypeError()
 
 
 class Union(SetOperation):
