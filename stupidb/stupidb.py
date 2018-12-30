@@ -433,9 +433,8 @@ class GroupBy(UnaryRelation):
         return iter(self.child)
 
     def partition_key(self, row: Tuple[Row]) -> PartitionKey:
-        group_by = self.group_by
         return tuple(
-            (name, keyfunc(*row)) for name, keyfunc in group_by.items()
+            (name, keyfunc(*row)) for name, keyfunc in self.group_by.items()
         )
 
 

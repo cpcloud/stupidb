@@ -131,7 +131,7 @@ def over(
 @shiftable
 def _group_by(
     group_by: Mapping[str, PartitionBy], child: UnaryRelation
-) -> UnaryRelation:
+) -> Relation:
     return GroupBy(child, group_by)
 
 
