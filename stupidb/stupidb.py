@@ -41,7 +41,6 @@ from typing import (
     Callable,
     FrozenSet,
     Generic,
-    Hashable,
     Iterable,
     Iterator,
     Mapping,
@@ -49,7 +48,6 @@ from typing import (
     Sequence,
     Tuple,
     Type,
-    TypeVar,
 )
 from typing import Union as Union_
 
@@ -58,9 +56,7 @@ from typing_extensions import NoReturn
 
 from stupidb.row import Row
 from stupidb.typehints import (
-    BinaryProjector,
     Following,
-    GroupingKeyFunction,
     Input1,
     Input2,
     InputType,
@@ -71,8 +67,8 @@ from stupidb.typehints import (
     PartitionKey,
     Preceding,
     Predicate,
+    Projector,
     R,
-    UnaryProjector,
 )
 
 
@@ -116,38 +112,112 @@ class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
         return super().operate(args)
 
 
-Projector = TypeVar("Projector", UnaryProjector, BinaryProjector)
-
-
-class Projection(
-    Generic[InputType, Projector], Relation[InputType, Tuple[Row]]
-):
-    def __init__(
-        self, child: Relation, projectors: Mapping[str, Projector]
-    ) -> None:
-        super().__init__(child)
-        self.projectors: Mapping[str, Projector] = projectors
-
-    def operate(self, args: InputType) -> Optional[Tuple[Row]]:
-        mapping = {
-            name: projector(*args)
-            for name, projector in self.projectors.items()
-        }
-        row = Row(mapping)
-        return (row,)
-
-
-class Aggregation(Relation[InputType, Tuple[Row]]):
+class Projection(Relation[InputType, Tuple[Row]]):
     def __init__(
         self,
         child: Relation,
-        aggregations: Mapping[str, "AggregateSpecification"],
+        projections: Mapping[
+            str, Union_[Projector, "WindowAggregateSpecification"]
+        ],
     ) -> None:
+        super().__init__(child)
+        self.projections = projections
+
+    def __iter__(self) -> Iterator[Tuple[Row]]:
+        # we need a row iterator for every aggregation to be fully generic
+        # since they potentially share no structure
+        from stupidb.window import window_agg
+
+        aggregations = {
+            aggname: aggspec
+            for aggname, aggspec in self.projections.items()
+            if isinstance(aggspec, WindowAggregateSpecification)
+        }
+        child, *rowterators = itertools.tee(self.child, len(aggregations) + 1)
+        aggnames = aggregations.keys()
+        aggvalues = aggregations.values()
+        aggrows = (
+            dict(zip(aggnames, aggvalue))
+            for aggvalue in zip(*map(window_agg, rowterators, aggvalues))
+        )
+
+        projections = {
+            name: projector
+            for name, projector in self.projections.items()
+            if not isinstance(projector, WindowAggregateSpecification)
+        }
+        projnames = projections.keys()
+        projrows = (
+            dict(
+                zip(
+                    projnames,
+                    (projector(*row) for projector in projections.values()),
+                )
+            )
+            for row in child
+        )
+        for i, (aggrow, projrow) in enumerate(
+            itertools.zip_longest(aggrows, projrows, fillvalue={})
+        ):
+            res = Row(toolz.merge(projrow, aggrow), _id=i)
+            yield (res,)
+
+    def operate(self, row: InputType) -> NoReturn:
+        raise TypeError()
+
+
+class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def step(self, input1: Optional[Input1]) -> None:
+        ...
+
+    @abc.abstractmethod
+    def finalize(self) -> Optional[Output]:
+        ...
+
+
+class UnaryWindowAggregate(UnaryAggregate[Input1, Output]):
+    @abc.abstractmethod
+    def inverse(self, input1: Optional[Input1]) -> None:
+        ...
+
+    def value(self) -> Optional[Output]:
+        return self.finalize()
+
+
+class BinaryAggregate(Generic[Input1, Input2, Output]):
+    @abc.abstractmethod
+    def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
+        ...
+
+    @abc.abstractmethod
+    def finalize(self) -> Optional[Output]:
+        ...
+
+
+class BinaryWindowAggregate(BinaryAggregate[Input1, Input2, Output]):
+    @abc.abstractmethod
+    def inverse(
+        self, input1: Optional[Input1], input2: Optional[Input2]
+    ) -> None:
+        ...
+
+    def value(self) -> Optional[Output]:
+        return self.finalize()
+
+
+Aggregate = Union_[UnaryAggregate, BinaryAggregate]
+Aggregations = Mapping[str, "AggregateSpecification"]
+WindowAggregations = Mapping[str, "WindowAggregateSpecification"]
+
+
+class Aggregation(Relation[InputType, Tuple[Row]]):
+    def __init__(self, child: Relation, aggregations: Aggregations) -> None:
         super().__init__(child)
         self.aggregations = aggregations
 
-    def operate(self, row: InputType) -> Optional[Tuple[Row]]:
-        return super().operate(row)
+    def operate(self, row: InputType) -> NoReturn:
+        raise TypeError()
 
     def __iter__(self) -> Iterator[Tuple[Row]]:
         aggregations = self.aggregations
@@ -186,38 +256,6 @@ class Selection(UnaryRelation):
 
     def operate(self, row: Tuple[Row]) -> Optional[Tuple[Row]]:
         return row if self.predicate(*row) else None
-
-
-class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def step(self, input1: Optional[Input1]) -> None:
-        ...
-
-    @abc.abstractmethod
-    def finalize(self) -> Optional[Output]:
-        ...
-
-
-class UnaryWindowAggregate(UnaryAggregate[Input1, Output]):
-    @abc.abstractmethod
-    def inverse(self, input1: Optional[Input1]) -> None:
-        ...
-
-    def value(self) -> Optional[Output]:
-        return self.finalize()
-
-
-class BinaryAggregate(Generic[Input1, Input2, Output]):
-    @abc.abstractmethod
-    def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
-        ...
-
-    @abc.abstractmethod
-    def finalize(self) -> Optional[Output]:
-        ...
-
-
-Aggregate = Union_[UnaryAggregate, BinaryAggregate]
 
 
 class FrameClause:
@@ -284,10 +322,7 @@ class WindowAggregateSpecification(AbstractAggregateSpecification):
 
 
 class AggregateSpecification(AbstractAggregateSpecification):
-    def over(self, window: FrameClause) -> WindowAggregateSpecification:
-        return WindowAggregateSpecification(
-            window, self.aggregate, *self.getters
-        )
+    pass
 
 
 class Count(UnaryWindowAggregate[Input1, int]):
@@ -332,8 +367,8 @@ class Total(Sum[R]):
 
 class Mean(UnaryWindowAggregate[R, float]):
     def __init__(self) -> None:
-        self.total: float = 0.0
-        self.count: int = 0
+        self.total = 0.0
+        self.count = 0
 
     def step(self, value: Optional[R]) -> None:
         if value is not None:
@@ -352,10 +387,10 @@ class Mean(UnaryWindowAggregate[R, float]):
 
 class Covariance(BinaryAggregate[R, R, float]):
     def __init__(self, *, ddof: int) -> None:
-        self.meanx: float = 0.0
-        self.meany: float = 0.0
-        self.count: int = 0
-        self.cov: float = 0.0
+        self.meanx = 0.0
+        self.meany = 0.0
+        self.count = 0
+        self.cov = 0.0
         self.ddof = ddof
 
     def step(self, x: Optional[R], y: Optional[R]) -> None:
@@ -382,27 +417,46 @@ class PopulationCovariance(Covariance):
         super().__init__(ddof=0)
 
 
-class GroupBy(Relation[InputType, OutputType]):
+class GroupBy(UnaryRelation):
+    def __init__(
+        self,
+        child: UnaryRelation,
+        group_by: Mapping[str, PartitionBy],
+    ) -> None:
+        super().__init__(child)
+        self.group_by = group_by
+
+    def operate(self, row: InputType) -> NoReturn:
+        raise TypeError()
+
+    def __iter__(self) -> Iterator[OutputType]:
+        return iter(self.child)
+
+    def partition_key(self, row: Tuple[Row]) -> PartitionKey:
+        group_by = self.group_by
+        return tuple(
+            (name, keyfunc(*row)) for name, keyfunc in group_by.items()
+        )
+
+
+class SortBy(Relation[InputType, OutputType]):
     def __init__(
         self,
         child: Relation[InputType, OutputType],
-        group_by: Mapping[str, GroupingKeyFunction],
+        order_by: Tuple[OrderBy, ...],
     ) -> None:
         super().__init__(child)
-        self.group_by: Mapping[str, GroupingKeyFunction] = group_by
+        self.order_by = order_by
 
     def operate(self, row: InputType) -> NoReturn:
         raise TypeError("Should never reach this")
 
     def __iter__(self) -> Iterator[OutputType]:
-        return iter(self.child)
-
-    def partition_key(
-        self, row: InputType
-    ) -> Tuple[Tuple[str, Hashable], ...]:
-        group_by = self.group_by
-        return tuple(
-            (name, keyfunc(*row)) for name, keyfunc in group_by.items()
+        yield from sorted(
+            (row for row in self.child),
+            key=lambda row: tuple(
+                order_func(*row) for order_func in self.order_by
+            ),
         )
 
 
@@ -458,6 +512,9 @@ class SetOperation(Relation[Tuple[Row, Row], Tuple[Row]]):
     def __init__(self, left: UnaryRelation, right: UnaryRelation) -> None:
         self.left = left
         self.right = right
+
+    def operate(self, row: Tuple[Row, Row]) -> NoReturn:
+        raise TypeError()
 
 
 class Union(SetOperation):

@@ -18,6 +18,8 @@ from stupidb.api import (
     group_by,
     inner_join,
     mean,
+    order_by,
+    over,
     pop_cov,
     samp_cov,
     select,
@@ -288,28 +290,27 @@ def test_right_shiftable(table, right_table):
     assert_rowset_equal(result, expected)
 
 
-@pytest.mark.xfail(raises=KeyError, reason="Not yet implemented")
 def test_window(table, rows):
-    preceding = lambda r: 2
-    following = lambda r: 0
-    partition_by = []
-    order_by = [lambda r: r["e"]]
     pipeline = (
         table
-        >> select(a=lambda r: r["a"])
-        >> aggregate(
-            my_agg=sum(lambda r: r["e"]).over(
+        >> select(
+            z=lambda r: r["z"],
+            e=lambda r: r["e"],
+            a=lambda r: r["a"],
+            my_agg=sum(lambda r: r["a"])
+            >> over(
                 Window.rows(
-                    order_by=order_by,
-                    partition_by=partition_by,
-                    preceding=preceding,
-                    following=following,
+                    order_by=[lambda r: r["e"]],
+                    partition_by=[lambda r: r["z"]],
+                    preceding=lambda r: 2,
+                    following=lambda r: 0,
                 )
-            )
+            ),
         )
+        >> order_by(lambda r: r["z"], lambda r: r["e"])
     )
     result = list(pipeline >> do())
-    assert result is not None
+    assert len(result) > 1
 
 
 def test_agg(table, rows):

@@ -1,12 +1,22 @@
 import collections
-from typing import Hashable, Iterator, List, Optional, Sequence, Tuple
+import itertools
+from typing import (
+    Any,
+    Hashable,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 import toolz
 from typing_extensions import DefaultDict
 
 from stupidb.row import Row
-from stupidb.stupidb import AggregateSpecification
-from stupidb.typehints import Following, OrderBy, PartitionBy, Preceding
+from stupidb.stupidb import WindowAggregateSpecification
+from stupidb.typehints import Following, PartitionBy, Preceding
 
 
 def compute_partition_key(
@@ -26,33 +36,36 @@ def compute_window_frame(
 ) -> List[Row]:
     npeers = len(possible_peers)
     if preceding is not None:
-        start: Optional[int] = max(current_row.id - preceding(current_row), 0)
+        start = max(current_row._id - preceding(current_row) - 1, 0)
     else:
         start = 0
 
     if following is not None:
-        stop = min(current_row.id + following(current_row), npeers)
+        stop = min(current_row._id + following(current_row), npeers)
     else:
         stop = npeers
     return possible_peers[start:stop]
 
 
 def window_agg(
-    rows: Sequence[Row],
-    partition_by: Sequence[PartitionBy],
-    order_by: Sequence[OrderBy],
-    preceding: Preceding,
-    following: Following,
-    aggspec: AggregateSpecification,
-) -> Iterator[Row]:
-    partitions: DefaultDict[
+    rows: Iterable[Tuple[Row]], aggspec: WindowAggregateSpecification
+) -> Iterator[Any]:
+    frame_clause = aggspec.frame_clause
+    partition_by = frame_clause._partition_by
+    order_by = frame_clause._order_by
+    preceding = frame_clause._preceding
+    following = frame_clause._following
+    raw_partitions: DefaultDict[
         Tuple[Hashable, ...], List[Row]
     ] = collections.defaultdict(list)
 
     # partition
-    for row in rows:
+    rows1, rows2 = itertools.tee(rows)
+    for (row,) in rows1:
         partition_key = compute_partition_key(row, partition_by)
-        partitions[partition_key].append(row)
+        raw_partitions[partition_key].append(row)
+
+    partitions = dict(raw_partitions)
 
     # sort
     for partition_key in partitions.keys():
@@ -60,17 +73,21 @@ def window_agg(
             key=lambda row: tuple(order_func(row) for order_func in order_by)
         )
 
-    for row in rows:
+    for (row,) in rows2:
         # compute the partition the row is in
         partition_key = compute_partition_key(row, partition_by)
         possible_peers = partitions[partition_key]
+        index = possible_peers.index(row)
+        new_id = index + 1
 
         # compute the window frame, ROWS mode only for now
         # compute the aggregation over the rows in the partition in the frame
-        peers = compute_window_frame(row, possible_peers, preceding, following)
+        peers = compute_window_frame(
+            row.renew_id(new_id), possible_peers, preceding, following
+        )
         agg = aggspec.aggregate()
         for peer in peers:
             args = [getter(peer) for getter in aggspec.getters]
             agg.step(*args)
         result = agg.finalize()
-        yield Row(toolz.merge(row, {"agg": result}), _id=row._id)
+        yield result

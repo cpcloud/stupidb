@@ -1,22 +1,24 @@
-from typing import Callable, Iterable, Iterator, Mapping
+from typing import Any, Callable, Iterable, Iterator, Mapping, TypeVar
 
 import toolz
 from toolz import curry
 
-from stupidb.row import V
+from stupidb.comparable import Comparable
 from stupidb.stupidb import (
     AggregateSpecification,
     Aggregation,
+    Aggregations,
     Count,
     CrossJoin,
     Difference,
+    FrameClause,
     GroupBy,
-    GroupingKeyFunction,
     InnerJoin,
     Intersection,
     JoinPredicate,
     Mean,
     PartitionableIterable,
+    PartitionBy,
     PopulationCovariance,
     Projection,
     Projector,
@@ -24,12 +26,15 @@ from stupidb.stupidb import (
     Row,
     SampleCovariance,
     Selection,
+    SortBy,
     Sum,
     Total,
+    Tuple,
     UnaryRelation,
     Union,
+    WindowAggregateSpecification,
 )
-from stupidb.typehints import Predicate, RealGetter
+from stupidb.typehints import OrderBy, Predicate, RealGetter
 
 
 class shiftable(curry):
@@ -41,7 +46,7 @@ class shiftable(curry):
 
 
 @shiftable
-def table(rows: Iterable[Mapping[str, V]]) -> Relation:
+def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     """Construct a relation from an iterable of mappings."""
     first, rows = toolz.peek(rows)
     return UnaryRelation(
@@ -72,6 +77,16 @@ def _select(
     return Projection(child, projectors)
 
 
+@shiftable
+def _order_by(order_by: Tuple[OrderBy, ...], child: Relation) -> Relation:
+    return SortBy(child, order_by)
+
+
+def order_by(*order_by: Comparable) -> shiftable:
+    """Group the child operator according to `order_by`."""
+    return _order_by(order_by)
+
+
 def select(**projectors: Projector) -> shiftable:
     """Compute columns from `projectors`."""
     return _select(projectors)
@@ -95,9 +110,7 @@ def exists(relation: UnaryRelation) -> bool:
 
 
 @shiftable
-def _aggregate(
-    aggregations: Mapping[str, AggregateSpecification], child: Relation
-) -> Relation:
+def _aggregate(aggregations: Aggregations, child: Relation) -> Relation:
     return Aggregation(child, aggregations)
 
 
@@ -107,13 +120,22 @@ def aggregate(**aggregations: AggregateSpecification) -> shiftable:
 
 
 @shiftable
+def over(
+    window: FrameClause, child: AggregateSpecification
+) -> WindowAggregateSpecification:
+    return WindowAggregateSpecification(
+        window, child.aggregate, *child.getters
+    )
+
+
+@shiftable
 def _group_by(
-    group_by: Mapping[str, GroupingKeyFunction], child: Relation
-) -> Relation:
+    group_by: Mapping[str, PartitionBy], child: UnaryRelation
+) -> UnaryRelation:
     return GroupBy(child, group_by)
 
 
-def group_by(**group_by: GroupingKeyFunction) -> shiftable:
+def group_by(**group_by: PartitionBy) -> shiftable:
     """Group the child operator according to `group_by`."""
     return _group_by(group_by)
 
@@ -147,6 +169,9 @@ def do(child: UnaryRelation) -> Iterator[Row]:
 
     """
     return map(toolz.first, child)
+
+
+V = TypeVar("V")
 
 
 # Aggregations

@@ -1,10 +1,8 @@
-from typing import Iterator, List, Mapping, TypeVar
-
-V = TypeVar("V")
+from typing import Any, Iterator, List, Mapping
 
 
-class Row(Mapping[str, V]):
-    def __init__(self, data: Mapping[str, V], _id: int = -1) -> None:
+class Row(Mapping[str, Any]):
+    def __init__(self, data: Mapping[str, Any], _id: int = -1) -> None:
         # an id of -1 is never used since rows are always reconstructed with
         # their ids in the core loop. See the Relation class
         #
@@ -13,10 +11,13 @@ class Row(Mapping[str, V]):
         self._data = data
         self._id = _id
 
-    def __getitem__(self, column: str) -> V:
+    def renew_id(self, id: int) -> "Row":
+        return type(self)(self.data, _id=id)
+
+    def __getitem__(self, column: str) -> Any:
         return self._data[column]
 
-    def __getattr__(self, attr: str) -> V:
+    def __getattr__(self, attr: str) -> Any:
         try:
             return self._data[attr]
         except KeyError as e:
@@ -27,14 +28,14 @@ class Row(Mapping[str, V]):
         return list(self.keys())
 
     @property
-    def data(self) -> Mapping[str, V]:
+    def data(self) -> Mapping[str, Any]:
         return self._data
 
     def __hash__(self) -> int:
         return hash(tuple(tuple(item) for item in self._data.items()))
 
     @classmethod
-    def from_mapping(cls, mapping: Mapping[str, V], _id: int) -> "Row":
+    def from_mapping(cls, mapping: Mapping[str, Any], _id: int) -> "Row":
         return cls(getattr(mapping, "data", mapping), _id)
 
     def __iter__(self) -> Iterator[str]:

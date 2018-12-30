@@ -1,5 +1,5 @@
 from numbers import Real
-from typing import Callable, Hashable, Tuple, TypeVar
+from typing import Callable, Hashable, Optional, Tuple, TypeVar, Union
 
 from stupidb.comparable import Comparable
 from stupidb.row import Row
@@ -8,18 +8,17 @@ PartitionKey = Tuple[Tuple[str, Hashable], ...]
 
 PartitionBy = Callable[[Row], Hashable]
 OrderBy = Callable[[Row], Comparable]
-Preceding = Callable[[Row], int]
+Preceding = Optional[Callable[[Row], int]]
 Following = Preceding
 
 Predicate = Callable[[Row], bool]
 
 UnaryProjector = Callable[[Row], Row]
 BinaryProjector = Callable[[Row, Row], Row]
+Projector = Union[UnaryProjector, BinaryProjector]
 
 InputType = TypeVar("InputType", Tuple[Row], Tuple[Row, Row])
 OutputType = TypeVar("OutputType", Tuple[Row], Tuple[Row, Row])
-
-GroupingKeyFunction = Callable[..., Hashable]
 
 Input = TypeVar("Input")
 Input1 = TypeVar("Input1")
