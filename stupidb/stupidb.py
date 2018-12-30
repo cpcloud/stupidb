@@ -448,7 +448,7 @@ class SortBy(Relation[InputType, OutputType]):
         self.order_by = order_by
 
     def operate(self, row: InputType) -> NoReturn:
-        raise TypeError("Should never reach this")
+        raise TypeError()
 
     def __iter__(self) -> Iterator[OutputType]:
         yield from sorted(
