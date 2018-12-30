@@ -419,9 +419,7 @@ class PopulationCovariance(Covariance):
 
 class GroupBy(UnaryRelation):
     def __init__(
-        self,
-        child: UnaryRelation,
-        group_by: Mapping[str, PartitionBy],
+        self, child: UnaryRelation, group_by: Mapping[str, PartitionBy]
     ) -> None:
         super().__init__(child)
         self.group_by = group_by

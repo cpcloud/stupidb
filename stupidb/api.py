@@ -71,13 +71,6 @@ def inner_join(
 
 
 @shiftable
-def _select(
-    projectors: Mapping[str, Projector], child: Relation
-) -> Projection:
-    return Projection(child, projectors)
-
-
-@shiftable
 def _order_by(order_by: Tuple[OrderBy, ...], child: Relation) -> Relation:
     return SortBy(child, order_by)
 
@@ -85,6 +78,13 @@ def _order_by(order_by: Tuple[OrderBy, ...], child: Relation) -> Relation:
 def order_by(*order_by: Comparable) -> shiftable:
     """Group the child operator according to `order_by`."""
     return _order_by(order_by)
+
+
+@shiftable
+def _select(
+    projectors: Mapping[str, Projector], child: Relation
+) -> Projection:
+    return Projection(child, projectors)
 
 
 def select(**projectors: Projector) -> shiftable:
