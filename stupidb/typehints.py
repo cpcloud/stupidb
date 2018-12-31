@@ -17,9 +17,6 @@ UnaryProjector = Callable[[Row], Row]
 BinaryProjector = Callable[[Row, Row], Row]
 Projector = Union[UnaryProjector, BinaryProjector]
 
-InputType = TypeVar("InputType", Tuple[Row], Tuple[Row, Row])
-OutputType = TypeVar("OutputType", Tuple[Row], Tuple[Row, Row])
-
 Input = TypeVar("Input")
 Input1 = TypeVar("Input1")
 Input2 = TypeVar("Input2")

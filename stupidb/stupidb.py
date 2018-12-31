@@ -58,9 +58,7 @@ from stupidb.aggregation import (
 )
 from stupidb.row import JoinedRow, Row
 from stupidb.typehints import (
-    InputType,
     OrderBy,
-    OutputType,
     PartitionBy,
     PartitionKey,
     Predicate,
@@ -68,12 +66,12 @@ from stupidb.typehints import (
 )
 
 
-class Partitionable(Generic[InputType, OutputType], metaclass=abc.ABCMeta):
-    def partition_key(self, row: InputType) -> PartitionKey:
+class Partitionable(abc.ABC):
+    def partition_key(self, row: Row) -> PartitionKey:
         return ()
 
     @abc.abstractmethod
-    def __iter__(self) -> Iterator[OutputType]:
+    def __iter__(self) -> Iterator[Row]:
         ...
 
 
@@ -239,7 +237,7 @@ class SortBy(Relation):
 JoinPredicate = Callable[[JoinedRow], bool]
 
 
-class Join(Relation, metaclass=abc.ABCMeta):
+class Join(Relation):
     def __init__(
         self, left: Relation, right: Relation, predicate: JoinPredicate
     ) -> None:
@@ -335,7 +333,7 @@ class Union(SetOperation):
 SetOperand = FrozenSet[Tuple[Tuple[str, Any], ...]]
 
 
-class InefficientSetOperation(SetOperation, metaclass=abc.ABCMeta):
+class InefficientSetOperation(SetOperation):
     def __iter__(self) -> Iterator[Row]:
         itemize = toolz.compose(frozenset, functools.partial(map, items))
         return (
