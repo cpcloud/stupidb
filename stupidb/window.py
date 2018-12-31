@@ -27,12 +27,14 @@ def compute_window_frame(
 ) -> List[Row]:
     npeers = len(possible_peers)
     if preceding is not None:
-        start = max(partition_id - preceding(current_row) - 1, 0)
+        start = max(partition_id - preceding(current_row), 0)
     else:
         start = 0
 
     if following is not None:
-        stop = min(partition_id + following(current_row), npeers)
+        # because of slice semantics based on zero-based indexing we have to
+        # add one here to make sure the current row is included
+        stop = min(partition_id + following(current_row) + 1, npeers)
     else:
         stop = npeers
     return possible_peers[start:stop]
@@ -68,8 +70,7 @@ def window_agg(
         # compute the partition the row is in
         partition_key = compute_partition_key(row, partition_by)
         possible_peers = partitions[partition_key]
-        zero_based_partition_index = possible_peers.index(row)
-        partition_id = zero_based_partition_index + 1
+        partition_id = possible_peers.index(row)
 
         # compute the window frame, ROWS mode only for now
         # compute the aggregation over the rows in the partition in the frame
