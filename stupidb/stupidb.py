@@ -153,7 +153,7 @@ class Mutate(Projection):
     def __iter__(self) -> Iterator[Row]:
         child, self.child = itertools.tee(self.child)
         for i, row in enumerate(map(toolz.merge, child, super().__iter__())):
-            yield Row.from_mapping(row, _id=i)
+            yield row.renew_id(i)
 
 
 Aggregations = Mapping[str, AggregateSpecification]
