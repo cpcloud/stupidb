@@ -49,7 +49,6 @@ class shiftable(curry):
 @shiftable
 def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     """Construct a relation from an iterable of mappings."""
-    first, rows = toolz.peek(rows)
     return UnaryRelation(
         PartitionableIterable(
             (Row.from_mapping(row, _id=id),) for id, row in enumerate(rows)
@@ -127,7 +126,7 @@ def exists(relation: UnaryRelation) -> bool:
     bool
 
     """
-    return any(map(toolz.first, relation))
+    return any(relation >> do())
 
 
 @shiftable
