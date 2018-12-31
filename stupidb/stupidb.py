@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""The stupidest database.
+"""StupiDB. The stupidest database.
 
 This is project designed to illustate the concepts that underly a typical
 relational database implementation, starting at naive execution of table-stakes
@@ -9,23 +9,22 @@ features up to rule-based query optimization.
 Please do not use this for any other reason than learning. There are no
 guarantees here except that there will be bugs.
 
-Plan of Attack
---------------
+Features
+--------
 * Projection
 * Selection
-* Group By
-* Joins
+* Cross, Inner, Left, and Right joins
+* Group by
+* Custom aggregations are the same as built-ins
+* Window functions including support for both range and rows
+* Iterator model where naively possible
+* Disregards the latest buzzwords
+* Scales down
 
 Requirements
 ------------
-* The database must be able to operate on datasets that do not fit into main
-  memory.
-* The database must use as little memory as possible (within the bounds of
-  standard Python code) and use only O(1) memory where possible.
-* The database must produce rows using generators.
-* The database must accept any iterable of mapping as its input(s).
-* The database must attempt to use only built-in Python data structures
-  including those in standard library modules.
+* All implementations must be as naive as possible
+* Unless an optimization is ridiculously trivial, don't try and implement it
 
 """
 

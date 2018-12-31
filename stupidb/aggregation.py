@@ -133,6 +133,8 @@ class RangeMode(FrameClause):
         assert preceding is not None
 
         current_row = possible_peers[partition_id]
+
+        # add one to make sure we include the current row
         peers = possible_peers[: partition_id + 1]
         delta_preceding = preceding(current_row)
         current_row_order_by_value = current_row[order_by_column]
@@ -152,14 +154,15 @@ class RangeMode(FrameClause):
         assert following is not None
 
         current_row = possible_peers[partition_id]
-        npeers = len(possible_peers)
-        indexes = range(npeers - 1, partition_id - 1, -1)
         delta_following = following(current_row)
         current_row_order_by_value = current_row[order_by_column]
+        npeers = len(possible_peers)
+        indexes = range(npeers - 1, partition_id - 1, -1)
         for index in indexes:
             peer = possible_peers[index]
             order_by_value = peer[order_by_column]
             if order_by_value - current_row_order_by_value <= delta_following:
+                # add one to make sure we include the current row
                 return index + 1
         return -1
 
