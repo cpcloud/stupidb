@@ -249,7 +249,7 @@ class WindowAggregateSpecification(AbstractAggregateSpecification):
         self.frame_clause = frame_clause
 
     def compute(self, rows: Iterable[Row]) -> Iterator[Any]:
-        """Aggregate `rows` over a window specified by `aggspec`."""
+        """Aggregate `rows` over a window."""
         frame_clause = self.frame_clause
         partition_by = frame_clause.partition_by
         order_by = frame_clause.order_by
