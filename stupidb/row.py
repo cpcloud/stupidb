@@ -4,7 +4,7 @@ import toolz
 
 
 class Row(Mapping[str, Any]):
-    def __init__(self, data: Mapping[str, Any], _id: int) -> None:
+    def __init__(self, data: Mapping[str, Any], *, _id: int) -> None:
         # an id of -1 is never used since rows are always reconstructed with
         # their ids in the core loop. See the Relation class
         #
@@ -37,8 +37,8 @@ class Row(Mapping[str, Any]):
         return hash(tuple(tuple(item) for item in self._data.items()))
 
     @classmethod
-    def from_mapping(cls, mapping: Mapping[str, Any], _id: int) -> "Row":
-        return cls(getattr(mapping, "data", mapping), _id)
+    def from_mapping(cls, mapping: Mapping[str, Any], *, _id: int) -> "Row":
+        return cls(getattr(mapping, "data", mapping), _id=_id)
 
     def __iter__(self) -> Iterator[str]:
         return iter(self._data)
@@ -52,12 +52,12 @@ class Row(Mapping[str, Any]):
 
 class JoinedRow(Row):
     def __init__(
-        self, left: Mapping[str, Any], right: Mapping[str, Any], _id: int
+        self, left: Mapping[str, Any], right: Mapping[str, Any], *, _id: int
     ) -> None:
         self.left = Row.from_mapping(left, _id=_id)
         self.right = Row.from_mapping(right, _id=_id)
         self._overlapping_keys = left.keys() & right.keys()
-        super().__init__(toolz.merge(left, right), _id)
+        super().__init__(toolz.merge(left, right), _id=_id)
 
     def __getitem__(self, key: str) -> Any:
         if self._overlapping_keys:
