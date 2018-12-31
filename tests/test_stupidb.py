@@ -303,7 +303,7 @@ def test_window(table, rows):
                     preceding=lambda r: 2,
                     following=lambda r: 0,
                 )
-            ),
+            )
         )
         >> order_by(lambda r: r["z"], lambda r: r["e"])
     )
@@ -321,7 +321,7 @@ def test_window(table, rows):
     assert len(result) == len(expected_aggrows)
     expected = sorted(
         map(toolz.merge, rows, expected_aggrows),
-        key=lambda r: (r["z"], r["e"])
+        key=lambda r: (r["z"], r["e"]),
     )
     assert len(result) == len(expected)
     assert_rowset_equal(result, expected)
@@ -338,7 +338,6 @@ def test_agg(table, rows):
     assert result["mean"] == result["sum"] / result["count"]
 
 
-@pytest.mark.xfail(reason="Not yet validating")
 def test_invalid_agg(table, rows):
     with pytest.raises(TypeError, match="Invalid projection"):
         select(

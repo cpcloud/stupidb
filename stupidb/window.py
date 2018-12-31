@@ -1,17 +1,7 @@
 import collections
 import itertools
-from typing import (
-    Any,
-    Hashable,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import Any, Hashable, Iterable, Iterator, List, Sequence, Tuple
 
-import toolz
 from typing_extensions import DefaultDict
 
 from stupidb.row import Row

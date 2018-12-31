@@ -144,8 +144,9 @@ class Projection(Relation[InputType, Tuple[Row]]):
         projections = {
             name: projector
             for name, projector in self.projections.items()
-            if not isinstance(projector, WindowAggregateSpecification)
+            if callable(projector)
         }
+
         projnames = projections.keys()
         projrows = (
             dict(

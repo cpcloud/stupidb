@@ -23,7 +23,6 @@ from stupidb.stupidb import (
     PartitionBy,
     PopulationCovariance,
     Projection,
-    Projector,
     Relation,
     Row,
     SampleCovariance,
@@ -91,6 +90,14 @@ def _select(
 
 def select(**projectors: FullProjector) -> shiftable:
     """Subset or compute columns from `projectors`."""
+    valid_projectors = {
+        name: projector
+        for name, projector in projectors.items()
+        if callable(projector)
+        or isinstance(projector, WindowAggregateSpecification)
+    }
+    if len(valid_projectors) != len(projectors):
+        raise TypeError('Invalid projection')
     return _select(projectors)
 
 
