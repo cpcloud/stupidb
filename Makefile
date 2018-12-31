@@ -1,4 +1,4 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help
+.PHONY: clean clean-test clean-pyc clean-build docs help black isort checkformat lint
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -50,15 +50,19 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
-isort:
-	isort -tc -rc .
+ISORT_OPTIONS := --trailing-comma --recursive
+BLACK_OPTIONS := --line-length=79 --py36
 
-black: isort
-	black . --line-length=79 --py36
+formatimports:
+	isort $(ISORT_OPTIONS) .
 
-format: black
+format: formatimports
+	black $(BLACK_OPTIONS) .
 
-lint: format ## check style with flake8
+checkformat:
+	black $(BLACK_OPTIONS) --check .
+
+lint: checkformat ## check style with flake8
 	flake8 stupidb tests
 
 test: ## run tests quickly with the default Python
