@@ -37,7 +37,7 @@ from stupidb.stupidb import (
     Tuple,
     Union,
 )
-from stupidb.typehints import OrderBy, Predicate, RealGetter
+from stupidb.typehints import OrderBy, RealGetter
 
 
 class shiftable(curry):
