@@ -166,7 +166,7 @@ def _aggregate(aggregations: Aggregations, child: Relation) -> Relation:
 
 
 def aggregate(**aggregations: AggregateSpecification) -> shiftable:
-    """Aggregate child operator based on `aggregations`."""
+    """Aggregate values from the child operator using `aggregations`."""
     return _aggregate(aggregations)
 
 
