@@ -7,11 +7,10 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Mapping,
     Sequence,
     Tuple,
 )
-
-from typing_extensions import DefaultDict
 
 from stupidb.comparable import Comparable
 from stupidb.row import Row
@@ -60,18 +59,33 @@ def make_key_func(order_by: Iterable[OrderBy]) -> Callable[[Row], Comparable]:
 def window_agg(
     rows: Iterable[Row], aggspec: WindowAggregateSpecification
 ) -> Iterator[Any]:
+    """Aggregate `rows` over a window specified by `aggspec`."""
     frame_clause = aggspec.frame_clause
     partition_by = frame_clause._partition_by
     order_by = frame_clause._order_by
     preceding = frame_clause._preceding
     following = frame_clause._following
-    raw_partitions: DefaultDict[
+
+    # A mapping from each row's partition key to a list of rows.
+    raw_partitions: Mapping[
         Tuple[Hashable, ...], List[Row]
     ] = collections.defaultdict(list)
 
+    # We use one iterator for partitioning and one for computing the frame
+    # given a partition and a row.
+    #
+    # Alternatively we could reuse the rows that are in memory in the
+    # partitions, but they aren't going to be in the order of the original
+    # relation's rows.
+    #
+    # This leads to incorrect results when an aggregation is used downstream.
+    #
+    # We could sort them to address this, but it's less code this way and I
+    # suspect more efficient to dup the iterator.
+    rows_for_partition, rows_for_frame_computation = itertools.tee(rows)
+
     # partition
-    rows1, rows2 = itertools.tee(rows)
-    for row in rows1:
+    for row in rows_for_partition:
         partition_key = compute_partition_key(row, partition_by)
         raw_partitions[partition_key].append(row)
 
@@ -82,17 +96,27 @@ def window_agg(
     for partition_key in partitions.keys():
         partitions[partition_key].sort(key=key)
 
-    for row in rows2:
+    for row in rows_for_frame_computation:
         # compute the partition the row is in
         partition_key = compute_partition_key(row, partition_by)
+
+        # the maximal set of rows that could be in the current row's peer set
         possible_peers = partitions[partition_key]
+
+        # Compute the index of the row in the partition. This value is the
+        # value that all peers (using preceding and following if they are not
+        # None) are computed relative to.
+        #
+        # Stupidly, this is a linear search for a matching row and assumes that
+        # there are no duplicate rows in `possible_peers`.
         partition_id = possible_peers.index(row)
 
-        # compute the window frame, ROWS mode only for now
-        # compute the aggregation over the rows in the partition in the frame
+        # Compute the window frame, which is a subset of `possible_peers`.
         peers = compute_window_frame(
             row, partition_id, possible_peers, preceding, following
         )
+
+        # Aggregate over the rows in the frame.
         agg = aggspec.aggregate()
         for peer in peers:
             args = [getter(peer) for getter in aggspec.getters]
