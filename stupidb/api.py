@@ -39,7 +39,7 @@ from stupidb.typehints import OrderBy, Predicate, RealGetter
 
 
 class shiftable(curry):
-    def __rrshift__(self, other: Relation) -> Relation:
+    def __rrshift__(self, other):
         return self(other)
 
 
@@ -73,7 +73,7 @@ def _order_by(order_by: Tuple[OrderBy, ...], child: Relation) -> Relation:
 
 
 def order_by(*order_by: Comparable) -> shiftable:
-    """Group the child operator according to `order_by`."""
+    """Order the rows of the child operator according to `order_by`."""
     return _order_by(order_by)
 
 
@@ -153,7 +153,7 @@ def _group_by(
 
 
 def group_by(**group_by: PartitionBy) -> shiftable:
-    """Group the child operator according to `group_by`."""
+    """Group the rows of the child operator according to `group_by`."""
     return _group_by(group_by)
 
 
