@@ -156,9 +156,7 @@ class AggregateSpecification(AbstractAggregateSpecification):
 def compute_partition_key(
     row: Row, partition_by: Iterable[PartitionBy]
 ) -> Tuple[Hashable, ...]:
-    return tuple(
-        partition_func(row) for partition_func in partition_by
-    )
+    return tuple(partition_func(row) for partition_func in partition_by)
 
 
 def make_key_func(order_by: Iterable[OrderBy]) -> Callable[[Row], Comparable]:
