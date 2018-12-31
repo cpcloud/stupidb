@@ -23,11 +23,11 @@ from stupidb.stupidb import (
     GroupBy,
     InnerJoin,
     Intersection,
-    JoinPredicate,
     LeftJoin,
     Mutate,
     PartitionableIterable,
     PartitionBy,
+    Predicate,
     Projection,
     Relation,
     RightJoin,
@@ -63,7 +63,7 @@ def cross_join(right: Relation, left: Relation) -> Relation:
 
 @shiftable
 def inner_join(
-    right: Relation, predicate: JoinPredicate, left: Relation
+    right: Relation, predicate: Predicate, left: Relation
 ) -> Relation:
     """Join `left` and `right` relations using `predicate`.
 
@@ -75,7 +75,7 @@ def inner_join(
 
 @shiftable
 def left_join(
-    right: Relation, predicate: JoinPredicate, left: Relation
+    right: Relation, predicate: Predicate, left: Relation
 ) -> Relation:
     """Join `left` and `right` relations using `predicate`.
 
@@ -88,7 +88,7 @@ def left_join(
 
 @shiftable
 def right_join(
-    right: Relation, predicate: JoinPredicate, left: Relation
+    right: Relation, predicate: Predicate, left: Relation
 ) -> Relation:
     """Join `left` and `right` relations using `predicate`.
 
