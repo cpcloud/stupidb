@@ -89,7 +89,6 @@ def test_table(table, rows):
     op = table_(rows)
     result = list(op)
     assert_rowset_equal(result, expected)
-    assert set(table_(rows).columns) == set(rows[0].keys())
 
 
 def test_projection(table, rows):

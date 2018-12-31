@@ -1,4 +1,4 @@
-from typing import Any, Iterator, List, Mapping
+from typing import Any, Iterator, Mapping
 
 import toolz
 
@@ -29,10 +29,6 @@ class Row(Mapping[str, Any]):
             return self._data[attr]
         except KeyError as e:
             raise AttributeError(attr) from e
-
-    @property
-    def columns(self) -> List[str]:
-        return list(self.keys())
 
     @property
     def data(self) -> Mapping[str, Any]:
