@@ -18,6 +18,7 @@ from stupidb.api import (
     group_by,
     inner_join,
     mean,
+    mutate,
     order_by,
     over,
     pop_cov,
@@ -293,10 +294,7 @@ def test_right_shiftable(table, right_table):
 def test_window(table, rows):
     pipeline = (
         table
-        >> select(
-            z=lambda r: r["z"],
-            e=lambda r: r["e"],
-            a=lambda r: r["a"],
+        >> mutate(
             my_agg=sum(lambda r: r["a"])
             >> over(
                 Window.rows(
@@ -310,15 +308,22 @@ def test_window(table, rows):
         >> order_by(lambda r: r["z"], lambda r: r["e"])
     )
     result = list(pipeline >> do())
-    expected = [
-        {"a": 1, "e": 1, "my_agg": 1, "z": "a"},
-        {"a": 3, "e": 3, "my_agg": 4, "z": "a"},
-        {"a": 4, "e": 4, "my_agg": 8, "z": "a"},
-        {"a": 1, "e": 5, "my_agg": 8, "z": "a"},
-        {"a": 2, "e": 2, "my_agg": 2, "z": "b"},
-        {"a": 2, "e": 6, "my_agg": 4, "z": "b"},
-        {"a": 3, "e": 7, "my_agg": 7, "z": "b"},
+    expected_aggrows = [
+        {"my_agg": 1},
+        {"my_agg": 2},
+        {"my_agg": 4},
+        {"my_agg": 8},
+        {"my_agg": 8},
+        {"my_agg": 4},
+        {"my_agg": 7},
     ]
+    assert len(result) == len(rows)
+    assert len(result) == len(expected_aggrows)
+    expected = sorted(
+        map(toolz.merge, rows, expected_aggrows),
+        key=lambda r: (r["z"], r["e"])
+    )
+    assert len(result) == len(expected)
     assert_rowset_equal(result, expected)
 
 

@@ -12,11 +12,13 @@ from stupidb.stupidb import (
     CrossJoin,
     Difference,
     FrameClause,
+    FullProjector,
     GroupBy,
     InnerJoin,
     Intersection,
     JoinPredicate,
     Mean,
+    Mutate,
     PartitionableIterable,
     PartitionBy,
     PopulationCovariance,
@@ -82,14 +84,26 @@ def order_by(*order_by: Comparable) -> shiftable:
 
 @shiftable
 def _select(
-    projectors: Mapping[str, Projector], child: Relation
-) -> Projection:
+    projectors: Mapping[str, FullProjector], child: Relation
+) -> Relation:
     return Projection(child, projectors)
 
 
-def select(**projectors: Projector) -> shiftable:
-    """Compute columns from `projectors`."""
+def select(**projectors: FullProjector) -> shiftable:
+    """Subset or compute columns from `projectors`."""
     return _select(projectors)
+
+
+@shiftable
+def _mutate(
+    mutators: Mapping[str, FullProjector], child: Relation
+) -> Relation:
+    return Mutate(child, mutators)
+
+
+def mutate(**mutators: FullProjector) -> shiftable:
+    """Add new columns specified by `mutators`."""
+    return _mutate(mutators)
 
 
 @shiftable

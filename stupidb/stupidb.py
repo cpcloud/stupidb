@@ -110,13 +110,12 @@ class UnaryRelation(Relation[Tuple[Row], Tuple[Row]]):
     pass
 
 
+FullProjector = Union_[Projector, "WindowAggregateSpecification"]
+
+
 class Projection(Relation[InputType, Tuple[Row]]):
     def __init__(
-        self,
-        child: Relation,
-        projections: Mapping[
-            str, Union_[Projector, "WindowAggregateSpecification"]
-        ],
+        self, child: Relation, projections: Mapping[str, FullProjector]
     ) -> None:
         super().__init__(child)
         self.projections = projections
@@ -131,6 +130,9 @@ class Projection(Relation[InputType, Tuple[Row]]):
             for aggname, aggspec in self.projections.items()
             if isinstance(aggspec, WindowAggregateSpecification)
         }
+
+        # one child iter for *all* projections
+        # one child iter for *each* window aggregation
         child, *rowterators = itertools.tee(self.child, len(aggregations) + 1)
         aggnames = aggregations.keys()
         aggvalues = aggregations.values()
@@ -154,11 +156,18 @@ class Projection(Relation[InputType, Tuple[Row]]):
             )
             for row in child
         )
+
         for i, (aggrow, projrow) in enumerate(
             itertools.zip_longest(aggrows, projrows, fillvalue={})
         ):
-            res = Row(toolz.merge(projrow, aggrow), _id=i)
-            yield (res,)
+            yield (Row(toolz.merge(projrow, aggrow), _id=i),)
+
+
+class Mutate(Projection[InputType]):
+    def __iter__(self) -> Iterator[Tuple[Row]]:
+        child, self.child = itertools.tee(self.child)
+        for i, row in enumerate(map(operator.add, child, super().__iter__())):
+            yield (Row.from_mapping(toolz.merge(*row), _id=i),)
 
 
 class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
