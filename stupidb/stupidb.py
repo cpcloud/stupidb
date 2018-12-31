@@ -103,46 +103,42 @@ class Projection(Relation):
         self, child: Relation, projections: Mapping[str, FullProjector]
     ) -> None:
         super().__init__(child)
-        self.projections = projections
-
-    def __iter__(self) -> Iterator[Row]:
-        # we need a row iterator for every aggregation to be fully generic
-        # since they potentially share no structure
-        aggregations = {
+        self.aggregations = {
             aggname: aggspec
-            for aggname, aggspec in self.projections.items()
+            for aggname, aggspec in projections.items()
             if isinstance(aggspec, WindowAggregateSpecification)
         }
+        self.projections = {
+            name: projector
+            for name, projector in projections.items()
+            if callable(projector)
+        }
 
+    def __iter__(self) -> Iterator[Row]:
+        aggregations = self.aggregations
+        # we need a row iterator for every aggregation to be fully generic
+        # since they potentially share no structure
+        #
         # one child iter for *all* projections
         # one child iter for *each* window aggregation
         child, *rowterators = itertools.tee(self.child, len(aggregations) + 1)
         aggnames = aggregations.keys()
         aggvalues = aggregations.values()
         aggrows = (
-            dict(zip(aggnames, aggvalue))
-            for aggvalue in zip(
-                *(
-                    aggspec.compute_aggregation(rowterator)
-                    for aggspec, rowterator in zip(aggvalues, rowterators)
+            dict(zip(aggnames, aggrow))
+            for aggrow in zip(
+                *map(
+                    WindowAggregateSpecification.compute,
+                    aggvalues,
+                    rowterators,
                 )
             )
         )
 
-        projections = {
-            name: projector
-            for name, projector in self.projections.items()
-            if callable(projector)
-        }
-
+        projections = self.projections
         projnames = projections.keys()
         projrows = (
-            dict(
-                zip(
-                    projnames,
-                    (projector(row) for projector in projections.values()),
-                )
-            )
+            dict(zip(projnames, (proj(row) for proj in projections.values())))
             for row in child
         )
 
