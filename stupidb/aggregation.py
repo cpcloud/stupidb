@@ -321,7 +321,7 @@ class WindowAggregateSpecification(AbstractAggregateSpecification):
             partition_id = possible_peers.index(row)
 
             # Compute the window frame, which is a subset of `possible_peers`.
-            start, stop = self.frame_clause.compute_window_frame(
+            start, stop = frame_clause.compute_window_frame(
                 possible_peers, partition_id, order_by_columns
             )
 
