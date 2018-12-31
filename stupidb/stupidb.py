@@ -151,6 +151,9 @@ class Projection(Relation):
 
 class Mutate(Projection):
     def __iter__(self) -> Iterator[Row]:
+        # reasign self.child here to avoid clobbering its iteration
+        # we need to use it twice: once for the computed columns (self.child)
+        # and once for the original relation (child)
         child, self.child = itertools.tee(self.child)
         for i, row in enumerate(map(toolz.merge, child, super().__iter__())):
             yield row.renew_id(i)
