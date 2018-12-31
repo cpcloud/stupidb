@@ -108,8 +108,6 @@ class Projection(Relation):
     def __iter__(self) -> Iterator[Row]:
         # we need a row iterator for every aggregation to be fully generic
         # since they potentially share no structure
-        from stupidb.window import window_agg
-
         aggregations = {
             aggname: aggspec
             for aggname, aggspec in self.projections.items()
@@ -123,7 +121,12 @@ class Projection(Relation):
         aggvalues = aggregations.values()
         aggrows = (
             dict(zip(aggnames, aggvalue))
-            for aggvalue in zip(*map(window_agg, rowterators, aggvalues))
+            for aggvalue in zip(
+                *(
+                    aggspec.compute_aggregation(rowterator)
+                    for aggspec, rowterator in zip(aggvalues, rowterators)
+                )
+            )
         )
 
         projections = {
