@@ -293,9 +293,11 @@ class AsymmetricJoin(Join):
         else:
             keys = self.mismatch_keys(row)
 
-        for i, row in enumerate(self.match_provider(self), start=k):
-            if row not in matches:
-                yield JoinedRow(row, dict.fromkeys(keys), _id=i)
+        non_matching_rows = (
+            row for row in self.match_provider(self) if row not in matches
+        )
+        for i, row in enumerate(non_matching_rows, start=k):
+            yield JoinedRow(row, dict.fromkeys(keys), _id=i)
 
 
 class LeftJoin(AsymmetricJoin):
