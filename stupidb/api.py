@@ -148,6 +148,8 @@ def sift(predicate: Predicate, child: Relation) -> Relation:
 def exists(relation: Relation) -> bool:
     """Compute whether any of the rows in `relation` are truthy.
 
+    Useful for specifying semi-joins
+
     Returns
     -------
     bool
@@ -187,6 +189,7 @@ def group_by(**group_by: PartitionBy) -> shiftable:
     return _group_by(group_by)
 
 
+# Set operations
 @shiftable
 def union(right: Relation, left: Relation) -> Relation:
     """Compute the set union of `left` and `right`."""
