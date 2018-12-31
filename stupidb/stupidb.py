@@ -260,8 +260,7 @@ class Join(Relation):
         self.predicate = predicate
 
     def __iter__(self) -> Iterator[Row]:
-        predicate = self.predicate
-        return (row for row in self.child if predicate(row))
+        return filter(self.predicate, self.child)
 
 
 class CrossJoin(Join):
