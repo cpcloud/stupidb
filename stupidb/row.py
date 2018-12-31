@@ -13,6 +13,11 @@ class Row(Mapping[str, Any]):
         self._data = data
         self._id = _id
 
+    def merge(self, other: Mapping[str, Any]) -> "Row":
+        return type(self)(
+            toolz.merge(self.data, getattr(other, "data", other)), _id=self._id
+        )
+
     def renew_id(self, _id: int) -> "Row":
         return type(self)(self.data, _id=_id)
 
