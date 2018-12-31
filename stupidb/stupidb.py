@@ -37,7 +37,6 @@ import operator
 from operator import methodcaller
 from typing import (
     Any,
-    Callable,
     FrozenSet,
     Iterable,
     Iterator,
@@ -233,12 +232,9 @@ class SortBy(Relation):
         )
 
 
-JoinPredicate = Callable[[Row], bool]
-
-
 class Join(Relation):
     def __init__(
-        self, left: Relation, right: Relation, predicate: JoinPredicate
+        self, left: Relation, right: Relation, predicate: Predicate
     ) -> None:
         self.left, left_ = itertools.tee(left)
         self.right, right_ = itertools.tee(right)
