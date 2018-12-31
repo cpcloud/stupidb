@@ -354,7 +354,7 @@ def test_right_shiftable(table, right_table):
     assert_rowset_equal(result, expected)
 
 
-def test_window(table, rows):
+def test_rows_window(table, rows):
     pipeline = (
         table
         >> mutate(
@@ -386,6 +386,47 @@ def test_window(table, rows):
         map(toolz.merge, rows, expected_aggrows),
         key=lambda r: (r["z"], r["e"]),
     )
+    assert len(result) == len(expected)
+    assert_rowset_equal(result, expected)
+
+
+def test_range_window(table, rows):
+    pipeline = (
+        table
+        >> mutate(
+            my_agg=sum(lambda r: r["a"])
+            >> over(
+                Window.range(
+                    order_by=[lambda r: r["e"]],
+                    partition_by=[lambda r: r["z"]],
+                    preceding=lambda r: 2,
+                    following=lambda r: 0,
+                )
+            )
+        )
+        >> order_by(lambda r: r["z"], lambda r: r["e"])
+        >> select(
+            a=lambda r: r.a,
+            e=lambda r: r.e,
+            my_agg=lambda r: r.my_agg,
+            z=lambda r: r.z,
+        )
+    )
+    result = list(pipeline)
+    expected_a = [
+        {"a": 1, "e": 1, "my_agg": 1, "z": "a"},
+        {"a": 3, "e": 3, "my_agg": 4, "z": "a"},
+        {"a": 4, "e": 4, "my_agg": 7, "z": "a"},
+        {"a": 1, "e": 5, "my_agg": 8, "z": "a"},
+    ]
+    expected_b = [
+        {"a": 2, "e": 2, "my_agg": 2, "z": "b"},
+        {"a": 2, "e": 6, "my_agg": 2, "z": "b"},
+        {"a": 3, "e": 7, "my_agg": 5, "z": "b"},
+    ]
+
+    expected = expected_a + expected_b
+
     assert len(result) == len(expected)
     assert_rowset_equal(result, expected)
 
