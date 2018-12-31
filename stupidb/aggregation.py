@@ -11,7 +11,6 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Sequence,
     Tuple,
     Type,
     Union,
@@ -77,13 +76,13 @@ Aggregate = Union[UnaryAggregate, BinaryAggregate]
 class FrameClause(abc.ABC):
     def __init__(
         self,
-        order_by: Sequence[OrderBy],
-        partition_by: Sequence[PartitionBy],
+        order_by: Iterable[OrderBy],
+        partition_by: Iterable[PartitionBy],
         preceding: Optional[Preceding],
         following: Optional[Following],
     ) -> None:
-        self._order_by = order_by
-        self._partition_by = partition_by
+        self._order_by = list(order_by)
+        self._partition_by = list(partition_by)
         self._preceding = preceding
         self._following = following
         ...
@@ -140,8 +139,8 @@ class RangeMode(FrameClause):
 class Window:
     @staticmethod
     def rows(
-        order_by: Sequence[OrderBy] = (),
-        partition_by: Sequence[PartitionBy] = (),
+        order_by: Iterable[OrderBy] = (),
+        partition_by: Iterable[PartitionBy] = (),
         preceding: Optional[Preceding] = None,
         following: Optional[Following] = None,
     ) -> FrameClause:
@@ -149,8 +148,8 @@ class Window:
 
     @staticmethod
     def range(
-        order_by: Sequence[OrderBy] = (),
-        partition_by: Sequence[PartitionBy] = (),
+        order_by: Iterable[OrderBy] = (),
+        partition_by: Iterable[PartitionBy] = (),
         preceding: Optional[Preceding] = None,
         following: Optional[Following] = None,
     ) -> FrameClause:
@@ -171,12 +170,9 @@ class AggregateSpecification(AbstractAggregateSpecification):
 
 
 def compute_partition_key(
-    row: Row, partition_by: Sequence[PartitionBy]
+    row: Row, partition_by: Iterable[PartitionBy]
 ) -> Tuple[Hashable, ...]:
-    partition_key = tuple(
-        partition_func(row) for partition_func in partition_by
-    )
-    return partition_key
+    return tuple(partition_func(row) for partition_func in partition_by)
 
 
 def make_key_func(order_by: Iterable[OrderBy]) -> Callable[[Row], Comparable]:
@@ -196,7 +192,7 @@ class WindowAggregateSpecification(AbstractAggregateSpecification):
         super().__init__(aggregate, *getters)
         self.frame_clause = frame_clause
 
-    def compute_aggregation(self, rows: Iterable[Row]) -> Any:
+    def compute(self, rows: Iterable[Row]) -> Any:
         """Aggregate `rows` over a window specified by `aggspec`."""
         frame_clause = self.frame_clause
         partition_by = frame_clause._partition_by
