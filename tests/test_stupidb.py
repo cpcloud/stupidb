@@ -146,12 +146,18 @@ def test_group_by(table, rows):
     assert_rowset_equal(result, expected)
 
 
-@pytest.mark.xfail(raises=ValueError)
 def test_cross_join(left_table, right_table, left, right):
-    join = left_table >> cross_join(right_table)
+    join = (
+        left_table
+        >> cross_join(right_table)
+        >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
+    )
     result = list(join)
     assert len(result) == len(left) * len(right)
-    expected = list(map(toolz.first, itertools.product(left, right)))
+    expected = [
+        {"left_z": l["z"], "right_z": r["z"]}
+        for l, r in list(itertools.product(left, right))
+    ]
     assert len(expected) == len(result)
     assert_rowset_equal(result, expected)
 
@@ -212,19 +218,26 @@ def test_left_join(left_table, right_table, left):
     assert_rowset_equal(result, expected)
 
 
-@pytest.mark.xfail
 def test_right_join(left_table, right_table, left):
     join = (
         left_table
-        >> right_join(right_table, lambda r: r.left["a"] == r.right["a"])
+        >> right_join(right_table, lambda r: r.left["z"] == r.right["z"])
         >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
     )
     result = list(join)
     expected = [
-        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
-        {"left_a": 3, "left_z": "a", "right_a": 3, "right_z": "b"},
-        {"left_a": 4, "left_z": "a", "right_a": 4, "right_z": "a"},
-        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
     ]
     assert_rowset_equal(result, expected)
 
