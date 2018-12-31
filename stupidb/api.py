@@ -1,39 +1,41 @@
-from typing import Any, Callable, Iterable, Iterator, Mapping, TypeVar
+from typing import Any, Callable, Iterable, Mapping, TypeVar
 
-import toolz
 from toolz import curry
 
+from stupidb.aggregation import (
+    AggregateSpecification,
+    Count,
+    FrameClause,
+    Mean,
+    PopulationCovariance,
+    SampleCovariance,
+    Sum,
+    Total,
+    WindowAggregateSpecification,
+)
 from stupidb.comparable import Comparable
 from stupidb.stupidb import (
-    AggregateSpecification,
     Aggregation,
     Aggregations,
-    Count,
     CrossJoin,
     Difference,
-    FrameClause,
     FullProjector,
     GroupBy,
     InnerJoin,
     Intersection,
     JoinPredicate,
-    Mean,
+    LeftJoin,
     Mutate,
     PartitionableIterable,
     PartitionBy,
-    PopulationCovariance,
     Projection,
     Relation,
+    RightJoin,
     Row,
-    SampleCovariance,
     Selection,
     SortBy,
-    Sum,
-    Total,
     Tuple,
-    UnaryRelation,
     Union,
-    WindowAggregateSpecification,
 )
 from stupidb.typehints import OrderBy, Predicate, RealGetter
 
@@ -46,25 +48,53 @@ class shiftable(curry):
 @shiftable
 def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     """Construct a relation from an iterable of mappings."""
-    return UnaryRelation(
+    return Relation(
         PartitionableIterable(
-            (Row.from_mapping(row, _id=id),) for id, row in enumerate(rows)
+            Row.from_mapping(row, _id=id) for id, row in enumerate(rows)
         )
     )
 
 
 @shiftable
-def cross_join(right: UnaryRelation, left: UnaryRelation) -> Relation:
+def cross_join(right: Relation, left: Relation) -> Relation:
     """Return the Cartesian product of tuples from `left` and `right`."""
     return CrossJoin(left, right)
 
 
 @shiftable
 def inner_join(
-    right: UnaryRelation, predicate: JoinPredicate, left: UnaryRelation
+    right: Relation, predicate: JoinPredicate, left: Relation
 ) -> Relation:
-    """Join `left` and `right` relations using `predicate`."""
+    """Join `left` and `right` relations using `predicate`.
+
+    Drop rows if `predicate` returns ``False``.
+
+    """
     return InnerJoin(left, right, predicate)
+
+
+@shiftable
+def left_join(
+    right: Relation, predicate: JoinPredicate, left: Relation
+) -> Relation:
+    """Join `left` and `right` relations using `predicate`.
+
+    Drop rows if `predicate` returns ``False``.
+
+    """
+    return LeftJoin(left, right, predicate)
+
+
+@shiftable
+def right_join(
+    right: Relation, predicate: JoinPredicate, left: Relation
+) -> Relation:
+    """Join `left` and `right` relations using `predicate`.
+
+    Drop rows if `predicate` returns ``False``.
+
+    """
+    return RightJoin(left, right, predicate)
 
 
 @shiftable
@@ -110,12 +140,12 @@ def mutate(**mutators: FullProjector) -> shiftable:
 
 
 @shiftable
-def sift(predicate: Predicate, child: UnaryRelation) -> Relation:
+def sift(predicate: Predicate, child: Relation) -> Relation:
     """Filter rows in `child` according to `predicate`."""
     return Selection(child, predicate)
 
 
-def exists(relation: UnaryRelation) -> bool:
+def exists(relation: Relation) -> bool:
     """Compute whether any of the rows in `relation` are truthy.
 
     Returns
@@ -123,7 +153,7 @@ def exists(relation: UnaryRelation) -> bool:
     bool
 
     """
-    return any(relation >> do())
+    return any(relation)
 
 
 @shiftable
@@ -147,7 +177,7 @@ def over(
 
 @shiftable
 def _group_by(
-    group_by: Mapping[str, PartitionBy], child: UnaryRelation
+    group_by: Mapping[str, PartitionBy], child: Relation
 ) -> Relation:
     return GroupBy(child, group_by)
 
@@ -158,34 +188,21 @@ def group_by(**group_by: PartitionBy) -> shiftable:
 
 
 @shiftable
-def union(right: UnaryRelation, left: UnaryRelation) -> Relation:
+def union(right: Relation, left: Relation) -> Relation:
     """Compute the set union of `left` and `right`."""
     return Union(left, right)
 
 
 @shiftable
-def intersection(right: UnaryRelation, left: UnaryRelation) -> Relation:
+def intersection(right: Relation, left: Relation) -> Relation:
     """Compute the set intersection of `left` and `right`."""
     return Intersection(left, right)
 
 
 @shiftable
-def difference(right: UnaryRelation, left: UnaryRelation) -> Relation:
+def difference(right: Relation, left: Relation) -> Relation:
     """Compute the set difference of `left` and `right`."""
     return Difference(left, right)
-
-
-@shiftable
-def do(child: UnaryRelation) -> Iterator[Row]:
-    """Pull the :class:`~stupidb.row.Row` instances out of `child`.
-
-    Notes
-    -----
-    All operations should call this to materialize rows. Call the builtin
-    ``list`` function on the result of ``do()`` to produce a list of rows.
-
-    """
-    return map(toolz.first, child)
 
 
 V = TypeVar("V")

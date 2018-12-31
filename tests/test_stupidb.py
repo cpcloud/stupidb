@@ -13,22 +13,23 @@ from stupidb.api import (
     aggregate,
     count,
     cross_join,
-    do,
     exists,
     group_by,
     inner_join,
+    left_join,
     mean,
     mutate,
     order_by,
     over,
     pop_cov,
+    right_join,
     samp_cov,
     select,
     sift,
     sum,
 )
 from stupidb.api import table as table_
-from stupidb.stupidb import Window
+from stupidb.aggregation import Window
 
 
 @pytest.fixture
@@ -51,7 +52,15 @@ def left(rows):
 
 @pytest.fixture
 def right(rows):
-    return rows[3:]
+    return [
+        dict(z="a", a=1, b=2, e=1),
+        dict(z="c", a=2, b=-1, e=2),
+        dict(z="a", a=3, b=4, e=3),
+        dict(z="c", a=4, b=-3, e=4),
+        dict(z="a", a=1, b=-3, e=5),
+        dict(z="c", a=2, b=-3, e=6),
+        dict(z="c", a=3, b=-3, e=7),
+    ]
 
 
 def assert_rowset_equal(left, right):
@@ -77,7 +86,7 @@ def right_table(right):
 @pytest.fixture
 def test_table(table, rows):
     expected = rows[:]
-    op = table_(rows) >> do()
+    op = table_(rows)
     result = list(op)
     assert_rowset_equal(result, expected)
     assert set(table_(rows).columns) == set(rows[0].keys())
@@ -93,10 +102,8 @@ def test_projection(table, rows):
         dict(z="b", c=2, d=-3),
         dict(z="b", c=3, d=-3),
     ]
-    pipeline = (
-        table
-        >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
-        >> do()
+    pipeline = table >> select(
+        c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"]
     )
     result = list(pipeline)
     assert_rowset_equal(result, expected)
@@ -116,7 +123,6 @@ def test_selection(table, rows):
         table
         >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
         >> sift(lambda r: True)
-        >> do()
     )
     assert_rowset_equal(selection, expected)
 
@@ -136,13 +142,14 @@ def test_group_by(table, rows):
         >> group_by(c=lambda r: r["c"], z=lambda r: r["z"])
         >> aggregate(total=sum(lambda r: r["d"]), mean=mean(lambda r: r["d"]))
     )
-    result = list(gb >> do())
+    result = list(gb)
     assert_rowset_equal(result, expected)
 
 
+@pytest.mark.xfail(raises=ValueError)
 def test_cross_join(left_table, right_table, left, right):
     join = left_table >> cross_join(right_table)
-    result = list(join >> do())
+    result = list(join)
     assert len(result) == len(left) * len(right)
     expected = list(map(toolz.first, itertools.product(left, right)))
     assert len(expected) == len(result)
@@ -153,17 +160,66 @@ def test_inner_join(left_table, right_table, left):
     join = (
         left_table
         >> inner_join(
-            right_table, lambda l, r: l["z"] == "a" and l["a"] == r["a"]
+            right_table,
+            lambda r: (
+                r.left["z"] == "a"
+                and r.right["z"] == "a"
+                and r.left["a"] == r.right["a"]
+            ),
         )
         >> select(
-            left_a=lambda l, r: l["a"],
-            right_a=lambda l, r: r["a"],
-            right_z=lambda l, r: r["z"],
-            left_z=lambda l, r: l["z"],
+            left_a=lambda r: r.left["a"],
+            right_a=lambda r: r.right["a"],
+            right_z=lambda r: r.right["z"],
+            left_z=lambda r: r.left["z"],
         )
     )
-    pipeline = join >> do()
-    result = list(pipeline)
+    result = list(join)
+    expected = [
+        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
+        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
+        {"left_a": 3, "left_z": "a", "right_a": 3, "right_z": "a"},
+        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
+        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
+    ]
+    assert_rowset_equal(result, expected)
+
+
+def test_left_join(left_table, right_table, left):
+    join = (
+        left_table
+        >> left_join(right_table, lambda r: r.left["z"] == r.right["z"])
+        >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
+    )
+    result = list(join)
+    expected = [
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "a", "right_z": "a"},
+        {"left_z": "b", "right_z": None},
+        {"left_z": "b", "right_z": None},
+        {"left_z": "b", "right_z": None},
+    ]
+    assert_rowset_equal(result, expected)
+
+
+@pytest.mark.xfail
+def test_right_join(left_table, right_table, left):
+    join = (
+        left_table
+        >> right_join(right_table, lambda r: r.left["a"] == r.right["a"])
+        >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
+    )
+    result = list(join)
     expected = [
         {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
         {"left_a": 3, "left_z": "a", "right_a": 3, "right_z": "b"},
@@ -171,16 +227,6 @@ def test_inner_join(left_table, right_table, left):
         {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
     ]
     assert_rowset_equal(result, expected)
-
-
-@pytest.mark.xfail(raises=AssertionError, reason="Not yet implemented")
-def test_left_join():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason="Not yet implemented")
-def test_right_join():
-    assert False
 
 
 def test_semi_join():
@@ -205,7 +251,7 @@ def test_semi_join():
             table_(other_rows) >> sift(lambda o: r["z"] == o["z"])
         )
     )
-    result = list(pipeline >> do())
+    result = list(pipeline)
     assert result == rows
 
 
@@ -226,7 +272,7 @@ def test_semi_join_not_all_rows_match():
             table_(other_rows) >> sift(lambda o: r["z"] == o["z"])
         )
     )
-    result = list(pipeline >> do())
+    result = list(pipeline)
     expected = [row for row in rows if row["z"] == "b"]
     assert result == expected
 
@@ -287,7 +333,7 @@ def test_right_shiftable(table, right_table):
             "z": "b",
         },
     ]
-    result = list(pipeline >> do())
+    result = list(pipeline)
     assert_rowset_equal(result, expected)
 
 
@@ -307,7 +353,7 @@ def test_window(table, rows):
         )
         >> order_by(lambda r: r["z"], lambda r: r["e"])
     )
-    result = list(pipeline >> do())
+    result = list(pipeline)
     expected_aggrows = [
         {"my_agg": 1},
         {"my_agg": 2},
@@ -333,7 +379,7 @@ def test_agg(table, rows):
         mean=mean(lambda r: r["e"]),
         count=count(lambda r: r["e"]),
     )
-    result, = list(pipeline >> do())
+    result, = list(pipeline)
     assert result["sum"] == 28
     assert result["mean"] == result["sum"] / result["count"]
 

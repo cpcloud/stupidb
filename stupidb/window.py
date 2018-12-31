@@ -1,12 +1,22 @@
 import collections
 import itertools
-from typing import Any, Hashable, Iterable, Iterator, List, Sequence, Tuple
+from typing import (
+    Any,
+    Callable,
+    Hashable,
+    Iterable,
+    Iterator,
+    List,
+    Sequence,
+    Tuple,
+)
 
 from typing_extensions import DefaultDict
 
+from stupidb.comparable import Comparable
 from stupidb.row import Row
 from stupidb.stupidb import WindowAggregateSpecification
-from stupidb.typehints import Following, PartitionBy, Preceding
+from stupidb.typehints import Following, OrderBy, PartitionBy, Preceding
 
 
 def compute_partition_key(
@@ -40,8 +50,15 @@ def compute_window_frame(
     return possible_peers[start:stop]
 
 
+def make_key_func(order_by: Iterable[OrderBy]) -> Callable[[Row], Comparable]:
+    def key(row: Row) -> Tuple[Comparable, ...]:
+        return tuple(order_func(row) for order_func in order_by)
+
+    return key
+
+
 def window_agg(
-    rows: Iterable[Tuple[Row]], aggspec: WindowAggregateSpecification
+    rows: Iterable[Row], aggspec: WindowAggregateSpecification
 ) -> Iterator[Any]:
     frame_clause = aggspec.frame_clause
     partition_by = frame_clause._partition_by
@@ -54,19 +71,18 @@ def window_agg(
 
     # partition
     rows1, rows2 = itertools.tee(rows)
-    for (row,) in rows1:
+    for row in rows1:
         partition_key = compute_partition_key(row, partition_by)
         raw_partitions[partition_key].append(row)
 
     partitions = dict(raw_partitions)
 
     # sort
+    key = make_key_func(order_by)
     for partition_key in partitions.keys():
-        partitions[partition_key].sort(
-            key=lambda row: tuple(order_func(row) for order_func in order_by)
-        )
+        partitions[partition_key].sort(key=key)
 
-    for (row,) in rows2:
+    for row in rows2:
         # compute the partition the row is in
         partition_key = compute_partition_key(row, partition_by)
         possible_peers = partitions[partition_key]
