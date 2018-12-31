@@ -8,6 +8,7 @@ from typing import (
     Generic,
     Hashable,
     Iterable,
+    Iterator,
     List,
     Mapping,
     Optional,
@@ -116,24 +117,7 @@ class RowsMode(FrameClause):
 
 
 class RangeMode(FrameClause):
-    def compute_window_frame(
-        self, current_row: Row, partition_id: int, possible_peers: List[Row]
-    ) -> List[Row]:
-        npeers = len(possible_peers)
-        preceding = self._preceding
-        if preceding is not None:
-            start = max(partition_id - preceding(current_row), 0)
-        else:
-            start = 0
-
-        following = self._following
-        if following is not None:
-            # because of zero-based indexing we must add one to `stop` to make
-            # sure the current row is included
-            stop = min(partition_id + following(current_row) + 1, npeers)
-        else:
-            stop = npeers
-        return possible_peers[start:stop]
+    pass
 
 
 class Window:
@@ -172,7 +156,9 @@ class AggregateSpecification(AbstractAggregateSpecification):
 def compute_partition_key(
     row: Row, partition_by: Iterable[PartitionBy]
 ) -> Tuple[Hashable, ...]:
-    return tuple(partition_func(row) for partition_func in partition_by)
+    return tuple(
+        partition_func(row) for partition_func in partition_by
+    )
 
 
 def make_key_func(order_by: Iterable[OrderBy]) -> Callable[[Row], Comparable]:
@@ -192,7 +178,7 @@ class WindowAggregateSpecification(AbstractAggregateSpecification):
         super().__init__(aggregate, *getters)
         self.frame_clause = frame_clause
 
-    def compute(self, rows: Iterable[Row]) -> Any:
+    def compute(self, rows: Iterable[Row]) -> Iterator[Any]:
         """Aggregate `rows` over a window specified by `aggspec`."""
         frame_clause = self.frame_clause
         partition_by = frame_clause._partition_by

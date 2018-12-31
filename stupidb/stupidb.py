@@ -103,12 +103,12 @@ class Projection(Relation):
         self, child: Relation, projections: Mapping[str, FullProjector]
     ) -> None:
         super().__init__(child)
-        self.aggregations = {
+        self.aggregations: Mapping[str, WindowAggregateSpecification] = {
             aggname: aggspec
             for aggname, aggspec in projections.items()
             if isinstance(aggspec, WindowAggregateSpecification)
         }
-        self.projections = {
+        self.projections: Mapping[str, Projector] = {
             name: projector
             for name, projector in projections.items()
             if callable(projector)
@@ -124,6 +124,10 @@ class Projection(Relation):
         child, *rowterators = itertools.tee(self.child, len(aggregations) + 1)
         aggnames = aggregations.keys()
         aggvalues = aggregations.values()
+
+        # The .compute method returns an iterator of aggregation results
+        # Each element of the iterator is the result of a single column in a
+        # single row of the corresponding window function
         aggrows = (
             dict(zip(aggnames, aggrow))
             for aggrow in zip(
@@ -142,6 +146,8 @@ class Projection(Relation):
             for row in child
         )
 
+        # Use zip_longest here, because either of aggrows or projrows can be
+        # empty
         for i, (aggrow, projrow) in enumerate(
             itertools.zip_longest(aggrows, projrows, fillvalue={})
         ):
@@ -152,7 +158,8 @@ class Mutate(Projection):
     def __iter__(self) -> Iterator[Row]:
         # reasign self.child here to avoid clobbering its iteration
         # we need to use it twice: once for the computed columns (self.child)
-        # and once for the original relation (child)
+        # used during the iteration of super().__iter__() and once for the
+        # original relation (child)
         child, self.child = itertools.tee(self.child)
         for i, row in enumerate(map(toolz.merge, child, super().__iter__())):
             yield Row.from_mapping(row, _id=i)
