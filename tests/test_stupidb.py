@@ -9,6 +9,7 @@ import operator
 import pytest
 import toolz
 
+from stupidb.aggregation import Window
 from stupidb.api import (
     aggregate,
     count,
@@ -29,7 +30,6 @@ from stupidb.api import (
     sum,
 )
 from stupidb.api import table as table_
-from stupidb.aggregation import Window
 
 
 @pytest.fixture
