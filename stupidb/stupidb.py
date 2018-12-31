@@ -285,11 +285,10 @@ class AsymmetricJoin(Join):
     def __iter__(self) -> Iterator[Row]:
         matches: Set[Row] = set()
         k = 0
-        for row in self.child:
-            if self.predicate(row):
-                matches.add(self.match_provider(row))
-                yield row.renew_id(k)
-                k += 1
+        for row in filter(self.predicate, self.child):
+            matches.add(self.match_provider(row))
+            yield row.renew_id(k)
+            k += 1
         else:
             keys = self.mismatch_keys(row)
 
