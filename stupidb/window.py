@@ -32,8 +32,8 @@ def compute_window_frame(
         start = 0
 
     if following is not None:
-        # because of slice semantics, which are based on zero-based indexing,
-        # we must add one to `stop` to make sure the current row is included
+        # because of zero-based indexing we must add one to `stop` to make sure
+        # the current row is included
         stop = min(partition_id + following(current_row) + 1, npeers)
     else:
         stop = npeers
