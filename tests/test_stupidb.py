@@ -238,6 +238,10 @@ def test_right_join(left_table, right_table, left):
         {"left_z": "a", "right_z": "a"},
         {"left_z": "a", "right_z": "a"},
         {"left_z": "a", "right_z": "a"},
+        {"left_z": "c", "right_z": None},
+        {"left_z": "c", "right_z": None},
+        {"left_z": "c", "right_z": None},
+        {"left_z": "c", "right_z": None},
     ]
     assert_rowset_equal(result, expected)
 

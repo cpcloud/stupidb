@@ -304,7 +304,7 @@ class LeftJoin(AsymmetricJoin):
         return row.right.keys()
 
 
-class RightJoin(Join):
+class RightJoin(AsymmetricJoin):
     @property
     def match_provider(self):
         return operator.attrgetter("right")
