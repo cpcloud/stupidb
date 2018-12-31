@@ -39,9 +39,6 @@ from stupidb.typehints import OrderBy, Predicate, RealGetter
 
 
 class shiftable(curry):
-    def __rshift__(self, other: "shiftable") -> Relation:
-        return other(self)
-
     def __rrshift__(self, other: Relation) -> Relation:
         return self(other)
 
