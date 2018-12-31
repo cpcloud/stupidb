@@ -156,7 +156,7 @@ class Mutate(Projection):
         # and once for the original relation (child)
         child, self.child = itertools.tee(self.child)
         for i, row in enumerate(map(toolz.merge, child, super().__iter__())):
-            yield row.renew_id(i)
+            yield Row.from_mapping(row, _id=i)
 
 
 Aggregations = Mapping[str, AggregateSpecification]
