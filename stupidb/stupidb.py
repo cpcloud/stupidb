@@ -288,8 +288,8 @@ class AsymmetricJoin(Join):
         for row in self.child:
             if self.predicate(row):
                 matches.add(self.match_provider(row))
-                yield row
-            k += 1
+                yield row.renew_id(k)
+                k += 1
         else:
             keys = self.mismatch_keys(row)
 
