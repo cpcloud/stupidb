@@ -97,7 +97,7 @@ def select(**projectors: FullProjector) -> shiftable:
         or isinstance(projector, WindowAggregateSpecification)
     }
     if len(valid_projectors) != len(projectors):
-        raise TypeError('Invalid projection')
+        raise TypeError("Invalid projection")
     return _select(projectors)
 
 
