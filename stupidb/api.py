@@ -79,7 +79,8 @@ def left_join(
 ) -> Relation:
     """Join `left` and `right` relations using `predicate`.
 
-    Drop rows if `predicate` returns ``False``.
+    Drop rows if `predicate` returns ``False``.  Returns at least one of every
+    row from `left`.
 
     """
     return LeftJoin(left, right, predicate)
@@ -91,7 +92,8 @@ def right_join(
 ) -> Relation:
     """Join `left` and `right` relations using `predicate`.
 
-    Drop rows if `predicate` returns ``False``.
+    Drop rows if `predicate` returns ``False``.  Returns at least one of every
+    row from `right`.
 
     """
     return RightJoin(left, right, predicate)
