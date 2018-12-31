@@ -1,5 +1,5 @@
 from numbers import Real
-from typing import Callable, Hashable, Optional, Tuple, TypeVar, Union
+from typing import Callable, Hashable, Optional, Tuple, TypeVar
 
 from stupidb.comparable import Comparable
 from stupidb.row import Row
@@ -13,9 +13,7 @@ Following = Preceding
 
 Predicate = Callable[[Row], bool]
 
-UnaryProjector = Callable[[Row], Row]
-BinaryProjector = Callable[[Row, Row], Row]
-Projector = Union[UnaryProjector, BinaryProjector]
+Projector = Callable[[Row], Row]
 
 Input = TypeVar("Input")
 Input1 = TypeVar("Input1")

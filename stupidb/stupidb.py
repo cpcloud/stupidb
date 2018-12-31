@@ -39,7 +39,6 @@ from typing import (
     Any,
     Callable,
     FrozenSet,
-    Generic,
     Iterable,
     Iterator,
     Mapping,
@@ -234,7 +233,7 @@ class SortBy(Relation):
         )
 
 
-JoinPredicate = Callable[[JoinedRow], bool]
+JoinPredicate = Callable[[Row], bool]
 
 
 class Join(Relation):

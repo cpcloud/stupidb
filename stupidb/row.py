@@ -51,7 +51,9 @@ class Row(Mapping[str, Any]):
 
 
 class JoinedRow(Row):
-    def __init__(self, left: Row, right: Row, _id: int) -> None:
+    def __init__(
+        self, left: Mapping[str, Any], right: Mapping[str, Any], _id: int
+    ) -> None:
         self.left = Row.from_mapping(left, _id=_id)
         self.right = Row.from_mapping(right, _id=_id)
         self._overlapping_keys = left.keys() & right.keys()
