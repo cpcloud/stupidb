@@ -222,7 +222,7 @@ class SortBy(Relation):
 
     def __iter__(self) -> Iterator[Row]:
         yield from sorted(
-            (row for row in self.child),
+            self.child,
             key=lambda row: tuple(
                 order_func(row) for order_func in self.order_by
             ),
