@@ -73,6 +73,14 @@ class Partitionable(abc.ABC):
     def __iter__(self) -> Iterator[Row]:
         return iter(self.rows)
 
+    @classmethod
+    def from_iterable(
+        cls, iterable: Iterable[Mapping[str, Any]]
+    ) -> "Partitionable":
+        return cls(
+            Row.from_mapping(row, _id=i) for i, row in enumerate(iterable)
+        )
+
 
 class Relation(Partitionable):
     """A relation."""

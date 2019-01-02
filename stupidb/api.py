@@ -48,11 +48,7 @@ class shiftable(curry):
 @shiftable
 def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     """Construct a relation from an iterable of mappings."""
-    return Relation(
-        Partitionable(
-            Row.from_mapping(row, _id=id) for id, row in enumerate(rows)
-        )
-    )
+    return Relation(Partitionable.from_iterable(rows))
 
 
 @shiftable
