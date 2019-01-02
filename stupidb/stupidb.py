@@ -64,7 +64,7 @@ from stupidb.typehints import (
 
 
 class Partitionable(abc.ABC):
-    def __init__(self, rows: Iterable[Row]):
+    def __init__(self, rows: Iterable[Row]) -> None:
         self.rows = rows
 
     def partition_key(self, row: Row) -> PartitionKey:
