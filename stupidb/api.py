@@ -25,7 +25,7 @@ from stupidb.stupidb import (
     Intersection,
     LeftJoin,
     Mutate,
-    PartitionableIterable,
+    Partitionable,
     PartitionBy,
     Predicate,
     Projection,
@@ -49,7 +49,7 @@ class shiftable(curry):
 def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     """Construct a relation from an iterable of mappings."""
     return Relation(
-        PartitionableIterable(
+        Partitionable(
             Row.from_mapping(row, _id=id) for id, row in enumerate(rows)
         )
     )

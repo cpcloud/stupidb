@@ -64,17 +64,11 @@ from stupidb.typehints import (
 
 
 class Partitionable(abc.ABC):
-    def partition_key(self, row: Row) -> PartitionKey:
-        return ()
-
-    @abc.abstractmethod
-    def __iter__(self) -> Iterator[Row]:
-        ...
-
-
-class PartitionableIterable(Partitionable):
     def __init__(self, rows: Iterable[Row]):
         self.rows = rows
+
+    def partition_key(self, row: Row) -> PartitionKey:
+        return ()
 
     def __iter__(self) -> Iterator[Row]:
         return iter(self.rows)
@@ -86,11 +80,8 @@ class Relation(Partitionable):
     def __init__(self, child: Partitionable) -> None:
         self.child = child
 
-    def operate(self, row: Row) -> Optional[Row]:
-        return row
-
     def __iter__(self) -> Iterator[Row]:
-        for id, row in enumerate(filter(None, map(self.operate, self.child))):
+        for id, row in enumerate(filter(None, self.child)):
             yield row.renew_id(id)
 
 
@@ -206,8 +197,9 @@ class Selection(Relation):
         super().__init__(child)
         self.predicate = predicate
 
-    def operate(self, row: Row) -> Optional[Row]:
-        return row if self.predicate(row) else None
+    def __iter__(self) -> Iterator[Row]:
+        for id, row in enumerate(filter(self.predicate, self.child)):
+            yield row.renew_id(id)
 
 
 class GroupBy(Relation):
@@ -216,9 +208,6 @@ class GroupBy(Relation):
     ) -> None:
         super().__init__(child)
         self.group_by = group_by
-
-    def __iter__(self) -> Iterator[Row]:
-        return iter(self.child)
 
     def partition_key(self, row: Row) -> PartitionKey:
         return tuple(
@@ -247,7 +236,7 @@ class Join(Relation):
         self.left, left_ = itertools.tee(left)
         self.right, right_ = itertools.tee(right)
         super().__init__(
-            PartitionableIterable(
+            Partitionable(
                 (
                     JoinedRow(l, r, _id=i)
                     for i, (l, r) in enumerate(
