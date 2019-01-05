@@ -34,7 +34,16 @@ import functools
 import itertools
 import operator
 from operator import methodcaller
-from typing import Any, FrozenSet, Iterable, Iterator, Mapping, Set, Tuple
+from typing import (
+    Any,
+    FrozenSet,
+    Iterable,
+    Iterator,
+    Mapping,
+    NoReturn,
+    Set,
+    Tuple,
+)
 from typing import Union as Union_
 
 import toolz as toolz
@@ -248,6 +257,10 @@ class Join(Relation):
 
     def __iter__(self) -> Iterator[Row]:
         return filter(self.predicate, self.child)
+
+    @classmethod
+    def from_iterable(cls, *args, **kwargs) -> NoReturn:
+        raise TypeError(f"from_iterable not supported for {cls.__name__} type")
 
 
 class CrossJoin(Join):
