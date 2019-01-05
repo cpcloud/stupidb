@@ -24,6 +24,8 @@ import toolz
 
 from stupidb.row import Row
 from stupidb.typehints import (
+    R1,
+    R2,
     Following,
     Input1,
     Input2,
@@ -32,13 +34,11 @@ from stupidb.typehints import (
     PartitionBy,
     Preceding,
     R,
-    R1,
-    R2,
 )
 
 
 class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
-    __slots__ = 'count',
+    __slots__ = ("count",)
 
     def __init__(self) -> None:
         self.count = 0
@@ -53,7 +53,7 @@ class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
 
 
 class BinaryAggregate(Generic[Input1, Input2, Output], metaclass=abc.ABCMeta):
-    __slots__ = 'count',
+    __slots__ = ("count",)
 
     def __init__(self) -> None:
         self.count = 0
@@ -342,7 +342,7 @@ class Count(UnaryAggregate[Input1, int]):
 
 
 class Sum(UnaryAggregate[R1, R2]):
-    __slots__ = 'total',
+    __slots__ = ("total",)
 
     def __init__(self) -> None:
         super().__init__()
@@ -373,7 +373,7 @@ class Mean(Sum[R1, R2]):
 
 
 class Covariance(BinaryAggregate[R, R, float]):
-    __slots__ = 'meanx', 'meany', 'cov', 'ddof'
+    __slots__ = "meanx", "meany", "cov", "ddof"
 
     def __init__(self, *, ddof: int) -> None:
         super().__init__()
