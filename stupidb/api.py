@@ -170,9 +170,7 @@ def aggregate(**aggregations: AggregateSpecification) -> shiftable:
 def over(
     window: FrameClause, child: AggregateSpecification
 ) -> WindowAggregateSpecification:
-    return WindowAggregateSpecification(
-        window, child.aggregate, *child.getters
-    )
+    return WindowAggregateSpecification(child.aggregate, child.getters, window)
 
 
 @shiftable
@@ -211,24 +209,24 @@ V = TypeVar("V")
 
 # Aggregations
 def count(getter: Callable[[Row], V]) -> AggregateSpecification:
-    return AggregateSpecification(Count, getter)
+    return AggregateSpecification(Count, (getter,))
 
 
 def sum(getter: RealGetter) -> AggregateSpecification:
-    return AggregateSpecification(Sum, getter)
+    return AggregateSpecification(Sum, (getter,))
 
 
 def total(getter: RealGetter) -> AggregateSpecification:
-    return AggregateSpecification(Total, getter)
+    return AggregateSpecification(Total, (getter,))
 
 
 def mean(getter: RealGetter) -> AggregateSpecification:
-    return AggregateSpecification(Mean, getter)
+    return AggregateSpecification(Mean, (getter,))
 
 
 def samp_cov(arg1: RealGetter, arg2: RealGetter) -> AggregateSpecification:
-    return AggregateSpecification(SampleCovariance, arg1, arg2)
+    return AggregateSpecification(SampleCovariance, (arg1, arg2))
 
 
 def pop_cov(arg1: RealGetter, arg2: RealGetter) -> AggregateSpecification:
-    return AggregateSpecification(PopulationCovariance, arg1, arg2)
+    return AggregateSpecification(PopulationCovariance, (arg1, arg2))
