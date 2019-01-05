@@ -24,7 +24,7 @@ Features
 Requirements
 ------------
 * All implementations must be as naive as possible
-* Unless an optimization is ridiculously trivial, don't try and implement it
+* Unless an optimization is ridiculously trivial, don't implement it
 
 """
 
