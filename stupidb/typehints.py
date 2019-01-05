@@ -21,4 +21,6 @@ Input2 = TypeVar("Input2")
 Output = TypeVar("Output")
 
 R = TypeVar("R", bound=Real)
+R1 = TypeVar("R1", bound=Real)
+R2 = TypeVar("R2", bound=Real)
 RealGetter = Callable[[Row], R]
