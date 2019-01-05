@@ -2,6 +2,7 @@ import abc
 import collections
 import itertools
 import typing
+from operator import itemgetter
 from typing import (
     Any,
     Callable,
@@ -12,10 +13,14 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
     Tuple,
     Type,
     Union,
 )
+
+import attr
+import toolz
 
 from stupidb.row import Row
 from stupidb.typehints import (
@@ -27,10 +32,17 @@ from stupidb.typehints import (
     PartitionBy,
     Preceding,
     R,
+    R1,
+    R2,
 )
 
 
 class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
+    __slots__ = 'count',
+
+    def __init__(self) -> None:
+        self.count = 0
+
     @abc.abstractmethod
     def step(self, input1: Optional[Input1]) -> None:
         ...
@@ -40,16 +52,12 @@ class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
         ...
 
 
-class UnaryWindowAggregate(UnaryAggregate[Input1, Output]):
-    @abc.abstractmethod
-    def inverse(self, input1: Optional[Input1]) -> None:
-        ...
+class BinaryAggregate(Generic[Input1, Input2, Output], metaclass=abc.ABCMeta):
+    __slots__ = 'count',
 
-    def value(self) -> Optional[Output]:
-        return self.finalize()
+    def __init__(self) -> None:
+        self.count = 0
 
-
-class BinaryAggregate(Generic[Input1, Input2, Output]):
     @abc.abstractmethod
     def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
         ...
@@ -59,51 +67,34 @@ class BinaryAggregate(Generic[Input1, Input2, Output]):
         ...
 
 
-class BinaryWindowAggregate(BinaryAggregate[Input1, Input2, Output]):
-    @abc.abstractmethod
-    def inverse(
-        self, input1: Optional[Input1], input2: Optional[Input2]
-    ) -> None:
-        ...
-
-    def value(self) -> Optional[Output]:
-        return self.finalize()
-
-
 Aggregate = Union[UnaryAggregate, BinaryAggregate]
 
 
+@attr.s(frozen=True, slots=True)
 class FrameClause(abc.ABC):
-    def __init__(
-        self,
-        order_by: Iterable[OrderBy],
-        partition_by: Iterable[PartitionBy],
-        preceding: Optional[Preceding],
-        following: Optional[Following],
-    ) -> None:
-        self.order_by = list(order_by)
-        self.partition_by = list(partition_by)
-        self.preceding = preceding
-        self.following = following
-        ...
+    order_by = attr.ib(converter=list, type=Iterable[OrderBy])
+    partition_by = attr.ib(converter=list, type=Iterable[PartitionBy])
+    preceding = attr.ib(type=Preceding)
+    following = attr.ib(type=Following)
 
     @abc.abstractmethod
     def compute_window_frame(
         self,
-        possible_peers: List[Row],
+        possible_peers: Sequence[Row],
         partition_id: int,
-        order_by_columns: List[str],
-    ) -> Tuple[Optional[int], Optional[int]]:
+        order_by_columns: Sequence[str],
+    ) -> Tuple[int, int]:
         ...
 
 
+@attr.s(frozen=True, slots=True)
 class RowsMode(FrameClause):
     def compute_window_frame(
         self,
-        possible_peers: List[Row],
+        possible_peers: Sequence[Row],
         partition_id: int,
-        order_by_columns: List[str],
-    ) -> Tuple[Optional[int], Optional[int]]:
+        order_by_columns: Sequence[str],
+    ) -> Tuple[int, int]:
         current_row = possible_peers[partition_id]
         npeers = len(possible_peers)
         preceding = self.preceding
@@ -122,56 +113,60 @@ class RowsMode(FrameClause):
         return start, stop
 
 
+@attr.s(frozen=True, slots=True)
 class RangeMode(FrameClause):
     def find_partition_begin(
         self,
-        possible_peers: List[Row],
+        possible_peers: Sequence[Row],
         partition_id: int,
         order_by_column: str,
     ) -> int:
         preceding = self.preceding
-        assert preceding is not None
+        assert preceding is not None, "preceding is None"
 
         current_row = possible_peers[partition_id]
-
-        # add one to make sure we include the current row
-        peers = possible_peers[: partition_id + 1]
+        last_peer = partition_id + 1  # include the current row
+        peers = possible_peers[:last_peer]
         delta_preceding = preceding(current_row)
         current_row_order_by_value = current_row[order_by_column]
-        for index, peer in enumerate(peers):
-            order_by_value = peer[order_by_column]
-            if current_row_order_by_value - order_by_value <= delta_preceding:
-                return index
-        return -1
+        return toolz.first(
+            index
+            for index, order_by_value in enumerate(
+                map(itemgetter(order_by_column), peers)
+            )
+            if current_row_order_by_value - order_by_value <= delta_preceding
+        )
 
     def find_partition_end(
         self,
-        possible_peers: List[Row],
+        possible_peers: Sequence[Row],
         partition_id: int,
         order_by_column: str,
     ) -> int:
         following = self.following
-        assert following is not None
+        assert following is not None, "following is None"
 
         current_row = possible_peers[partition_id]
         delta_following = following(current_row)
         current_row_order_by_value = current_row[order_by_column]
         npeers = len(possible_peers)
         indexes = range(npeers - 1, partition_id - 1, -1)
-        for index in indexes:
-            peer = possible_peers[index]
-            order_by_value = peer[order_by_column]
-            if order_by_value - current_row_order_by_value <= delta_following:
-                # add one to make sure we include the current row
-                return index + 1
-        return -1
+        return toolz.first(
+            # add one to make sure we include the current row
+            index + 1
+            for index, peer in zip(
+                indexes, map(possible_peers.__getitem__, indexes)
+            )
+            if peer[order_by_column] - current_row_order_by_value
+            <= delta_following
+        )
 
     def compute_window_frame(
         self,
-        possible_peers: List[Row],
+        possible_peers: Sequence[Row],
         partition_id: int,
-        order_by_columns: List[str],
-    ) -> Tuple[Optional[int], Optional[int]]:
+        order_by_columns: Sequence[str],
+    ) -> Tuple[int, int]:
         ncolumns = len(order_by_columns)
         if ncolumns != 1:
             raise ValueError(
@@ -199,6 +194,7 @@ class RangeMode(FrameClause):
         return start, stop
 
 
+@attr.s(frozen=True, slots=True)
 class Window:
     @staticmethod
     def rows(
@@ -222,12 +218,13 @@ class Window:
 Getter = Callable[[Row], Any]
 
 
+@attr.s(frozen=True, slots=True)
 class AbstractAggregateSpecification:
-    def __init__(self, aggregate: Type[Aggregate], *getters: Getter) -> None:
-        self.aggregate = aggregate
-        self.getters = getters
+    aggregate = attr.ib(type=Type[Aggregate])
+    getters = attr.ib(type=Tuple[Getter, ...])
 
 
+@attr.s(frozen=True, slots=True)
 class AggregateSpecification(AbstractAggregateSpecification):
     pass
 
@@ -238,15 +235,9 @@ def compute_partition_key(
     return tuple(partition_func(row) for partition_func in partition_by)
 
 
+@attr.s(frozen=True, slots=True)
 class WindowAggregateSpecification(AbstractAggregateSpecification):
-    def __init__(
-        self,
-        frame_clause: FrameClause,
-        aggregate: Type[Aggregate],
-        *getters: Getter,
-    ) -> None:
-        super().__init__(aggregate, *getters)
-        self.frame_clause = frame_clause
+    frame_clause = attr.ib(type=FrameClause)
 
     def compute(self, rows: Iterable[Row]) -> Iterator[Any]:
         """Aggregate `rows` over a window."""
@@ -339,71 +330,55 @@ class WindowAggregateSpecification(AbstractAggregateSpecification):
             yield result
 
 
-class Count(UnaryWindowAggregate[Input1, int]):
-    def __init__(self) -> None:
-        self.count = 0
+class Count(UnaryAggregate[Input1, int]):
+    __slots__ = ()
 
     def step(self, input1: Optional[Input1]) -> None:
         if input1 is not None:
             self.count += 1
 
-    def inverse(self, input1: Optional[Input1]) -> None:
-        if input1 is not None:
-            self.count -= 1
-
     def finalize(self) -> Optional[int]:
         return self.count
 
 
-class Sum(UnaryWindowAggregate[R, R]):
-    def __init__(self) -> None:
-        self.total = typing.cast(R, 0)
-        self.count = 0
+class Sum(UnaryAggregate[R1, R2]):
+    __slots__ = 'total',
 
-    def step(self, input1: Optional[R]) -> None:
+    def __init__(self) -> None:
+        super().__init__()
+        self.total = typing.cast(R2, 0)
+
+    def step(self, input1: Optional[R1]) -> None:
         if input1 is not None:
             self.total += input1
             self.count += 1
 
-    def inverse(self, input1: Optional[R]) -> None:
-        if input1 is not None:
-            self.total -= input1
-            self.count -= 1
-
-    def finalize(self) -> Optional[R]:
+    def finalize(self) -> Optional[R2]:
         return self.total if self.count else None
 
 
-class Total(Sum[R]):
-    def finalize(self) -> Optional[R]:
-        return self.total if self.count else typing.cast(R, 0)
+class Total(Sum[R1, R2]):
+    __slots__ = ()
+
+    def finalize(self) -> Optional[R2]:
+        return self.total if self.count else typing.cast(R2, 0)
 
 
-class Mean(UnaryWindowAggregate[R, float]):
-    def __init__(self) -> None:
-        self.total = 0.0
-        self.count = 0
+class Mean(Sum[R1, R2]):
+    __slots__ = ()
 
-    def step(self, value: Optional[R]) -> None:
-        if value is not None:
-            self.total += typing.cast(float, value)
-            self.count += 1
-
-    def inverse(self, input1: Optional[R]) -> None:
-        if input1 is not None:
-            self.total -= input1
-            self.count -= 1
-
-    def finalize(self) -> Optional[float]:
+    def finalize(self) -> Optional[R2]:
         count = self.count
         return self.total / count if count > 0 else None
 
 
 class Covariance(BinaryAggregate[R, R, float]):
+    __slots__ = 'meanx', 'meany', 'cov', 'ddof'
+
     def __init__(self, *, ddof: int) -> None:
+        super().__init__()
         self.meanx = 0.0
         self.meany = 0.0
-        self.count = 0
         self.cov = 0.0
         self.ddof = ddof
 
@@ -422,10 +397,14 @@ class Covariance(BinaryAggregate[R, R, float]):
 
 
 class SampleCovariance(Covariance):
+    __slots__ = ()
+
     def __init__(self) -> None:
         super().__init__(ddof=1)
 
 
 class PopulationCovariance(Covariance):
+    __slots__ = ()
+
     def __init__(self) -> None:
         super().__init__(ddof=0)
