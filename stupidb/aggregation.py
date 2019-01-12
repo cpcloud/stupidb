@@ -1,22 +1,23 @@
 import abc
-import collections
+import bisect
 import itertools
 import typing
 from typing import (
     Any,
     Callable,
+    Dict,
     Generic,
     Hashable,
     Iterable,
     Iterator,
     List,
-    Mapping,
     Optional,
     Tuple,
     Type,
     Union,
 )
 
+from stupidb.protocols import AdditiveWithInverse
 from stupidb.row import Row
 from stupidb.typehints import (
     Following,
@@ -73,6 +74,9 @@ class BinaryWindowAggregate(BinaryAggregate[Input1, Input2, Output]):
 Aggregate = Union[UnaryAggregate, BinaryAggregate]
 
 
+BeginEnd = Tuple[int, int]
+
+
 class FrameClause(abc.ABC):
     def __init__(
         self,
@@ -93,7 +97,7 @@ class FrameClause(abc.ABC):
         possible_peers: List[Row],
         partition_id: int,
         order_by_columns: List[str],
-    ) -> Tuple[Optional[int], Optional[int]]:
+    ) -> BeginEnd:
         ...
 
 
@@ -103,12 +107,14 @@ class RowsMode(FrameClause):
         possible_peers: List[Row],
         partition_id: int,
         order_by_columns: List[str],
-    ) -> Tuple[Optional[int], Optional[int]]:
+    ) -> BeginEnd:
         current_row = possible_peers[partition_id]
         npeers = len(possible_peers)
         preceding = self.preceding
         if preceding is not None:
-            start = max(partition_id - preceding(current_row), 0)
+            start = max(
+                partition_id - typing.cast(int, preceding(current_row)), 0
+            )
         else:
             start = 0
 
@@ -116,7 +122,10 @@ class RowsMode(FrameClause):
         if following is not None:
             # because of zero-based indexing we must add one to `stop` to make
             # sure the current row is included
-            stop = min(partition_id + following(current_row) + 1, npeers)
+            stop = min(
+                partition_id + typing.cast(int, following(current_row)) + 1,
+                npeers,
+            )
         else:
             stop = npeers
         return start, stop
@@ -125,53 +134,36 @@ class RowsMode(FrameClause):
 class RangeMode(FrameClause):
     def find_partition_begin(
         self,
-        possible_peers: List[Row],
-        partition_id: int,
-        order_by_column: str,
+        current_row: Row,
+        current_row_order_by_value: AdditiveWithInverse,
+        order_by_values: List[AdditiveWithInverse],
     ) -> int:
         preceding = self.preceding
         assert preceding is not None
-
-        current_row = possible_peers[partition_id]
-
-        # add one to make sure we include the current row
-        peers = possible_peers[: partition_id + 1]
         delta_preceding = preceding(current_row)
-        current_row_order_by_value = current_row[order_by_column]
-        for index, peer in enumerate(peers):
-            order_by_value = peer[order_by_column]
-            if current_row_order_by_value - order_by_value <= delta_preceding:
-                return index
-        return -1
+        value_to_find = current_row_order_by_value - delta_preceding
+        bisected_index = bisect.bisect_left(order_by_values, value_to_find)
+        return bisected_index
 
     def find_partition_end(
         self,
-        possible_peers: List[Row],
-        partition_id: int,
-        order_by_column: str,
+        current_row: Row,
+        current_row_order_by_value: AdditiveWithInverse,
+        order_by_values: List[AdditiveWithInverse],
     ) -> int:
         following = self.following
         assert following is not None
-
-        current_row = possible_peers[partition_id]
         delta_following = following(current_row)
-        current_row_order_by_value = current_row[order_by_column]
-        npeers = len(possible_peers)
-        indexes = range(npeers - 1, partition_id - 1, -1)
-        for index in indexes:
-            peer = possible_peers[index]
-            order_by_value = peer[order_by_column]
-            if order_by_value - current_row_order_by_value <= delta_following:
-                # add one to make sure we include the current row
-                return index + 1
-        return -1
+        value_to_find = current_row_order_by_value + delta_following
+        bisected_index = bisect.bisect_right(order_by_values, value_to_find)
+        return bisected_index
 
     def compute_window_frame(
         self,
         possible_peers: List[Row],
         partition_id: int,
         order_by_columns: List[str],
-    ) -> Tuple[Optional[int], Optional[int]]:
+    ) -> BeginEnd:
         ncolumns = len(order_by_columns)
         if ncolumns != 1:
             raise ValueError(
@@ -181,18 +173,27 @@ class RangeMode(FrameClause):
         npeers = len(possible_peers)
         preceding = self.preceding
         order_by_column, = order_by_columns
+        order_by_values = [peer[order_by_column] for peer in possible_peers]
+        current_row = possible_peers[partition_id]
+        current_row_order_by_value = current_row[order_by_column]
 
         if preceding is not None:
-            start = self.find_partition_begin(
-                possible_peers, partition_id, order_by_column
+            start = max(
+                0,
+                self.find_partition_begin(
+                    current_row, current_row_order_by_value, order_by_values
+                ),
             )
         else:
             start = 0
 
         following = self.following
         if following is not None:
-            stop = self.find_partition_end(
-                possible_peers, partition_id, order_by_column
+            stop = min(
+                npeers,
+                self.find_partition_end(
+                    current_row, current_row_order_by_value, order_by_values
+                ),
             )
         else:
             stop = npeers
@@ -222,14 +223,10 @@ class Window:
 Getter = Callable[[Row], Any]
 
 
-class AbstractAggregateSpecification:
+class AggregateSpecification:
     def __init__(self, aggregate: Type[Aggregate], *getters: Getter) -> None:
         self.aggregate = aggregate
         self.getters = getters
-
-
-class AggregateSpecification(AbstractAggregateSpecification):
-    pass
 
 
 def compute_partition_key(
@@ -238,7 +235,7 @@ def compute_partition_key(
     return tuple(partition_func(row) for partition_func in partition_by)
 
 
-class WindowAggregateSpecification(AbstractAggregateSpecification):
+class WindowAggregateSpecification(AggregateSpecification):
     def __init__(
         self,
         frame_clause: FrameClause,
@@ -255,9 +252,7 @@ class WindowAggregateSpecification(AbstractAggregateSpecification):
         order_by = frame_clause.order_by
 
         # A mapping from each row's partition key to a list of rows.
-        raw_partitions: Mapping[
-            Tuple[Hashable, ...], List[Row]
-        ] = collections.defaultdict(list)
+        partitions: Dict[Tuple[Hashable, ...], List[Row]] = {}
 
         order_by_columns = [f"_order_by_{i:d}" for i in range(len(order_by))]
 
@@ -294,17 +289,12 @@ class WindowAggregateSpecification(AbstractAggregateSpecification):
         # partition
         for i, row in enumerate(rows_for_partition):
             partition_key = compute_partition_key(row, partition_by)
-            raw_partitions[partition_key].append(row)
-
-        partitions = dict(raw_partitions)
+            partitions.setdefault(partition_key, []).append(row)
 
         # sort
         for partition_key in partitions.keys():
             partitions[partition_key].sort(
-                key=lambda row: tuple(
-                    row[order_by_column]
-                    for order_by_column in order_by_columns
-                )
+                key=lambda row: tuple(map(row.__getitem__, order_by_columns))
             )
 
         for row in rows_for_frame_computation:
@@ -328,11 +318,10 @@ class WindowAggregateSpecification(AbstractAggregateSpecification):
                 possible_peers, partition_id, order_by_columns
             )
 
-            peers = possible_peers[start:stop]
-
             # Aggregate over the rows in the frame.
             agg = self.aggregate()
-            for peer in peers:
+            for i in range(start, stop):
+                peer = possible_peers[i]
                 args = [getter(peer) for getter in self.getters]
                 agg.step(*args)
             result = agg.finalize()

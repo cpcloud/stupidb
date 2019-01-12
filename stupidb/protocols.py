@@ -23,3 +23,32 @@ class Comparable(Protocol):
 
     def __ge__(self: C, other: C) -> bool:
         return not self < other
+
+
+A = TypeVar("A", bound="AdditiveWithInverse")
+
+
+class AdditiveWithInverse(Comparable):
+    @abc.abstractmethod
+    def __add__(self: A, other: A) -> A:
+        ...
+
+    @abc.abstractmethod
+    def __radd__(self: A, other: A) -> A:
+        ...
+
+    @abc.abstractmethod
+    def __sub__(self: A, other: A) -> A:
+        ...
+
+    @abc.abstractmethod
+    def __rsub__(self: A, other: A) -> A:
+        ...
+
+    @abc.abstractmethod
+    def __neg__(self: A) -> A:
+        ...
+
+    @abc.abstractmethod
+    def __pos__(self: A) -> A:
+        ...
