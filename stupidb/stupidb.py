@@ -34,16 +34,7 @@ import functools
 import itertools
 import operator
 from operator import methodcaller
-from typing import (
-    Any,
-    FrozenSet,
-    Iterable,
-    Iterator,
-    Mapping,
-    NoReturn,
-    Set,
-    Tuple,
-)
+from typing import Any, FrozenSet, Iterable, Iterator, Mapping, Set, Tuple
 from typing import Union as Union_
 
 import toolz as toolz

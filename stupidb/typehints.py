@@ -1,15 +1,15 @@
 from numbers import Real
-from typing import Callable, Hashable, Optional, Tuple, TypeVar
+from typing import Callable, Hashable, Tuple, TypeVar
 
-from stupidb.comparable import Comparable
+from stupidb.protocols import AdditiveWithInverse
 from stupidb.row import Row
 
 PartitionKey = Tuple[Tuple[str, Hashable], ...]
 
 PartitionBy = Callable[[Row], Hashable]
-OrderBy = Callable[[Row], Comparable]
-Preceding = Optional[Callable[[Row], int]]
-Following = Preceding
+OrderBy = Callable[[Row], AdditiveWithInverse]
+Preceding = Callable[[Row], AdditiveWithInverse]
+Following = Callable[[Row], AdditiveWithInverse]
 
 Predicate = Callable[[Row], bool]
 
