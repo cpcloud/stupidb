@@ -12,6 +12,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    MutableMapping,
     Optional,
     Sequence,
     Tuple,
@@ -20,6 +21,7 @@ from typing import (
 )
 
 import attr
+import toolz
 
 from stupidb.protocols import AdditiveWithInverse
 from stupidb.row import AbstractRow
@@ -81,8 +83,8 @@ class FrameClause(abc.ABC):
     @abc.abstractmethod
     def compute_window_frame(
         self,
-        possible_peers: Sequence[AbstractRow],
-        partition_id: int,
+        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        row_id_in_partition: int,
         order_by_columns: Sequence[str],
     ) -> BeginEnd:
         ...
@@ -92,15 +94,16 @@ class FrameClause(abc.ABC):
 class RowsMode(FrameClause):
     def compute_window_frame(
         self,
-        possible_peers: Sequence[AbstractRow],
-        partition_id: int,
+        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        row_id_in_partition: int,
         order_by_columns: Sequence[str],
     ) -> BeginEnd:
-        current_row = possible_peers[partition_id]
+        _, current_row = possible_peers[row_id_in_partition]
         preceding = self.preceding
         if preceding is not None:
             start = max(
-                partition_id - typing.cast(int, preceding(current_row)), 0
+                row_id_in_partition - typing.cast(int, preceding(current_row)),
+                0,
             )
         else:
             start = 0
@@ -111,7 +114,9 @@ class RowsMode(FrameClause):
             # because of zero-based indexing we must add one to `stop` to make
             # sure the current row is included
             stop = min(
-                partition_id + typing.cast(int, following(current_row)) + 1,
+                row_id_in_partition
+                + typing.cast(int, following(current_row))
+                + 1,
                 npeers,
             )
         else:
@@ -149,8 +154,8 @@ class RangeMode(FrameClause):
 
     def compute_window_frame(
         self,
-        possible_peers: Sequence[AbstractRow],
-        partition_id: int,
+        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        row_id_in_partition: int,
         order_by_columns: Sequence[str],
     ) -> BeginEnd:
         ncolumns = len(order_by_columns)
@@ -162,16 +167,16 @@ class RangeMode(FrameClause):
         npeers = len(possible_peers)
         preceding = self.preceding
         order_by_column, = order_by_columns
-        order_by_values = [peer[order_by_column] for peer in possible_peers]
-        current_row = possible_peers[partition_id]
+        order_by_values = [peer[order_by_column] for _, peer in possible_peers]
+        _, current_row = possible_peers[row_id_in_partition]
         current_row_order_by_value = current_row[order_by_column]
 
         if preceding is not None:
             start = max(
-                0,
                 self.find_partition_begin(
                     current_row, current_row_order_by_value, order_by_values
                 ),
+                0,
             )
         else:
             start = 0
@@ -179,10 +184,10 @@ class RangeMode(FrameClause):
         following = self.following
         if following is not None:
             stop = min(
-                npeers,
                 self.find_partition_end(
                     current_row, current_row_order_by_value, order_by_values
                 ),
+                npeers,
             )
         else:
             stop = npeers
@@ -225,6 +230,18 @@ def compute_partition_key(
     return tuple(partition_func(row) for partition_func in partition_by)
 
 
+def make_key_func(
+    order_by_columns: Sequence[str],
+) -> Callable[[Tuple[int, AbstractRow]], Tuple[AdditiveWithInverse, ...]]:
+    def key(
+        row_with_id: Tuple[int, AbstractRow]
+    ) -> Tuple[AdditiveWithInverse, ...]:
+        _, row = row_with_id
+        return tuple(row[column] for column in order_by_columns)
+
+    return key
+
+
 @attr.s(frozen=True, slots=True)
 class WindowAggregateSpecification(AggregateSpecification):
     frame_clause = attr.ib(type=FrameClause)
@@ -236,7 +253,9 @@ class WindowAggregateSpecification(AggregateSpecification):
         order_by = frame_clause.order_by
 
         # A mapping from each row's partition key to a list of rows.
-        partitions: Dict[Tuple[Hashable, ...], List[AbstractRow]] = {}
+        partitions: Dict[
+            Tuple[Hashable, ...], List[Tuple[int, AbstractRow]]
+        ] = {}
 
         order_by_columns = [f"_order_by_{i:d}" for i in range(len(order_by))]
 
@@ -244,15 +263,18 @@ class WindowAggregateSpecification(AggregateSpecification):
         # functions in range mode
         # TODO: check that if in range mode we only have single order by
         rows_with_computed_order_by_columns = (
-            row.merge(
-                dict(
-                    zip(
-                        order_by_columns,
-                        (order_func(row) for order_func in order_by),
+            (
+                i,
+                row.merge(
+                    dict(
+                        zip(
+                            order_by_columns,
+                            (order_func(row) for order_func in order_by),
+                        )
                     )
-                )
+                ),
             )
-            for row in rows
+            for i, row in enumerate(rows)
         )
         # We use one iterator for partitioning and one for computing the frame
         # given a partition and a row.
@@ -270,18 +292,23 @@ class WindowAggregateSpecification(AggregateSpecification):
             rows_with_computed_order_by_columns
         )
 
+        id_mapping: MutableMapping[Tuple[int, Tuple[Hashable, ...]], int] = {}
+
         # partition
-        for i, row in enumerate(rows_for_partition):
+        for i, row in rows_for_partition:
             partition_key = compute_partition_key(row, partition_by)
-            partitions.setdefault(partition_key, []).append(row)
+            partitions.setdefault(partition_key, []).append((i, row))
 
         # sort
-        for partition_key in partitions.keys():
-            partitions[partition_key].sort(
-                key=lambda row: tuple(map(row.__getitem__, order_by_columns))
-            )
 
-        for row in rows_for_frame_computation:
+        key = make_key_func(order_by_columns)
+        for partition_key in partitions.keys():
+            rows_in_partition = partitions[partition_key]
+            rows_in_partition.sort(key=key)
+            for partition_id, (row_id, _) in enumerate(rows_in_partition):
+                id_mapping[row_id, partition_key] = partition_id
+
+        for i, row in rows_for_frame_computation:
             # compute the partition the row is in
             partition_key = compute_partition_key(row, partition_by)
 
@@ -292,20 +319,17 @@ class WindowAggregateSpecification(AggregateSpecification):
             # Compute the index of the row in the partition. This value is the
             # value that all peers (using preceding and following if they are
             # not None) are computed relative to.
-            #
-            # Stupidly, this is a linear search for a matching row and assumes
-            # that there are no duplicate rows in `possible_peers`.
-            partition_id = possible_peers.index(row)
+            row_id_in_partition = id_mapping[i, partition_key]
 
             # Compute the window frame, which is a subset of `possible_peers`.
             start, stop = frame_clause.compute_window_frame(
-                possible_peers, partition_id, order_by_columns
+                possible_peers, row_id_in_partition, order_by_columns
             )
 
             # Aggregate over the rows in the frame.
             agg = self.aggregate()
             for i in range(start, stop):
-                peer = possible_peers[i]
+                _, peer = possible_peers[i]
                 args = [getter(peer) for getter in self.getters]
                 agg.step(*args)
             result = agg.finalize()
