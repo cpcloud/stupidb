@@ -33,6 +33,7 @@ import collections
 import functools
 import itertools
 import operator
+import typing
 from operator import methodcaller
 from typing import (
     Any,
@@ -53,7 +54,7 @@ from stupidb.aggregation import (
     AggregateSpecification,
     WindowAggregateSpecification,
 )
-from stupidb.row import JoinedRow, Row
+from stupidb.row import AbstractRow, JoinedRow, Row
 from stupidb.typehints import (
     OrderBy,
     PartitionBy,
@@ -64,22 +65,14 @@ from stupidb.typehints import (
 
 
 class Partitionable(abc.ABC):
-    def __init__(self, rows: Iterable[Row]) -> None:
+    def __init__(self, rows: Iterable[AbstractRow]) -> None:
         self.rows = rows
 
-    def partition_key(self, row: Row) -> PartitionKey:
+    def partition_key(self, row: AbstractRow) -> PartitionKey:
         return ()
 
-    def __iter__(self) -> Iterator[Row]:
+    def __iter__(self) -> Iterator[AbstractRow]:
         return iter(self.rows)
-
-    @classmethod
-    def from_iterable(
-        cls, iterable: Iterable[Mapping[str, Any]]
-    ) -> "Partitionable":
-        return cls(
-            Row.from_mapping(row, _id=i) for i, row in enumerate(iterable)
-        )
 
 
 class Relation(Partitionable):
@@ -88,9 +81,19 @@ class Relation(Partitionable):
     def __init__(self, child: Partitionable) -> None:
         self.child = child
 
-    def __iter__(self) -> Iterator[Row]:
+    def __iter__(self) -> Iterator[AbstractRow]:
         for id, row in enumerate(filter(None, self.child)):
             yield row.renew_id(id)
+
+    @classmethod
+    def from_iterable(
+        cls, iterable: Iterable[Mapping[str, Any]]
+    ) -> "Relation":
+        return cls(
+            Partitionable(
+                Row.from_mapping(row, _id=i) for i, row in enumerate(iterable)
+            )
+        )
 
 
 FullProjector = Union_[Projector, WindowAggregateSpecification]
@@ -112,7 +115,7 @@ class Projection(Relation):
             if callable(projector)
         }
 
-    def __iter__(self) -> Iterator[Row]:
+    def __iter__(self) -> Iterator[AbstractRow]:
         aggregations = self.aggregations
         # we need a row iterator for every aggregation to be fully generic
         # since they potentially share no structure
@@ -153,12 +156,14 @@ class Projection(Relation):
 
 
 class Mutate(Projection):
-    def __iter__(self) -> Iterator[Row]:
+    def __iter__(self) -> Iterator[AbstractRow]:
         # reasign self.child here to avoid clobbering its iteration
         # we need to use it twice: once for the computed columns (self.child)
         # used during the iteration of super().__iter__() and once for the
         # original relation (child)
-        child, self.child = itertools.tee(self.child)
+        child, self.child = typing.cast(
+            Tuple[Partitionable, Partitionable], itertools.tee(self.child)
+        )
         for i, row in enumerate(map(toolz.merge, child, super().__iter__())):
             yield Row.from_mapping(row, _id=i)
 
@@ -172,7 +177,7 @@ class Aggregation(Relation):
         super().__init__(child)
         self.aggregations = aggregations
 
-    def __iter__(self) -> Iterator[Row]:
+    def __iter__(self) -> Iterator[AbstractRow]:
         aggregations = self.aggregations
 
         # initialize aggregates
@@ -205,7 +210,7 @@ class Selection(Relation):
         super().__init__(child)
         self.predicate = predicate
 
-    def __iter__(self) -> Iterator[Row]:
+    def __iter__(self) -> Iterator[AbstractRow]:
         for id, row in enumerate(filter(self.predicate, self.child)):
             yield row.renew_id(id)
 
@@ -217,7 +222,7 @@ class GroupBy(Relation):
         super().__init__(child)
         self.group_by = group_by
 
-    def partition_key(self, row: Row) -> PartitionKey:
+    def partition_key(self, row: AbstractRow) -> PartitionKey:
         return tuple(
             (name, keyfunc(row)) for name, keyfunc in self.group_by.items()
         )
@@ -228,7 +233,7 @@ class SortBy(Relation):
         super().__init__(child)
         self.order_by = order_by
 
-    def __iter__(self) -> Iterator[Row]:
+    def __iter__(self) -> Iterator[AbstractRow]:
         yield from sorted(
             self.child,
             key=lambda row: tuple(
@@ -255,7 +260,7 @@ class Join(Relation):
         )
         self.predicate = predicate
 
-    def __iter__(self) -> Iterator[Row]:
+    def __iter__(self) -> Iterator[AbstractRow]:
         return filter(self.predicate, self.child)
 
     @classmethod
@@ -279,11 +284,11 @@ class AsymmetricJoin(Join):
         ...
 
     @abc.abstractmethod
-    def mismatch_keys(self, row: Row) -> Set[str]:
+    def mismatch_keys(self, row: AbstractRow) -> Set[str]:
         ...
 
-    def __iter__(self) -> Iterator[Row]:
-        matches: Set[Row] = set()
+    def __iter__(self) -> Iterator[AbstractRow]:
+        matches: Set[AbstractRow] = set()
         k = 0
         for row in filter(self.predicate, self.child):
             matches.add(self.match_provider(row))
@@ -304,7 +309,7 @@ class LeftJoin(AsymmetricJoin):
     def match_provider(self):
         return operator.attrgetter("left")
 
-    def mismatch_keys(self, row: Row) -> Set[str]:
+    def mismatch_keys(self, row: AbstractRow) -> Set[str]:
         return row.right.keys()
 
 
@@ -313,7 +318,7 @@ class RightJoin(AsymmetricJoin):
     def match_provider(self):
         return operator.attrgetter("right")
 
-    def mismatch_keys(self, row: Row) -> Set[str]:
+    def mismatch_keys(self, row: AbstractRow) -> Set[str]:
         return row.left.keys()
 
 
@@ -327,7 +332,7 @@ class SetOperation(Relation):
 
 
 class Union(SetOperation):
-    def __iter__(self) -> Iterator[Row]:
+    def __iter__(self) -> Iterator[AbstractRow]:
         return toolz.unique(
             toolz.concatv(self.left, self.right),
             key=toolz.compose(frozenset, items),
@@ -338,7 +343,7 @@ SetOperand = FrozenSet[Tuple[Tuple[str, Any], ...]]
 
 
 class InefficientSetOperation(SetOperation):
-    def __iter__(self) -> Iterator[Row]:
+    def __iter__(self) -> Iterator[AbstractRow]:
         itemize = toolz.compose(frozenset, functools.partial(map, items))
         return (
             Row.from_mapping(dict(row), _id=id)

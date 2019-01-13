@@ -22,7 +22,7 @@ from typing import (
 import attr
 
 from stupidb.protocols import AdditiveWithInverse
-from stupidb.row import Row
+from stupidb.row import AbstractRow
 from stupidb.typehints import (
     R1,
     R2,
@@ -74,16 +74,16 @@ BeginEnd = Tuple[int, int]
 @attr.s(frozen=True, slots=True)
 class FrameClause(abc.ABC):
     order_by = attr.ib(converter=list, type=Collection[OrderBy])
-    partition_by = attr.ib(converter=list, type=Iterable[PartitionBy])
-    preceding = attr.ib(type=Preceding)
-    following = attr.ib(type=Following)
+    partition_by = attr.ib(converter=list, type=Collection[PartitionBy])
+    preceding = attr.ib(type=Optional[Preceding])  # type: ignore
+    following = attr.ib(type=Optional[Following])  # type: ignore
 
     @abc.abstractmethod
     def compute_window_frame(
         self,
-        possible_peers: Sequence[Row],
+        possible_peers: Sequence[AbstractRow],
         partition_id: int,
-        order_by_columns: List[str],
+        order_by_columns: Sequence[str],
     ) -> BeginEnd:
         ...
 
@@ -92,12 +92,11 @@ class FrameClause(abc.ABC):
 class RowsMode(FrameClause):
     def compute_window_frame(
         self,
-        possible_peers: Sequence[Row],
+        possible_peers: Sequence[AbstractRow],
         partition_id: int,
-        order_by_columns: List[str],
+        order_by_columns: Sequence[str],
     ) -> BeginEnd:
         current_row = possible_peers[partition_id]
-        npeers = len(possible_peers)
         preceding = self.preceding
         if preceding is not None:
             start = max(
@@ -106,6 +105,7 @@ class RowsMode(FrameClause):
         else:
             start = 0
 
+        npeers = len(possible_peers)
         following = self.following
         if following is not None:
             # because of zero-based indexing we must add one to `stop` to make
@@ -123,9 +123,9 @@ class RowsMode(FrameClause):
 class RangeMode(FrameClause):
     def find_partition_begin(
         self,
-        current_row: Row,
+        current_row: AbstractRow,
         current_row_order_by_value: AdditiveWithInverse,
-        order_by_values: List[AdditiveWithInverse],
+        order_by_values: Sequence[AdditiveWithInverse],
     ) -> int:
         preceding = self.preceding
         assert preceding is not None
@@ -136,9 +136,9 @@ class RangeMode(FrameClause):
 
     def find_partition_end(
         self,
-        current_row: Row,
+        current_row: AbstractRow,
         current_row_order_by_value: AdditiveWithInverse,
-        order_by_values: List[AdditiveWithInverse],
+        order_by_values: Sequence[AdditiveWithInverse],
     ) -> int:
         following = self.following
         assert following is not None
@@ -149,9 +149,9 @@ class RangeMode(FrameClause):
 
     def compute_window_frame(
         self,
-        possible_peers: Sequence[Row],
+        possible_peers: Sequence[AbstractRow],
         partition_id: int,
-        order_by_columns: List[str],
+        order_by_columns: Sequence[str],
     ) -> BeginEnd:
         ncolumns = len(order_by_columns)
         if ncolumns != 1:
@@ -193,8 +193,8 @@ class RangeMode(FrameClause):
 class Window:
     @staticmethod
     def rows(
-        order_by: Iterable[OrderBy] = (),
-        partition_by: Iterable[PartitionBy] = (),
+        order_by: Collection[OrderBy] = (),
+        partition_by: Collection[PartitionBy] = (),
         preceding: Optional[Preceding] = None,
         following: Optional[Following] = None,
     ) -> FrameClause:
@@ -202,25 +202,25 @@ class Window:
 
     @staticmethod
     def range(
-        order_by: Iterable[OrderBy] = (),
-        partition_by: Iterable[PartitionBy] = (),
+        order_by: Collection[OrderBy] = (),
+        partition_by: Collection[PartitionBy] = (),
         preceding: Optional[Preceding] = None,
         following: Optional[Following] = None,
     ) -> FrameClause:
         return RangeMode(order_by, partition_by, preceding, following)
 
 
-Getter = Callable[[Row], Any]
+Getter = Callable[[AbstractRow], Any]
 
 
 @attr.s(frozen=True, slots=True)
 class AggregateSpecification:
-    aggregate = attr.ib(type=Type[Aggregate])
-    getters = attr.ib(type=Tuple[Getter, ...])
+    aggregate = attr.ib(type=Type[Aggregate])  # type: ignore
+    getters = attr.ib(type=Tuple[Getter, ...])  # type: ignore
 
 
 def compute_partition_key(
-    row: Row, partition_by: Iterable[PartitionBy]
+    row: AbstractRow, partition_by: Iterable[PartitionBy]
 ) -> Tuple[Hashable, ...]:
     return tuple(partition_func(row) for partition_func in partition_by)
 
@@ -229,14 +229,14 @@ def compute_partition_key(
 class WindowAggregateSpecification(AggregateSpecification):
     frame_clause = attr.ib(type=FrameClause)
 
-    def compute(self, rows: Iterable[Row]) -> Iterator[Any]:
+    def compute(self, rows: Iterable[AbstractRow]) -> Iterator[Any]:
         """Aggregate `rows` over a window."""
         frame_clause = self.frame_clause
         partition_by = frame_clause.partition_by
         order_by = frame_clause.order_by
 
         # A mapping from each row's partition key to a list of rows.
-        partitions: Dict[Tuple[Hashable, ...], List[Row]] = {}
+        partitions: Dict[Tuple[Hashable, ...], List[AbstractRow]] = {}
 
         order_by_columns = [f"_order_by_{i:d}" for i in range(len(order_by))]
 

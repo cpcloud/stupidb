@@ -13,6 +13,7 @@ from stupidb.aggregation import (
     Total,
     WindowAggregateSpecification,
 )
+from stupidb.row import AbstractRow
 from stupidb.stupidb import (
     Aggregation,
     Aggregations,
@@ -28,7 +29,6 @@ from stupidb.stupidb import (
     Projection,
     Relation,
     RightJoin,
-    Row,
     Selection,
     SortBy,
     Tuple,
@@ -205,7 +205,7 @@ V = TypeVar("V")
 
 
 # Aggregations
-def count(getter: Callable[[Row], V]) -> AggregateSpecification:
+def count(getter: Callable[[AbstractRow], V]) -> AggregateSpecification:
     return AggregateSpecification(Count, (getter,))
 
 
