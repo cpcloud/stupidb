@@ -202,7 +202,7 @@ class Aggregation(Relation):
             finalized_aggregations = {
                 name: agg.finalize() for name, agg in aggs.items()
             }
-            data = toolz.merge(dict(grouping_key), finalized_aggregations)
+            data = toolz.merge(grouping_key, finalized_aggregations)
             yield Row(data, _id=id)
 
 
@@ -235,11 +235,14 @@ class SortBy(Relation):
         self.order_by = order_by
 
     def __iter__(self) -> Iterator[AbstractRow]:
-        yield from sorted(
-            self.child,
-            key=lambda row: tuple(
-                order_func(row) for order_func in self.order_by
-            ),
+        order_by = self.order_by
+        return iter(
+            sorted(
+                self.child,
+                key=lambda row: tuple(
+                    order_func(row) for order_func in order_by
+                ),
+            )
         )
 
 
