@@ -213,6 +213,7 @@ class Window:
 Getter = Callable[[Row], Any]
 
 
+@attr.s(frozen=True, slots=True)
 class AggregateSpecification:
     aggregate = attr.ib(type=Type[Aggregate])
     getters = attr.ib(type=Tuple[Getter, ...])
