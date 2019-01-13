@@ -142,8 +142,9 @@ class Projection(Relation):
 
         projections = self.projections
         projnames = projections.keys()
+        projvalues = projections.values()
         projrows = (
-            dict(zip(projnames, (proj(row) for proj in projections.values())))
+            dict(zip(projnames, (proj(row) for proj in projvalues)))
             for row in child
         )
 
