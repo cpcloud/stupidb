@@ -65,7 +65,7 @@ class Row(AbstractRow):
         return cls(getattr(mapping, "data", mapping), _id=_id)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.data}, _id={self._id:d})"
+        return f"{self.__class__.__name__}({self.data})"
 
 
 class JoinedRow(AbstractRow):
@@ -99,6 +99,5 @@ class JoinedRow(AbstractRow):
 
     def __repr__(self) -> str:
         return (
-            f"{self.__class__.__name__}({self.left.data}, "
-            f"{self.right.data}, _id={self._id:d})"
+            f"{self.__class__.__name__}({self.left.data}, {self.right.data})"
         )
