@@ -13,19 +13,16 @@ from stupidb.aggregation import (
     Total,
     WindowAggregateSpecification,
 )
-from stupidb.comparable import Comparable
 from stupidb.stupidb import (
     Aggregation,
     Aggregations,
-    CrossJoin,
     Difference,
     FullProjector,
     GroupBy,
-    InnerJoin,
     Intersection,
+    Join,
     LeftJoin,
     Mutate,
-    Partitionable,
     PartitionBy,
     Predicate,
     Projection,
@@ -48,13 +45,13 @@ class shiftable(curry):
 @shiftable
 def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     """Construct a relation from an iterable of mappings."""
-    return Relation(Partitionable.from_iterable(rows))
+    return Relation.from_iterable(rows)
 
 
 @shiftable
 def cross_join(right: Relation, left: Relation) -> Relation:
     """Return the Cartesian product of tuples from `left` and `right`."""
-    return CrossJoin(left, right)
+    return Join(left, right, lambda row: True)
 
 
 @shiftable
@@ -66,7 +63,7 @@ def inner_join(
     Drop rows if `predicate` returns ``False``.
 
     """
-    return InnerJoin(left, right, predicate)
+    return Join(left, right, predicate)
 
 
 @shiftable
@@ -100,7 +97,7 @@ def _order_by(order_by: Tuple[OrderBy, ...], child: Relation) -> Relation:
     return SortBy(child, order_by)
 
 
-def order_by(*order_by: Comparable) -> shiftable:
+def order_by(*order_by: OrderBy) -> shiftable:
     """Order the rows of the child operator according to `order_by`."""
     return _order_by(order_by)
 
