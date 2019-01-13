@@ -21,7 +21,6 @@ from typing import (
 )
 
 import attr
-import toolz
 
 from stupidb.protocols import AdditiveWithInverse
 from stupidb.row import AbstractRow
@@ -75,35 +74,78 @@ BeginEnd = Tuple[int, int]
 
 @attr.s(frozen=True, slots=True)
 class FrameClause(abc.ABC):
-    order_by = attr.ib(converter=list, type=Collection[OrderBy])
-    partition_by = attr.ib(converter=list, type=Collection[PartitionBy])
+    order_by = attr.ib(type=Collection[OrderBy])
+    partition_by = attr.ib(type=Collection[PartitionBy])
     preceding = attr.ib(type=Optional[Preceding])  # type: ignore
     following = attr.ib(type=Optional[Following])  # type: ignore
 
     @abc.abstractmethod
-    def compute_window_frame(
+    def find_partition_begin(
         self,
-        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        current_row: AbstractRow,
         row_id_in_partition: int,
-        order_by_columns: Sequence[str],
-    ) -> BeginEnd:
+        current_row_order_by_value: Optional[AdditiveWithInverse],
+        order_by_values: Sequence[AdditiveWithInverse],
+    ) -> int:
         ...
 
+    @abc.abstractmethod
+    def find_partition_end(
+        self,
+        current_row: AbstractRow,
+        row_id_in_partition: int,
+        current_row_order_by_value: Optional[AdditiveWithInverse],
+        order_by_values: Sequence[AdditiveWithInverse],
+    ) -> int:
+        ...
 
-@attr.s(frozen=True, slots=True)
-class RowsMode(FrameClause):
-    def compute_window_frame(
+    @abc.abstractmethod
+    def setup_window(
         self,
         possible_peers: Sequence[Tuple[int, AbstractRow]],
+        current_row: AbstractRow,
+        order_by_columns: Sequence[str],
+    ) -> Tuple[Optional[AdditiveWithInverse], Sequence[AdditiveWithInverse]]:
+        ...
+
+    def compute_window_frame_bounds(
+        self,
+        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        current_row: AbstractRow,
         row_id_in_partition: int,
         order_by_columns: Sequence[str],
     ) -> BeginEnd:
-        _, current_row = possible_peers[row_id_in_partition]
+        """Compute the bounds of the window frame.
+
+        Parameters
+        ----------
+        possible_peers
+            The sequence of possible rows that the window could consist of.
+        current_row
+            The row relative to which we are computing the window.
+        row_id_in_partition
+            The zero-based index of `current_row` in possible_peers.
+        order_by_columns
+            The columns by which we have ordered our window.
+
+        Returns
+        -------
+        BeginEnd
+            A pair of integers, indicating the start and stop indicies of the
+            window frame suitable to use as a slice.
+
+        """
+        current_row_order_by_value, order_by_values = self.setup_window(
+            possible_peers, current_row, order_by_columns
+        )
+
         preceding = self.preceding
         if preceding is not None:
-            start = max(
-                row_id_in_partition - typing.cast(int, preceding(current_row)),
-                0,
+            start = self.find_partition_begin(
+                current_row,
+                row_id_in_partition,
+                current_row_order_by_value,
+                order_by_values,
             )
         else:
             start = 0
@@ -111,29 +153,102 @@ class RowsMode(FrameClause):
         npeers = len(possible_peers)
         following = self.following
         if following is not None:
-            # because of zero-based indexing we must add one to `stop` to make
-            # sure the current row is included
-            stop = min(
-                row_id_in_partition
-                + typing.cast(int, following(current_row))
-                + 1,
-                npeers,
+            stop = self.find_partition_end(
+                current_row,
+                row_id_in_partition,
+                current_row_order_by_value,
+                order_by_values,
             )
         else:
             stop = npeers
-        return start, stop
+        return max(start, 0), min(stop, npeers)
+
+
+@attr.s(frozen=True, slots=True)
+class RowsMode(FrameClause):
+    def find_partition_begin(
+        self,
+        current_row: AbstractRow,
+        row_id_in_partition: int,
+        current_row_order_by_value: Optional[AdditiveWithInverse],
+        order_by_values: Sequence[AdditiveWithInverse],
+    ) -> int:
+        preceding = self.preceding
+        assert preceding is not None, "preceding is None"
+        return row_id_in_partition - typing.cast(int, preceding(current_row))
+
+    def find_partition_end(
+        self,
+        current_row: AbstractRow,
+        row_id_in_partition: int,
+        current_row_order_by_value: Optional[AdditiveWithInverse],
+        order_by_values: Sequence[AdditiveWithInverse],
+    ) -> int:
+        following = self.following
+        assert following is not None, "following is None"
+        return (
+            row_id_in_partition + typing.cast(int, following(current_row)) + 1
+        )
+
+    def setup_window(
+        self,
+        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        current_row: AbstractRow,
+        order_by_columns: Sequence[str],
+    ) -> Tuple[Optional[AdditiveWithInverse], Sequence[AdditiveWithInverse]]:
+        return None, ()
 
 
 @attr.s(frozen=True, slots=True)
 class RangeMode(FrameClause):
+    def setup_window(
+        self,
+        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        current_row: AbstractRow,
+        order_by_columns: Sequence[str],
+    ) -> Tuple[Optional[AdditiveWithInverse], Sequence[AdditiveWithInverse]]:
+        ncolumns = len(order_by_columns)
+        if ncolumns != 1:
+            raise ValueError(
+                "Must have exactly one order by column to use range mode. "
+                f"Got {ncolumns:d}."
+            )
+        order_by_column, = order_by_columns
+        order_by_values = [peer[order_by_column] for _, peer in possible_peers]
+        current_row_order_by_value = current_row[order_by_column]
+        return current_row_order_by_value, order_by_values
+
     def find_partition_begin(
         self,
         current_row: AbstractRow,
-        current_row_order_by_value: AdditiveWithInverse,
+        row_id_in_partition: int,
+        current_row_order_by_value: Optional[AdditiveWithInverse],
         order_by_values: Sequence[AdditiveWithInverse],
     ) -> int:
+        """Find the beginning of a window in a partition.
+
+        Parameters
+        ----------
+        current_row
+            The row relative to which we are computing the window.
+        row_id_in_partition
+            The zero-based index of `current_row` in possible_peers.
+        current_row_order_by_value
+            The value of the ORDER BY key in the current row.
+        order_by_values
+            The order by values for the current partition.
+
+        Returns
+        -------
+        int
+            The start point of the window in the current partition
+
+        """
+        assert (
+            current_row_order_by_value is not None
+        ), "current_row_order_by_value is None"
         preceding = self.preceding
-        assert preceding is not None
+        assert preceding is not None, "preceding is None"
         delta_preceding = preceding(current_row)
         value_to_find = current_row_order_by_value - delta_preceding
         bisected_index = bisect.bisect_left(order_by_values, value_to_find)
@@ -142,56 +257,38 @@ class RangeMode(FrameClause):
     def find_partition_end(
         self,
         current_row: AbstractRow,
-        current_row_order_by_value: AdditiveWithInverse,
+        row_id_in_partition: int,
+        current_row_order_by_value: Optional[AdditiveWithInverse],
         order_by_values: Sequence[AdditiveWithInverse],
     ) -> int:
+        """Find the end of a window in a partition.
+
+        Parameters
+        ----------
+        current_row
+            The row relative to which we are computing the window.
+        row_id_in_partition
+            The zero-based index of `current_row` in possible_peers.
+        current_row_order_by_value
+            The value of the ORDER BY key in the current row.
+        order_by_values
+            The order by values for the current partition.
+
+        Returns
+        -------
+        int
+            The end point of the window in the current partition
+
+        """
+        assert (
+            current_row_order_by_value is not None
+        ), "current_row_order_by_value"
         following = self.following
-        assert following is not None
+        assert following is not None, "following is None"
         delta_following = following(current_row)
         value_to_find = current_row_order_by_value + delta_following
         bisected_index = bisect.bisect_right(order_by_values, value_to_find)
         return bisected_index
-
-    def compute_window_frame(
-        self,
-        possible_peers: Sequence[Tuple[int, AbstractRow]],
-        row_id_in_partition: int,
-        order_by_columns: Sequence[str],
-    ) -> BeginEnd:
-        ncolumns = len(order_by_columns)
-        if ncolumns != 1:
-            raise ValueError(
-                "Must have exactly one order by column to use range mode. "
-                f"Got {ncolumns:d}."
-            )
-        npeers = len(possible_peers)
-        preceding = self.preceding
-        order_by_column, = order_by_columns
-        order_by_values = [peer[order_by_column] for _, peer in possible_peers]
-        _, current_row = possible_peers[row_id_in_partition]
-        current_row_order_by_value = current_row[order_by_column]
-
-        if preceding is not None:
-            start = max(
-                self.find_partition_begin(
-                    current_row, current_row_order_by_value, order_by_values
-                ),
-                0,
-            )
-        else:
-            start = 0
-
-        following = self.following
-        if following is not None:
-            stop = min(
-                self.find_partition_end(
-                    current_row, current_row_order_by_value, order_by_values
-                ),
-                npeers,
-            )
-        else:
-            stop = npeers
-        return start, stop
 
 
 @attr.s(frozen=True, slots=True)
@@ -299,8 +396,7 @@ class WindowAggregateSpecification(AggregateSpecification):
             partition_key = compute_partition_key(row, partition_by)
             partitions.setdefault(partition_key, []).append((i, row))
 
-        # sort
-
+        # sort and compute the location of each row in its partition
         key = make_key_func(order_by_columns)
         for partition_key in partitions.keys():
             rows_in_partition = partitions[partition_key]
@@ -321,10 +417,14 @@ class WindowAggregateSpecification(AggregateSpecification):
             # not None) are computed relative to.
             row_id_in_partition = id_mapping[i, partition_key]
 
-            # Compute the window frame, which is a subset of `possible_peers`.
-            start, stop = frame_clause.compute_window_frame(
-                possible_peers, row_id_in_partition, order_by_columns
+            # Compute the window frame bounds, which is a subset of
+            # `possible_peers`.
+            start, stop = frame_clause.compute_window_frame_bounds(
+                possible_peers, row, row_id_in_partition, order_by_columns
             )
+            assert (
+                0 <= start <= stop <= len(possible_peers)
+            ), f"start == {start}, stop == {stop}"
 
             # Aggregate over the rows in the frame.
             agg = self.aggregate()
