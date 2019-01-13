@@ -22,6 +22,7 @@ class AbstractRow(Mapping[str, Any], metaclass=abc.ABCMeta):
         return iter(self.data)
 
     def __len__(self) -> int:
+        """Return the number of columns in this row."""
         return len(self.data)
 
     def __getattr__(self, attr: str) -> Any:
@@ -34,6 +35,14 @@ class AbstractRow(Mapping[str, Any], metaclass=abc.ABCMeta):
         return self.data[column]
 
     def renew_id(self, _id: int) -> "AbstractRow":
+        """Reify this row with a new id `_id`.
+
+        Parameters
+        ----------
+        _id
+            The return value's new `_id`.
+
+        """
         return type(self)(*self.pieces, _id=_id)
 
 
@@ -52,6 +61,7 @@ class Row(AbstractRow):
 
     @classmethod
     def from_mapping(cls, mapping: Mapping[str, Any], *, _id: int) -> "Row":
+        """Construct a Row instance from any mapping with string keys."""
         return cls(getattr(mapping, "data", mapping), _id=_id)
 
     def __repr__(self) -> str:
