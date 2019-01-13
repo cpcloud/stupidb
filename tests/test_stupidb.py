@@ -6,7 +6,6 @@
 import itertools
 import operator
 from datetime import date, timedelta
-from operator import itemgetter
 
 import pytest
 import toolz
@@ -452,11 +451,11 @@ def t_table(t_rows):
 
 def test_temporal_range_window(t_table, t_rows):
     query = t_table >> mutate(
-        avg_balance=mean(itemgetter("balance"))
+        avg_balance=mean(lambda r: r["balance"])
         >> over(
             Window.range(
-                order_by=[itemgetter("date")],
-                partition_by=[itemgetter("name")],
+                order_by=[lambda r: r["date"]],
+                partition_by=[lambda r: r["name"]],
                 preceding=lambda r: timedelta(days=3),
                 following=lambda r: timedelta(days=0),
             )
