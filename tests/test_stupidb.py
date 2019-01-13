@@ -5,6 +5,8 @@
 
 import itertools
 import operator
+from datetime import date, timedelta
+from operator import itemgetter
 
 import pytest
 import toolz
@@ -427,6 +429,84 @@ def test_range_window(table, rows):
     expected = expected_a + expected_b
 
     assert len(result) == len(expected)
+    assert_rowset_equal(result, expected)
+
+
+@pytest.fixture
+def t_rows():
+    return [
+        dict(name="alice", date=date(2018, 1, 1), balance=2),
+        dict(name="alice", date=date(2018, 1, 4), balance=4),
+        dict(name="alice", date=date(2018, 1, 6), balance=-3),
+        dict(name="alice", date=date(2018, 1, 7), balance=-3),
+        dict(name="bob", date=date(2018, 1, 2), balance=-1),
+        dict(name="bob", date=date(2018, 1, 3), balance=-3),
+        dict(name="bob", date=date(2018, 1, 4), balance=-3),
+    ]
+
+
+@pytest.fixture
+def t_table(t_rows):
+    return table_(t_rows)
+
+
+def test_temporal_range_window(t_table, t_rows):
+    query = t_table >> mutate(
+        avg_balance=mean(itemgetter("balance"))
+        >> over(
+            Window.range(
+                order_by=[itemgetter("date")],
+                partition_by=[itemgetter("name")],
+                preceding=lambda r: timedelta(days=3),
+                following=lambda r: timedelta(days=0),
+            )
+        )
+    )
+    result = list(query)
+    expected = [
+        {
+            "avg_balance": 2.0,
+            "balance": 2,
+            "date": date(2018, 1, 1),
+            "name": "alice",
+        },
+        {
+            "avg_balance": 3.0,
+            "balance": 4,
+            "date": date(2018, 1, 4),
+            "name": "alice",
+        },
+        {
+            "avg_balance": 0.5,
+            "balance": -3,
+            "date": date(2018, 1, 6),
+            "name": "alice",
+        },
+        {
+            "avg_balance": -0.666_666_666_666_666_6,
+            "balance": -3,
+            "date": date(2018, 1, 7),
+            "name": "alice",
+        },
+        {
+            "avg_balance": -1.0,
+            "balance": -1,
+            "date": date(2018, 1, 2),
+            "name": "bob",
+        },
+        {
+            "avg_balance": -2.0,
+            "balance": -3,
+            "date": date(2018, 1, 3),
+            "name": "bob",
+        },
+        {
+            "avg_balance": -2.333_333_333_333_333_5,
+            "balance": -3,
+            "date": date(2018, 1, 4),
+            "name": "bob",
+        },
+    ]
     assert_rowset_equal(result, expected)
 
 
