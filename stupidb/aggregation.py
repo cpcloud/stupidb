@@ -1,6 +1,7 @@
 import abc
 import bisect
 import itertools
+import operator
 import typing
 from typing import (
     Any,
@@ -21,6 +22,7 @@ from typing import (
 )
 
 import attr
+import toolz
 
 from stupidb.protocols import AdditiveWithInverse
 from stupidb.row import AbstractRow
@@ -114,6 +116,7 @@ class FrameClause(abc.ABC):
         current_row: AbstractRow,
         row_id_in_partition: int,
         order_by_columns: Sequence[str],
+        current_start_stop: Optional[BeginEnd],
     ) -> BeginEnd:
         """Compute the bounds of the window frame.
 
@@ -248,9 +251,8 @@ class RangeMode(FrameClause):
             current_row_order_by_value is not None
         ), "current_row_order_by_value is None"
         preceding = self.preceding
-        assert preceding is not None, "preceding is None"
-        delta_preceding = preceding(current_row)
-        value_to_find = current_row_order_by_value - delta_preceding
+        assert preceding is not None, "preceding function is None"
+        value_to_find = current_row_order_by_value - preceding(current_row)
         bisected_index = bisect.bisect_left(order_by_values, value_to_find)
         return bisected_index
 
@@ -284,9 +286,8 @@ class RangeMode(FrameClause):
             current_row_order_by_value is not None
         ), "current_row_order_by_value"
         following = self.following
-        assert following is not None, "following is None"
-        delta_following = following(current_row)
-        value_to_find = current_row_order_by_value + delta_following
+        assert following is not None, "following function is None"
+        value_to_find = current_row_order_by_value + following(current_row)
         bisected_index = bisect.bisect_right(order_by_values, value_to_find)
         return bisected_index
 
@@ -359,7 +360,7 @@ class WindowAggregateSpecification(AggregateSpecification):
         # Add computed order by columns that are used when evaluating window
         # functions in range mode
         # TODO: check that if in range mode we only have single order by
-        rows_with_computed_order_by_columns = (
+        rows_for_partition = (
             (
                 i,
                 row.merge(
@@ -373,67 +374,52 @@ class WindowAggregateSpecification(AggregateSpecification):
             )
             for i, row in enumerate(rows)
         )
-        # We use one iterator for partitioning and one for computing the frame
-        # given a partition and a row.
-        #
-        # Alternatively we could reuse the rows that are in memory in the
-        # partitions, but they aren't going to be in the order of the original
-        # relation's rows.
-        #
-        # This leads to incorrect results when an aggregation is used
-        # downstream.
-        #
-        # We could unsort them (by storing their original index) to address
-        # this, but it's less code this way and therefore maximally stupider.
-        rows_for_partition, rows_for_frame_computation = itertools.tee(
-            rows_with_computed_order_by_columns
-        )
-
-        id_mapping: MutableMapping[Tuple[int, Tuple[Hashable, ...]], int] = {}
 
         # partition
-        for i, row in rows_for_partition:
+        for table_row_index, row in rows_for_partition:
             partition_key = compute_partition_key(row, partition_by)
-            partitions.setdefault(partition_key, []).append((i, row))
+            partitions.setdefault(partition_key, []).append(
+                (table_row_index, row)
+            )
 
         # sort and compute the location of each row in its partition
         key = make_key_func(order_by_columns)
         for partition_key in partitions.keys():
-            rows_in_partition = partitions[partition_key]
-            rows_in_partition.sort(key=key)
-            for partition_id, (row_id, _) in enumerate(rows_in_partition):
-                id_mapping[row_id, partition_key] = partition_id
+            partitions[partition_key].sort(key=key)
 
-        for i, row in rows_for_frame_computation:
-            # compute the partition the row is in
-            partition_key = compute_partition_key(row, partition_by)
+        results: List[Tuple[int, Any]] = []
+        most_recent_start_stop: MutableMapping[int, Tuple[int, int]] = {}
+        for partition_id, (partition_key, possible_peers) in enumerate(
+            partitions.items()
+        ):
+            for row_id_in_partition, (table_row_index, row) in enumerate(
+                possible_peers
+            ):
+                current_start_stop = most_recent_start_stop.get(partition_id)
+                # Compute the window frame bounds, which is a subset of
+                # `possible_peers`.
+                start, stop = frame_clause.compute_window_frame_bounds(
+                    possible_peers,
+                    row,
+                    row_id_in_partition,
+                    order_by_columns,
+                    current_start_stop,
+                )
+                assert (
+                    0 <= start <= stop <= len(possible_peers)
+                ), f"start == {start}, stop == {stop}"
 
-            # the maximal set of rows that could be in the current row's peer
-            # set
-            possible_peers = partitions[partition_key]
+                most_recent_start_stop[partition_id] = (start, stop)
 
-            # Compute the index of the row in the partition. This value is the
-            # value that all peers (using preceding and following if they are
-            # not None) are computed relative to.
-            row_id_in_partition = id_mapping[i, partition_key]
-
-            # Compute the window frame bounds, which is a subset of
-            # `possible_peers`.
-            start, stop = frame_clause.compute_window_frame_bounds(
-                possible_peers, row, row_id_in_partition, order_by_columns
-            )
-            assert (
-                0 <= start <= stop <= len(possible_peers)
-            ), f"start == {start}, stop == {stop}"
-
-            # Aggregate over the rows in the frame.
-            agg = self.aggregate()
-            for i in range(start, stop):
-                _, peer = possible_peers[i]
-                args = [getter(peer) for getter in self.getters]
-                agg.step(*args)
-            result = agg.finalize()
-            yield result
+                # Aggregate over the rows in the frame.
+                agg = self.aggregate()
+                for partition_index in range(start, stop):
+                    _, peer = possible_peers[partition_index]
+                    args = [getter(peer) for getter in self.getters]
+                    agg.step(*args)
+                result = agg.finalize()
+                results.append((table_row_index, result))
+        return map(toolz.second, sorted(results, key=operator.itemgetter(0)))
 
 
 class Count(UnaryAggregate[Input1, int]):
