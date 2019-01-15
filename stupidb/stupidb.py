@@ -252,17 +252,17 @@ class Join(Relation):
     ) -> None:
         self.left, left_ = itertools.tee(left)
         self.right, right_ = itertools.tee(right)
+        self.predicate = predicate
         super().__init__(
             Partitionable(
                 (
-                    JoinedRow(l, r, _id=i)
-                    for i, (l, r) in enumerate(
+                    JoinedRow(left_row, right_row, _id=i)
+                    for i, (left_row, right_row) in enumerate(
                         itertools.product(left_, right_)
                     )
                 )
             )
         )
-        self.predicate = predicate
 
     def __iter__(self) -> Iterator[AbstractRow]:
         return filter(self.predicate, self.child)
