@@ -71,7 +71,7 @@ class BinaryAggregate(Generic[Input1, Input2, Output], metaclass=abc.ABCMeta):
 
 
 Aggregate = Union[UnaryAggregate, BinaryAggregate]
-BeginEnd = Tuple[int, int]
+BeginEnd = Tuple[Tuple[int, int], Tuple[int, int]]
 
 
 @attr.s(frozen=True, slots=True)
@@ -116,7 +116,7 @@ class FrameClause(abc.ABC):
         current_row: AbstractRow,
         row_id_in_partition: int,
         order_by_columns: Sequence[str],
-        current_start_stop: Optional[BeginEnd],
+        current_start_stop: Optional[Tuple[int, int]],
     ) -> BeginEnd:
         """Compute the bounds of the window frame.
 
@@ -134,13 +134,15 @@ class FrameClause(abc.ABC):
         Returns
         -------
         BeginEnd
-            A pair of integers, indicating the start and stop indicies of the
-            window frame suitable to use as a slice.
 
         """
         current_row_order_by_value, order_by_values = self.setup_window(
             possible_peers, current_row, order_by_columns
         )
+        if current_start_stop is not None:
+            current_start, current_stop = current_start_stop
+        else:
+            current_start = current_stop = 0
 
         preceding = self.preceding
         if preceding is not None:
@@ -164,7 +166,13 @@ class FrameClause(abc.ABC):
             )
         else:
             stop = npeers
-        return max(start, 0), min(stop, npeers)
+
+        new_start = max(start, 0)
+        new_stop = min(stop, npeers)
+        return (
+            (current_stop - new_start, new_stop),
+            (new_start, new_stop),
+        )
 
 
 @attr.s(frozen=True, slots=True)
@@ -392,28 +400,35 @@ class WindowAggregateSpecification(AggregateSpecification):
         for partition_id, (partition_key, possible_peers) in enumerate(
             partitions.items()
         ):
+            agg = self.aggregate()
             for row_id_in_partition, (table_row_index, row) in enumerate(
                 possible_peers
             ):
                 current_start_stop = most_recent_start_stop.get(partition_id)
                 # Compute the window frame bounds, which is a subset of
                 # `possible_peers`.
-                start, stop = frame_clause.compute_window_frame_bounds(
+                (relative_start, relative_stop), (
+                    absolute_start,
+                    absolute_stop,
+                ) = win = frame_clause.compute_window_frame_bounds(
                     possible_peers,
                     row,
                     row_id_in_partition,
                     order_by_columns,
                     current_start_stop,
                 )
+                print(win)
                 assert (
-                    0 <= start <= stop <= len(possible_peers)
-                ), f"start == {start}, stop == {stop}"
+                    0 <= absolute_start <= absolute_stop <= len(possible_peers)
+                ), f"start == {absolute_start}, stop == {absolute_stop}"
 
-                most_recent_start_stop[partition_id] = (start, stop)
+                most_recent_start_stop[partition_id] = (
+                    absolute_start,
+                    absolute_stop,
+                )
 
                 # Aggregate over the rows in the frame.
-                agg = self.aggregate()
-                for partition_index in range(start, stop):
+                for partition_index in range(relative_start, relative_stop):
                     _, peer = possible_peers[partition_index]
                     args = [getter(peer) for getter in self.getters]
                     agg.step(*args)
