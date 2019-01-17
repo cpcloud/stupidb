@@ -449,17 +449,14 @@ class WindowAggregateSpecification(AggregateSpecification):
             partitions[partition_key].sort(key=key)
 
         results: List[Tuple[int, Any]] = []
-        previous_start_stop: MutableMapping[int, Tuple[int, int]] = {}
         for partition_id, (partition_key, possible_peers) in enumerate(
             partitions.items()
         ):
             agg = self.aggregate()
+            previous_start_stop: Optional[Tuple[int, int]] = None
             for row_id_in_partition, (table_row_index, row) in enumerate(
                 possible_peers
             ):
-                partition_previous_start_stop = previous_start_stop.get(
-                    partition_id
-                )
                 (range_to_remove_start, range_to_remove_stop), (
                     range_to_add_start,
                     range_to_add_stop,
@@ -471,16 +468,13 @@ class WindowAggregateSpecification(AggregateSpecification):
                     row,
                     row_id_in_partition,
                     order_by_columns,
-                    partition_previous_start_stop,
+                    previous_start_stop,
                 )
                 assert (
                     0 <= absolute_start <= absolute_stop <= len(possible_peers)
                 ), f"start == {absolute_start}, stop == {absolute_stop}"
 
-                previous_start_stop[partition_id] = (
-                    absolute_start,
-                    absolute_stop,
-                )
+                previous_start_stop = absolute_start, absolute_stop
 
                 # Aggregate over the rows in the frame.
                 for _, peer in possible_peers[
