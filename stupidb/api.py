@@ -6,7 +6,9 @@ from stupidb.aggregation import (
     AggregateSpecification,
     Count,
     FrameClause,
+    Max,
     Mean,
+    Min,
     PopulationCovariance,
     SampleCovariance,
     Sum,
@@ -219,6 +221,14 @@ def total(getter: RealGetter) -> AggregateSpecification:
 
 def mean(getter: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(Mean, (getter,))
+
+
+def min(getter) -> AggregateSpecification:
+    return AggregateSpecification(Min, (getter,))
+
+
+def max(getter) -> AggregateSpecification:
+    return AggregateSpecification(Max, (getter,))
 
 
 def samp_cov(arg1: RealGetter, arg2: RealGetter) -> AggregateSpecification:
