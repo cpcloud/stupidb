@@ -165,7 +165,7 @@ def aggregate(**aggregations: AggregateSpecification) -> shiftable:
 
 @shiftable
 def over(
-    window: FrameClause, child: AggregateSpecification
+    window: FrameClause, child: WindowAggregateSpecification
 ) -> WindowAggregateSpecification:
     return WindowAggregateSpecification(child.aggregate, child.getters, window)
 
