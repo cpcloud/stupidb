@@ -95,8 +95,8 @@ class BinaryWindowAggregate(BinaryAggregate[Input1, Input2, Output]):
 Aggregate = Union[UnaryAggregate, BinaryAggregate]
 WindowAggregate = Union[UnaryWindowAggregate, BinaryWindowAggregate]
 
-BeginEnd = Tuple[int, int]
-Ranges = Tuple[BeginEnd, BeginEnd, BeginEnd]
+StartStop = typing.NamedTuple("StartStop", [("start", int), ("stop", int)])
+Ranges = Tuple[StartStop, StartStop, StartStop]
 
 
 @attr.s(frozen=True, slots=True)
@@ -141,7 +141,7 @@ class FrameClause(abc.ABC):
         current_row: AbstractRow,
         row_id_in_partition: int,
         order_by_columns: Sequence[str],
-        previous_start_stop: Optional[BeginEnd],
+        previous_start_stop: Optional[StartStop],
     ) -> Ranges:
         """Compute the bounds of the window frame.
 
@@ -219,13 +219,13 @@ class FrameClause(abc.ABC):
         #
         # we track the absolute range so that we can determine how the window
         # changes throughout the iteration over the partitions
-        absolute_range = (new_start, new_stop)
+        absolute_range = StartStop(new_start, new_stop)
         assert (
             0 <= new_start <= new_stop <= npeers
         ), f"start == {new_start}, stop == {new_stop}"
         return (
-            (remove_start, remove_stop),
-            (add_start, add_stop),
+            StartStop(remove_start, remove_stop),
+            StartStop(add_start, add_stop),
             absolute_range,
         )
 
@@ -457,14 +457,16 @@ class WindowAggregateSpecification(AggregateSpecification):
             partitions.items()
         ):
             agg = self.aggregate()
-            previous_start_stop: Optional[BeginEnd] = None
+            previous_start_stop: Optional[StartStop] = None
+
             for row_id_in_partition, (table_row_index, row) in enumerate(
                 possible_peers
             ):
-                (range_to_remove_start, range_to_remove_stop), (
-                    range_to_add_start,
-                    range_to_add_stop,
-                ), previous_start_stop = frame_clause.compute_window_frame(
+                (
+                    remove,
+                    add,
+                    previous_start_stop,
+                ) = frame_clause.compute_window_frame(
                     possible_peers,
                     row,
                     row_id_in_partition,
@@ -473,15 +475,11 @@ class WindowAggregateSpecification(AggregateSpecification):
                 )
 
                 # Aggregate over the rows in the frame.
-                for _, peer in possible_peers[
-                    range_to_remove_start:range_to_remove_stop
-                ]:
+                for _, peer in possible_peers[remove.start : remove.stop]:
                     args = [getter(peer) for getter in self.getters]
                     agg.inverse(*args)
 
-                for _, peer in possible_peers[
-                    range_to_add_start:range_to_add_stop
-                ]:
+                for _, peer in possible_peers[add.start : add.stop]:
                     args = [getter(peer) for getter in self.getters]
                     agg.step(*args)
 
