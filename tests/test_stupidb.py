@@ -6,6 +6,7 @@
 import itertools
 import operator
 from datetime import date, timedelta
+from typing import Callable, Iterable, Iterator, TypeVar
 
 import pytest
 import toolz
@@ -528,3 +529,26 @@ def test_invalid_agg(table, rows):
             my_agg2=mean(lambda r: r["e"]),
             my_count=count(lambda r: r["e"]),
         )
+
+
+T = TypeVar("T")
+U = TypeVar("U")
+
+
+def cumagg(seq: Iterable[T], combine: Callable[[T, U], U]) -> Iterator[U]:
+    """Cumulative aggregation."""
+    result = toolz.first(seq)
+    yield result
+    for value in itertools.islice(seq, 1, None):
+        result = combine(value, result)
+        yield result
+
+
+def test_cumsum(rows):
+    query = table_(rows) >> select(
+        my_cumsum=sum(lambda r: r.e)
+        >> over(Window.rows(order_by=[lambda r: r.e]))
+    )
+    result = [r.my_cumsum for r in query]
+    expected = list(cumagg(range(1, 8), operator.add))
+    assert result == expected
