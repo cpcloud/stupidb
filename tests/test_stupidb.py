@@ -3,6 +3,7 @@
 
 """Tests for `stupidb` package."""
 
+import builtins
 import itertools
 import operator
 from datetime import date, timedelta
@@ -20,7 +21,9 @@ from stupidb.api import (
     group_by,
     inner_join,
     left_join,
+    max,
     mean,
+    min,
     mutate,
     order_by,
     over,
@@ -552,3 +555,11 @@ def test_cumsum(rows):
     result = [r.my_cumsum for r in query]
     expected = list(cumagg(range(1, 8), operator.add))
     assert result == expected
+
+
+def test_minmax(table, rows):
+    query = table >> aggregate(min=min(lambda r: r.e), max=max(lambda r: r.e))
+    e = [r["e"] for r in rows]
+    result = list(query)
+    expected = [dict(min=builtins.min(e), max=builtins.max(e))]
+    assert_rowset_equal(result, expected)
