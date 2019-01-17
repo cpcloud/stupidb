@@ -22,7 +22,7 @@ from typing import (
 import attr
 import toolz
 
-from stupidb.protocols import AdditiveWithInverse
+from stupidb.protocols import AdditiveWithInverse, Comparable
 from stupidb.row import AbstractRow
 from stupidb.typehints import (
     R1,
@@ -537,6 +537,43 @@ class Mean(Sum[R1, R2]):
     def finalize(self) -> Optional[R2]:
         count = self.count
         return self.total / count if count > 0 else None
+
+
+class MinMax(UnaryWindowAggregate[Comparable, Comparable]):
+    def __init__(
+        self, comparator: Callable[[Comparable, Comparable], Comparable]
+    ) -> None:
+        super().__init__()
+        self.value: Optional[Comparable] = None
+        self.values: List[Optional[Comparable]] = []
+        self.comparator = comparator
+
+    def step(self, input1: Optional[Comparable]) -> None:
+        if input1 is not None:
+            self.count += 1
+            self.values.append(self.value)
+            assert len(self.values) == self.count
+            if self.value is None:
+                self.value = input1
+            else:
+                self.value = self.comparator(self.value, input1)
+
+    def finalize(self) -> Optional[Comparable]:
+        return self.value
+
+    def inverse(self, input1: Optional[Comparable]) -> None:
+        if input1 is not None:
+            self.value = self.value.pop()
+
+
+class Min(MinMax):
+    def __init__(self) -> None:
+        super().__init__(min)
+
+
+class Max(MinMax):
+    def __init__(self) -> None:
+        super().__init__(max)
 
 
 class Covariance(BinaryAggregate[R, R, float]):
