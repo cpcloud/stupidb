@@ -12,7 +12,6 @@ from typing import (
     Iterable,
     Iterator,
     List,
-    MutableMapping,
     Optional,
     Sequence,
     Tuple,
