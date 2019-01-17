@@ -142,7 +142,7 @@ class FrameClause(abc.ABC):
         current_row: AbstractRow,
         row_id_in_partition: int,
         order_by_columns: Sequence[str],
-        current_start_stop: Optional[Tuple[int, int]],
+        previous_start_stop: Optional[Tuple[int, int]],
     ) -> Ranges:
         """Compute the bounds of the window frame.
 
@@ -165,10 +165,10 @@ class FrameClause(abc.ABC):
         current_row_order_by_value, order_by_values = self.setup_window(
             possible_peers, current_row, order_by_columns
         )
-        if current_start_stop is not None:
-            current_start, current_stop = current_start_stop
+        if previous_start_stop is not None:
+            previous_start, previous_stop = previous_start_stop
         else:
-            current_start = current_stop = 0
+            previous_start = previous_stop = 0
 
         preceding = self.preceding
         if preceding is not None:
@@ -196,18 +196,34 @@ class FrameClause(abc.ABC):
         new_start = max(start, 0)
         new_stop = min(stop, npeers)
 
-        # current_start can at least be equal to new_start. This will produce a
-        # range whose start is larger than it's stop, e.g., seq[1:0]. This
+        # start potential removal at the previous starting point
+        #
+        # stop removing up to the new start
+        #
+        # previous_start can at least be equal to new_start. This will produce
+        # a range whose start is larger than it's stop, e.g., seq[1:0]. This
         # results in removal of no rows, which is what we want when the window
         # has only increased in size and not shrunk, we would use max here if
         # for a language that doesn't have the same slice semantics as Python.
+        remove_start = previous_start
+        remove_stop = new_start - previous_start
+
+        # start adding rows from the previous stopping point
+        #
+        # stop adding rows at the new endpoint
+        add_start = previous_stop
+        add_stop = new_stop
+
+        # absolute range is the entire window
         #
         # we track the absolute range so that we can determine how the window
         # changes throughout the iteration over the partitions
-        range_to_remove = (current_start, new_start - current_start)
-        range_to_add = (current_stop, new_stop)
         absolute_range = (new_start, new_stop)
-        return range_to_remove, range_to_add, absolute_range
+        return (
+            (remove_start, remove_stop),
+            (add_start, add_stop),
+            absolute_range,
+        )
 
 
 @attr.s(frozen=True, slots=True)
@@ -441,7 +457,7 @@ class WindowAggregateSpecification(AggregateSpecification):
             for row_id_in_partition, (table_row_index, row) in enumerate(
                 possible_peers
             ):
-                current_start_stop = most_recent_start_stop.get(partition_id)
+                previous_start_stop = most_recent_start_stop.get(partition_id)
                 (range_to_remove_start, range_to_remove_stop), (
                     range_to_add_start,
                     range_to_add_stop,
@@ -453,7 +469,7 @@ class WindowAggregateSpecification(AggregateSpecification):
                     row,
                     row_id_in_partition,
                     order_by_columns,
-                    current_start_stop,
+                    previous_start_stop,
                 )
                 assert (
                     0 <= absolute_start <= absolute_stop <= len(possible_peers)
