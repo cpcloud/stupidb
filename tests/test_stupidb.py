@@ -559,7 +559,7 @@ def test_cumsum(rows):
 
 def test_minmax(table, rows):
     query = table >> aggregate(min=min(lambda r: r.e), max=max(lambda r: r.e))
-    e = [r["e"] for r in rows]
     result = list(query)
+    e = [r["e"] for r in rows]
     expected = [dict(min=builtins.min(e), max=builtins.max(e))]
     assert_rowset_equal(result, expected)
