@@ -1,6 +1,5 @@
 import abc
 import bisect
-import itertools
 import operator
 import typing
 from typing import (
@@ -55,6 +54,17 @@ class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
         ...
 
 
+class UnaryWindowAggregate(UnaryAggregate[Input1, Output]):
+    __slots__ = ()
+
+    @abc.abstractmethod
+    def inverse(self, input1: Input1) -> None:
+        ...
+
+    def value(self) -> Optional[Output]:
+        return self.finalize()
+
+
 class BinaryAggregate(Generic[Input1, Input2, Output], metaclass=abc.ABCMeta):
     __slots__ = ("count",)
 
@@ -70,8 +80,24 @@ class BinaryAggregate(Generic[Input1, Input2, Output], metaclass=abc.ABCMeta):
         ...
 
 
+class BinaryWindowAggregate(BinaryAggregate[Input1, Input2, Output]):
+    __slots__ = ()
+
+    @abc.abstractmethod
+    def inverse(
+        self, input1: Optional[Input1], input2: Optional[Input2]
+    ) -> None:
+        ...
+
+    def value(self) -> Optional[Output]:
+        return self.finalize()
+
+
 Aggregate = Union[UnaryAggregate, BinaryAggregate]
-BeginEnd = Tuple[Tuple[int, int], Tuple[int, int]]
+WindowAggregate = Union[UnaryWindowAggregate, BinaryWindowAggregate]
+
+# TODO: give these meaningful names by using typing.NamedTuple
+Ranges = Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]
 
 
 @attr.s(frozen=True, slots=True)
@@ -117,7 +143,7 @@ class FrameClause(abc.ABC):
         row_id_in_partition: int,
         order_by_columns: Sequence[str],
         current_start_stop: Optional[Tuple[int, int]],
-    ) -> BeginEnd:
+    ) -> Ranges:
         """Compute the bounds of the window frame.
 
         Parameters
@@ -133,7 +159,7 @@ class FrameClause(abc.ABC):
 
         Returns
         -------
-        BeginEnd
+        Ranges
 
         """
         current_row_order_by_value, order_by_values = self.setup_window(
@@ -169,10 +195,19 @@ class FrameClause(abc.ABC):
 
         new_start = max(start, 0)
         new_stop = min(stop, npeers)
-        return (
-            (current_stop - new_start, new_stop),
-            (new_start, new_stop),
-        )
+
+        # current_start can at least be equal to new_start. This will produce a
+        # range whose start is larger than it's stop, e.g., seq[1:0]. This
+        # results in removal of no rows, which is what we want when the window
+        # has only increased in size and not shrunk, we would use max here if
+        # for a language that doesn't have the same slice semantics as Python.
+        #
+        # we track the absolute range so that we can determine how the window
+        # changes throughout the iteration over the partitions
+        range_to_remove = (current_start, new_start - current_start)
+        range_to_add = (current_stop, new_stop)
+        absolute_range = (new_start, new_stop)
+        return range_to_remove, range_to_add, absolute_range
 
 
 @attr.s(frozen=True, slots=True)
@@ -350,6 +385,8 @@ def make_key_func(
 
 @attr.s(frozen=True, slots=True)
 class WindowAggregateSpecification(AggregateSpecification):
+    aggregate = attr.ib(type=Type[WindowAggregate])  # type: ignore
+    getters = attr.ib(type=Tuple[Getter, ...])  # type: ignore
     frame_clause = attr.ib(type=FrameClause)
 
     def compute(self, rows: Iterable[AbstractRow]) -> Iterator[Any]:
@@ -405,19 +442,19 @@ class WindowAggregateSpecification(AggregateSpecification):
                 possible_peers
             ):
                 current_start_stop = most_recent_start_stop.get(partition_id)
-                # Compute the window frame bounds, which is a subset of
-                # `possible_peers`.
-                (relative_start, relative_stop), (
+                (range_to_remove_start, range_to_remove_stop), (
+                    range_to_add_start,
+                    range_to_add_stop,
+                ), (
                     absolute_start,
                     absolute_stop,
-                ) = win = frame_clause.compute_window_frame_bounds(
+                ) = frame_clause.compute_window_frame_bounds(
                     possible_peers,
                     row,
                     row_id_in_partition,
                     order_by_columns,
                     current_start_stop,
                 )
-                print(win)
                 assert (
                     0 <= absolute_start <= absolute_stop <= len(possible_peers)
                 ), f"start == {absolute_start}, stop == {absolute_stop}"
@@ -428,16 +465,24 @@ class WindowAggregateSpecification(AggregateSpecification):
                 )
 
                 # Aggregate over the rows in the frame.
-                for partition_index in range(relative_start, relative_stop):
-                    _, peer = possible_peers[partition_index]
+                for _, peer in possible_peers[
+                    range_to_remove_start:range_to_remove_stop
+                ]:
+                    args = [getter(peer) for getter in self.getters]
+                    agg.inverse(*args)
+
+                for _, peer in possible_peers[
+                    range_to_add_start:range_to_add_stop
+                ]:
                     args = [getter(peer) for getter in self.getters]
                     agg.step(*args)
-                result = agg.finalize()
+
+                result = agg.value()
                 results.append((table_row_index, result))
         return map(toolz.second, sorted(results, key=operator.itemgetter(0)))
 
 
-class Count(UnaryAggregate[Input1, int]):
+class Count(UnaryWindowAggregate[Input1, int]):
     __slots__ = ()
 
     def step(self, input1: Optional[Input1]) -> None:
@@ -447,8 +492,12 @@ class Count(UnaryAggregate[Input1, int]):
     def finalize(self) -> Optional[int]:
         return self.count
 
+    def inverse(self, input1: Optional[Input1]) -> None:
+        if input1 is not None:
+            self.count -= 1
 
-class Sum(UnaryAggregate[R1, R2]):
+
+class Sum(UnaryWindowAggregate[R1, R2]):
     __slots__ = ("total",)
 
     def __init__(self) -> None:
@@ -462,6 +511,11 @@ class Sum(UnaryAggregate[R1, R2]):
 
     def finalize(self) -> Optional[R2]:
         return self.total if self.count else None
+
+    def inverse(self, input1: Input1) -> None:
+        if input1 is not None:
+            self.total -= input1
+            self.count -= 1
 
 
 class Total(Sum[R1, R2]):
