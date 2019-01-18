@@ -193,9 +193,15 @@ class FrameClause(abc.ABC):
                 order_by_values,
             )
         else:
-            # default to the current row if following is not provided. This is
-            # consistent with the defaults in at least PostgreSQL and SQLite.
-            stop = row_id_in_partition + 1
+            if not order_by_values:
+                # if we don't have an order by then all possible peers are the
+                # actual peers of this row
+                stop = npeers
+            else:
+                # default to the current row if following is not provided. This
+                # is consistent with the defaults in at least PostgreSQL and
+                # SQLite.
+                stop = row_id_in_partition + 1
 
         new_start = max(start, 0)
         new_stop = min(stop, npeers)
