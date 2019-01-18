@@ -612,3 +612,56 @@ class PopulationCovariance(Covariance):
 
     def __init__(self) -> None:
         super().__init__(ddof=0)
+
+
+class First(UnaryWindowAggregate[Input1, Input1]):
+    def __init__(self):
+        self._value = None
+        self._values = []
+
+    def step(self, input1: Optional[Input1]) -> None:
+        if self._value is None:
+            self._values.append(self._value)
+            self._value = input1
+
+    def finalize(self) -> Input1:
+        return self._value
+
+    def inverse(self, input1: Optional[Input1]) -> None:
+        self._value = self._values.pop()
+
+
+class Last(UnaryWindowAggregate[Input1, Input1]):
+    def __init__(self):
+        self.current_value: Optional[Input1] = None
+        self.values: List[Optional[Input1]] = []
+
+    def step(self, input1: Optional[Input1]) -> None:
+        self.current_value = input1
+
+    def finalize(self) -> Input1:
+        return self.current_value
+
+    def inverse(self, input1: Optional[Input1]) -> None:
+        self.current_value = self.values.pop()
+
+
+class Nth(BinaryWindowAggregate[Input1, int, Input1]):
+    def __init__(self):
+        self.current_value: Optional[Input1] = None
+        self.current_index = 0
+        self.value_history: List[Input1] = []
+
+    def step(self, input1: Optional[Input1], index: Optional[int]) -> None:
+        if index is not None and index == self.current_index:
+            self.value_history.append(self.current_value)
+            self.current_value = input1
+        self.current_index += 1
+
+    def finalize(self) -> Input1:
+        return self.current_value
+
+    def inverse(self, input1: Optional[Input1], index: Optional[int]) -> None:
+        if index is not None and index == self.current_index:
+            self.current_value = self.value_history.pop()
+        self.current_index -= 1
