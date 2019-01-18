@@ -568,14 +568,14 @@ def test_minmax(table, rows):
     assert_rowset_equal(result, expected)
 
 
-def test_first_last_nth(t_rows):
+def test_first_last_nth_min_max(t_rows):
+    window = Window.range(partition_by=[lambda r: r.name])
     query = table_(t_rows) >> select(
-        first_date=first(lambda r: r.date)
-        >> over(Window.range(partition_by=[lambda r: r.name])),
-        last_date=last(lambda r: r.date)
-        >> over(Window.range(partition_by=[lambda r: r.name])),
-        nth_date=nth(lambda r: r.date, lambda r: 2)
-        >> over(Window.range(partition_by=[lambda r: r.name])),
+        first_date=first(lambda r: r.date) >> over(window),
+        last_date=last(lambda r: r.date) >> over(window),
+        nth_date=nth(lambda r: r.date, lambda r: 2) >> over(window),
+        min_date=min(lambda r: r.date) >> over(window),
+        max_date=max(lambda r: r.date) >> over(window)
     )
     result = list(query)
     expected = [
@@ -583,36 +583,50 @@ def test_first_last_nth(t_rows):
             first_date=date(2018, 1, 1),
             last_date=date(2018, 1, 7),
             nth_date=date(2018, 1, 6),
+            min_date=date(2018, 1, 1),
+            max_date=date(2018, 1, 7),
         ),
         dict(
             first_date=date(2018, 1, 1),
             last_date=date(2018, 1, 7),
             nth_date=date(2018, 1, 6),
+            min_date=date(2018, 1, 1),
+            max_date=date(2018, 1, 7),
         ),
         dict(
             first_date=date(2018, 1, 1),
             last_date=date(2018, 1, 7),
             nth_date=date(2018, 1, 6),
+            min_date=date(2018, 1, 1),
+            max_date=date(2018, 1, 7),
         ),
         dict(
             first_date=date(2018, 1, 1),
             last_date=date(2018, 1, 7),
             nth_date=date(2018, 1, 6),
+            min_date=date(2018, 1, 1),
+            max_date=date(2018, 1, 7),
         ),
         dict(
             first_date=date(2018, 1, 2),
             last_date=date(2018, 1, 4),
             nth_date=date(2018, 1, 4),
+            min_date=date(2018, 1, 2),
+            max_date=date(2018, 1, 4),
         ),
         dict(
             first_date=date(2018, 1, 2),
             last_date=date(2018, 1, 4),
             nth_date=date(2018, 1, 4),
+            min_date=date(2018, 1, 2),
+            max_date=date(2018, 1, 4),
         ),
         dict(
             first_date=date(2018, 1, 2),
             last_date=date(2018, 1, 4),
             nth_date=date(2018, 1, 4),
+            min_date=date(2018, 1, 2),
+            max_date=date(2018, 1, 4),
         ),
     ]
     assert_rowset_equal(result, expected)
