@@ -111,8 +111,8 @@ class FrameClause(abc.ABC):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[AdditiveWithInverse],
-        order_by_values: Sequence[AdditiveWithInverse],
+        current_row_order_by_value: Optional[Tuple[AdditiveWithInverse, ...]],
+        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
     ) -> int:
         ...
 
@@ -121,8 +121,8 @@ class FrameClause(abc.ABC):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[AdditiveWithInverse],
-        order_by_values: Sequence[AdditiveWithInverse],
+        current_row_order_by_value: Optional[Tuple[AdditiveWithInverse, ...]],
+        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
     ) -> int:
         ...
 
@@ -132,7 +132,10 @@ class FrameClause(abc.ABC):
         possible_peers: Sequence[Tuple[int, AbstractRow]],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
-    ) -> Tuple[Optional[AdditiveWithInverse], Sequence[AdditiveWithInverse]]:
+    ) -> Tuple[
+        Tuple[AdditiveWithInverse, ...],
+        Sequence[Tuple[AdditiveWithInverse, ...]],
+    ]:
         ...
 
     def compute_window_frame(
@@ -236,8 +239,8 @@ class RowsMode(FrameClause):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[AdditiveWithInverse],
-        order_by_values: Sequence[AdditiveWithInverse],
+        current_row_order_by_value: Optional[Tuple[AdditiveWithInverse, ...]],
+        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
     ) -> int:
         preceding = self.preceding
         assert preceding is not None, "preceding is None"
@@ -247,8 +250,8 @@ class RowsMode(FrameClause):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[AdditiveWithInverse],
-        order_by_values: Sequence[AdditiveWithInverse],
+        current_row_order_by_value: Optional[Tuple[AdditiveWithInverse, ...]],
+        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
     ) -> int:
         following = self.following
         assert following is not None, "following is None"
@@ -261,8 +264,15 @@ class RowsMode(FrameClause):
         possible_peers: Sequence[Tuple[int, AbstractRow]],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
-    ) -> Tuple[Optional[AdditiveWithInverse], Sequence[AdditiveWithInverse]]:
-        return None, ()
+    ) -> Tuple[
+        Tuple[AdditiveWithInverse, ...],
+        Sequence[Tuple[AdditiveWithInverse, ...]],
+    ]:
+        cols = [
+            tuple(map(peer.__getitem__, order_by_columns))
+            for _, peer in possible_peers
+        ]
+        return tuple(map(current_row.__getitem__, order_by_columns)), cols
 
 
 @attr.s(frozen=True, slots=True)
@@ -272,7 +282,14 @@ class RangeMode(FrameClause):
         possible_peers: Sequence[Tuple[int, AbstractRow]],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
-    ) -> Tuple[Optional[AdditiveWithInverse], Sequence[AdditiveWithInverse]]:
+    ) -> Tuple[
+        Tuple[AdditiveWithInverse, ...],
+        Sequence[Tuple[AdditiveWithInverse, ...]],
+    ]:
+        # range mode allows no order by
+        if not order_by_columns:
+            return (), ()
+
         ncolumns = len(order_by_columns)
         if ncolumns != 1:
             raise ValueError(
@@ -280,16 +297,18 @@ class RangeMode(FrameClause):
                 f"Got {ncolumns:d}."
             )
         order_by_column, = order_by_columns
-        order_by_values = [peer[order_by_column] for _, peer in possible_peers]
-        current_row_order_by_value = current_row[order_by_column]
+        order_by_values = [
+            (peer[order_by_column],) for _, peer in possible_peers
+        ]
+        current_row_order_by_value = (current_row[order_by_column],)
         return current_row_order_by_value, order_by_values
 
     def find_partition_begin(
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[AdditiveWithInverse],
-        order_by_values: Sequence[AdditiveWithInverse],
+        current_row_order_by_values: Optional[Tuple[AdditiveWithInverse, ...]],
+        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
     ) -> int:
         """Find the beginning of a window in a partition.
 
@@ -311,20 +330,24 @@ class RangeMode(FrameClause):
 
         """
         assert (
-            current_row_order_by_value is not None
+            current_row_order_by_values is not None
         ), "current_row_order_by_value is None"
         preceding = self.preceding
         assert preceding is not None, "preceding function is None"
+        assert len(current_row_order_by_values) == 1
+        current_row_order_by_value, = current_row_order_by_values
         value_to_find = current_row_order_by_value - preceding(current_row)
-        bisected_index = bisect.bisect_left(order_by_values, value_to_find)
+        bisected_index = bisect.bisect_left(
+            [value for value, in order_by_values], value_to_find
+        )
         return bisected_index
 
     def find_partition_end(
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[AdditiveWithInverse],
-        order_by_values: Sequence[AdditiveWithInverse],
+        current_row_order_by_values: Optional[Tuple[AdditiveWithInverse, ...]],
+        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
     ) -> int:
         """Find the end of a window in a partition.
 
@@ -346,12 +369,16 @@ class RangeMode(FrameClause):
 
         """
         assert (
-            current_row_order_by_value is not None
-        ), "current_row_order_by_value"
+            current_row_order_by_values is not None
+        ), "current_row_order_by_values is None"
         following = self.following
         assert following is not None, "following function is None"
+        assert len(current_row_order_by_values) == 1
+        current_row_order_by_value, = current_row_order_by_values
         value_to_find = current_row_order_by_value + following(current_row)
-        bisected_index = bisect.bisect_right(order_by_values, value_to_find)
+        bisected_index = bisect.bisect_right(
+            [value for value, in order_by_values], value_to_find
+        )
         return bisected_index
 
 
