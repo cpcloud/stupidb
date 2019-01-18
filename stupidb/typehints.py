@@ -4,6 +4,7 @@ from typing import Callable, Hashable, Tuple, TypeVar
 from stupidb.protocols import AdditiveWithInverse
 from stupidb.row import AbstractRow
 
+OrderingKey = Tuple[AdditiveWithInverse, ...]
 PartitionKey = Tuple[Tuple[str, Hashable], ...]
 
 PartitionBy = Callable[[AbstractRow], Hashable]

@@ -22,7 +22,7 @@ from typing import (
 import attr
 import toolz
 
-from stupidb.protocols import AdditiveWithInverse, Comparable
+from stupidb.protocols import Comparable
 from stupidb.row import AbstractRow
 from stupidb.typehints import (
     R1,
@@ -31,6 +31,7 @@ from stupidb.typehints import (
     Input1,
     Input2,
     OrderBy,
+    OrderingKey,
     Output,
     PartitionBy,
     Preceding,
@@ -111,8 +112,8 @@ class FrameClause(abc.ABC):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[Tuple[AdditiveWithInverse, ...]],
-        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
+        current_row_order_by_value: Optional[OrderingKey],
+        order_by_values: Sequence[OrderingKey],
     ) -> int:
         ...
 
@@ -121,8 +122,8 @@ class FrameClause(abc.ABC):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[Tuple[AdditiveWithInverse, ...]],
-        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
+        current_row_order_by_value: Optional[OrderingKey],
+        order_by_values: Sequence[OrderingKey],
     ) -> int:
         ...
 
@@ -132,10 +133,7 @@ class FrameClause(abc.ABC):
         possible_peers: Sequence[Tuple[int, AbstractRow]],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
-    ) -> Tuple[
-        Tuple[AdditiveWithInverse, ...],
-        Sequence[Tuple[AdditiveWithInverse, ...]],
-    ]:
+    ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:
         ...
 
     def compute_window_frame(
@@ -245,8 +243,8 @@ class RowsMode(FrameClause):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[Tuple[AdditiveWithInverse, ...]],
-        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
+        current_row_order_by_value: Optional[OrderingKey],
+        order_by_values: Sequence[OrderingKey],
     ) -> int:
         preceding = self.preceding
         assert preceding is not None, "preceding is None"
@@ -256,8 +254,8 @@ class RowsMode(FrameClause):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[Tuple[AdditiveWithInverse, ...]],
-        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
+        current_row_order_by_value: Optional[OrderingKey],
+        order_by_values: Sequence[OrderingKey],
     ) -> int:
         following = self.following
         assert following is not None, "following is None"
@@ -270,10 +268,7 @@ class RowsMode(FrameClause):
         possible_peers: Sequence[Tuple[int, AbstractRow]],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
-    ) -> Tuple[
-        Tuple[AdditiveWithInverse, ...],
-        Sequence[Tuple[AdditiveWithInverse, ...]],
-    ]:
+    ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:
         cols = [
             tuple(map(peer.__getitem__, order_by_columns))
             for _, peer in possible_peers
@@ -288,10 +283,7 @@ class RangeMode(FrameClause):
         possible_peers: Sequence[Tuple[int, AbstractRow]],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
-    ) -> Tuple[
-        Tuple[AdditiveWithInverse, ...],
-        Sequence[Tuple[AdditiveWithInverse, ...]],
-    ]:
+    ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:
         # range mode allows no order by
         if not order_by_columns:
             return (), ()
@@ -313,8 +305,8 @@ class RangeMode(FrameClause):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_values: Optional[Tuple[AdditiveWithInverse, ...]],
-        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
+        current_row_order_by_values: Optional[OrderingKey],
+        order_by_values: Sequence[OrderingKey],
     ) -> int:
         """Find the beginning of a window in a partition.
 
@@ -352,8 +344,8 @@ class RangeMode(FrameClause):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_values: Optional[Tuple[AdditiveWithInverse, ...]],
-        order_by_values: Sequence[Tuple[AdditiveWithInverse, ...]],
+        current_row_order_by_values: Optional[OrderingKey],
+        order_by_values: Sequence[OrderingKey],
     ) -> int:
         """Find the end of a window in a partition.
 
@@ -426,10 +418,8 @@ def compute_partition_key(
 
 def make_key_func(
     order_by_columns: Sequence[str],
-) -> Callable[[Tuple[int, AbstractRow]], Tuple[AdditiveWithInverse, ...]]:
-    def key(
-        row_with_id: Tuple[int, AbstractRow]
-    ) -> Tuple[AdditiveWithInverse, ...]:
+) -> Callable[[Tuple[int, AbstractRow]], OrderingKey]:
+    def key(row_with_id: Tuple[int, AbstractRow]) -> OrderingKey:
         _, row = row_with_id
         return tuple(row[column] for column in order_by_columns)
 
