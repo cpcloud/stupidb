@@ -18,13 +18,16 @@ from stupidb.api import (
     count,
     cross_join,
     exists,
+    first,
     group_by,
     inner_join,
+    last,
     left_join,
     max,
     mean,
     min,
     mutate,
+    nth,
     order_by,
     over,
     pop_cov,
@@ -547,8 +550,8 @@ def cumagg(seq: Iterable[T], combine: Callable[[T, U], U]) -> Iterator[U]:
         yield result
 
 
-def test_cumsum(rows):
-    query = table_(rows) >> select(
+def test_cumsum(table):
+    query = table >> select(
         my_cumsum=sum(lambda r: r.e)
         >> over(Window.rows(order_by=[lambda r: r.e]))
     )
@@ -562,4 +565,54 @@ def test_minmax(table, rows):
     result = list(query)
     e = [r["e"] for r in rows]
     expected = [dict(min=builtins.min(e), max=builtins.max(e))]
+    assert_rowset_equal(result, expected)
+
+
+def test_first_last_nth(t_rows):
+    query = table_(t_rows) >> select(
+        first_date=first(lambda r: r.date)
+        >> over(Window.range(partition_by=[lambda r: r.name])),
+        last_date=last(lambda r: r.date)
+        >> over(Window.range(partition_by=[lambda r: r.name])),
+        nth_date=nth(lambda r: r.date, lambda r: 2)
+        >> over(Window.range(partition_by=[lambda r: r.name])),
+    )
+    result = list(query)
+    expected = [
+        dict(
+            first_date=date(2018, 1, 1),
+            last_date=date(2018, 1, 7),
+            nth_date=date(2018, 1, 6),
+        ),
+        dict(
+            first_date=date(2018, 1, 1),
+            last_date=date(2018, 1, 7),
+            nth_date=date(2018, 1, 6),
+        ),
+        dict(
+            first_date=date(2018, 1, 1),
+            last_date=date(2018, 1, 7),
+            nth_date=date(2018, 1, 6),
+        ),
+        dict(
+            first_date=date(2018, 1, 1),
+            last_date=date(2018, 1, 7),
+            nth_date=date(2018, 1, 6),
+        ),
+        dict(
+            first_date=date(2018, 1, 2),
+            last_date=date(2018, 1, 4),
+            nth_date=date(2018, 1, 4),
+        ),
+        dict(
+            first_date=date(2018, 1, 2),
+            last_date=date(2018, 1, 4),
+            nth_date=date(2018, 1, 4),
+        ),
+        dict(
+            first_date=date(2018, 1, 2),
+            last_date=date(2018, 1, 4),
+            nth_date=date(2018, 1, 4),
+        ),
+    ]
     assert_rowset_equal(result, expected)
