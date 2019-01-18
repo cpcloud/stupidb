@@ -470,7 +470,7 @@ class WindowAggregateSpecification(AggregateSpecification):
                 (table_row_index, row)
             )
 
-        # sort and compute the location of each row in its partition
+        # sort
         key = make_key_func(order_by_columns)
         for partition_key in partitions.keys():
             partitions[partition_key].sort(key=key)
