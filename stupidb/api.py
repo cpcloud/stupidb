@@ -18,6 +18,7 @@ from stupidb.aggregation import (
     Total,
     WindowAggregateSpecification,
 )
+from stupidb.protocols import Comparable
 from stupidb.row import AbstractRow
 from stupidb.stupidb import (
     Aggregation,
@@ -39,7 +40,6 @@ from stupidb.stupidb import (
     Tuple,
     Union,
 )
-from stupidb.protocols import Comparable
 from stupidb.typehints import OrderBy, RealGetter
 
 

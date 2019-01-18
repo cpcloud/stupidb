@@ -575,7 +575,7 @@ def test_first_last_nth_min_max(t_rows):
         last_date=last(lambda r: r.date) >> over(window),
         nth_date=nth(lambda r: r.date, lambda r: 2) >> over(window),
         min_date=min(lambda r: r.date) >> over(window),
-        max_date=max(lambda r: r.date) >> over(window)
+        max_date=max(lambda r: r.date) >> over(window),
     )
     result = list(query)
     expected = [
