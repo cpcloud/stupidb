@@ -568,32 +568,34 @@ class Mean(Sum[R1, R2]):
 
 
 class MinMax(UnaryWindowAggregate[Comparable, Comparable]):
-    __slots__ = "value", "values", "comparator"
+    __slots__ = "current_value", "value_history", "comparator"
 
     def __init__(
         self, comparator: Callable[[Comparable, Comparable], Comparable]
     ) -> None:
         super().__init__()
-        self.value: Optional[Comparable] = None
-        self.values: List[Optional[Comparable]] = []
+        self.current_value: Optional[Comparable] = None
+        self.value_history: List[Optional[Comparable]] = []
         self.comparator = comparator
 
     def step(self, input1: Optional[Comparable]) -> None:
         if input1 is not None:
             self.count += 1
-            self.values.append(self.value)
-            assert len(self.values) == self.count
-            if self.value is None:
-                self.value = input1
+            self.value_history.append(self.current_value)
+            assert len(self.value_history) == self.count
+            if self.current_value is None:
+                self.current_value = input1
             else:
-                self.value = self.comparator(self.value, input1)
+                self.current_value = self.comparator(
+                    self.current_value, input1
+                )
 
     def finalize(self) -> Optional[Comparable]:
-        return self.value
+        return self.current_value
 
     def inverse(self, input1: Optional[Comparable]) -> None:
         if input1 is not None:
-            self.value = self.value.pop()
+            self.current_value = self.value_history.pop()
 
 
 class Min(MinMax):
