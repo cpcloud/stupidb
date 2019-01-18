@@ -639,34 +639,35 @@ class PopulationCovariance(Covariance):
 
 class First(UnaryWindowAggregate[Input1, Input1]):
     def __init__(self):
-        self._value = None
-        self._values = []
+        self.current_value: Optional[Input1] = None
+        self.value_history: List[Optional[Input1]] = []
 
     def step(self, input1: Optional[Input1]) -> None:
-        if self._value is None:
-            self._values.append(self._value)
-            self._value = input1
+        if self.current_value is None:
+            self.value_history.append(self.current_value)
+            self.current_value = input1
 
     def finalize(self) -> Input1:
-        return self._value
+        return self.current_value
 
     def inverse(self, input1: Optional[Input1]) -> None:
-        self._value = self._values.pop()
+        self.current_value = self.value_history.pop()
 
 
 class Last(UnaryWindowAggregate[Input1, Input1]):
     def __init__(self):
         self.current_value: Optional[Input1] = None
-        self.values: List[Optional[Input1]] = []
+        self.value_history: List[Optional[Input1]] = []
 
     def step(self, input1: Optional[Input1]) -> None:
+        self.value_history.append(self.current_value)
         self.current_value = input1
 
     def finalize(self) -> Input1:
         return self.current_value
 
     def inverse(self, input1: Optional[Input1]) -> None:
-        self.current_value = self.values.pop()
+        self.current_value = self.value_history.pop()
 
 
 class Nth(BinaryWindowAggregate[Input1, int, Input1]):
