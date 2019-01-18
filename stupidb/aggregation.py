@@ -498,6 +498,10 @@ class WindowAggregateSpecification(AggregateSpecification):
                 )
 
                 # Aggregate over the rows in the frame.
+                #
+                # Currently implements the "removable cumulative" algorithm
+                # from "Efficient Processing of Window Functions in Analytical
+                # SQL Queries"
                 for _, peer in possible_peers[remove.start : remove.stop]:
                     args = [getter(peer) for getter in self.getters]
                     agg.inverse(*args)
@@ -508,6 +512,9 @@ class WindowAggregateSpecification(AggregateSpecification):
 
                 result = agg.value()
                 results.append((table_row_index, result))
+
+        # Sort the results in order of the child relation, because we processed
+        # them in partition order, which might not be the same
         return map(toolz.second, sorted(results, key=operator.itemgetter(0)))
 
 
@@ -563,6 +570,8 @@ class Mean(Sum[R1, R2]):
 
 
 class MinMax(UnaryWindowAggregate[Comparable, Comparable]):
+    __slots__ = "value", "values", "comparator"
+
     def __init__(
         self, comparator: Callable[[Comparable, Comparable], Comparable]
     ) -> None:
@@ -590,11 +599,15 @@ class MinMax(UnaryWindowAggregate[Comparable, Comparable]):
 
 
 class Min(MinMax):
+    __slots__ = ()
+
     def __init__(self) -> None:
         super().__init__(min)
 
 
 class Max(MinMax):
+    __slots__ = ()
+
     def __init__(self) -> None:
         super().__init__(max)
 
@@ -638,6 +651,8 @@ class PopulationCovariance(Covariance):
 
 
 class First(UnaryWindowAggregate[Input1, Input1]):
+    __slots__ = "current_value", "value_history"
+
     def __init__(self):
         self.current_value: Optional[Input1] = None
         self.value_history: List[Optional[Input1]] = []
@@ -655,6 +670,8 @@ class First(UnaryWindowAggregate[Input1, Input1]):
 
 
 class Last(UnaryWindowAggregate[Input1, Input1]):
+    __slots__ = "current_value", "value_history"
+
     def __init__(self):
         self.current_value: Optional[Input1] = None
         self.value_history: List[Optional[Input1]] = []
@@ -671,6 +688,8 @@ class Last(UnaryWindowAggregate[Input1, Input1]):
 
 
 class Nth(BinaryWindowAggregate[Input1, int, Input1]):
+    __slots__ = "current_value", "current_index", "value_history"
+
     def __init__(self):
         self.current_value: Optional[Input1] = None
         self.current_index = 0
