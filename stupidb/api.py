@@ -5,10 +5,13 @@ from toolz import curry
 from stupidb.aggregation import (
     AggregateSpecification,
     Count,
+    First,
     FrameClause,
+    Last,
     Max,
     Mean,
     Min,
+    Nth,
     PopulationCovariance,
     SampleCovariance,
     Sum,
@@ -217,6 +220,20 @@ def sum(getter: RealGetter) -> AggregateSpecification:
 
 def total(getter: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(Total, (getter,))
+
+
+def first(getter: Callable[[AbstractRow], V]) -> AggregateSpecification:
+    return AggregateSpecification(First, (getter,))
+
+
+def last(getter: Callable[[AbstractRow], V]) -> AggregateSpecification:
+    return AggregateSpecification(Last, (getter,))
+
+
+def nth(
+    getter: Callable[[AbstractRow], V], index: Callable[[AbstractRow], int]
+) -> AggregateSpecification:
+    return AggregateSpecification(Nth, (getter, index))
 
 
 def mean(getter: RealGetter) -> AggregateSpecification:
