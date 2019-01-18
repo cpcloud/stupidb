@@ -39,6 +39,7 @@ from stupidb.stupidb import (
     Tuple,
     Union,
 )
+from stupidb.protocols import Comparable
 from stupidb.typehints import OrderBy, RealGetter
 
 
@@ -240,11 +241,11 @@ def mean(getter: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(Mean, (getter,))
 
 
-def min(getter) -> AggregateSpecification:
+def min(getter: Callable[[AbstractRow], Comparable]) -> AggregateSpecification:
     return AggregateSpecification(Min, (getter,))
 
 
-def max(getter) -> AggregateSpecification:
+def max(getter: Callable[[AbstractRow], Comparable]) -> AggregateSpecification:
     return AggregateSpecification(Max, (getter,))
 
 
