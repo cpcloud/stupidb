@@ -7,7 +7,6 @@ from typing import (
     Callable,
     Collection,
     Dict,
-    Generic,
     Hashable,
     Iterable,
     Iterator,
@@ -16,7 +15,7 @@ from typing import (
     Sequence,
     Tuple,
     Type,
-    Union,
+    TypeVar,
 )
 
 import attr
@@ -24,77 +23,25 @@ import toolz
 
 from stupidb.protocols import Comparable
 from stupidb.row import AbstractRow
+from stupidb.segmenttree import (
+    Aggregate,
+    BinaryAggregate,
+    SegmentTree,
+    UnaryAggregate,
+)
 from stupidb.typehints import (
     R1,
     R2,
     Following,
     Input1,
-    Input2,
     OrderBy,
     OrderingKey,
-    Output,
     PartitionBy,
     Preceding,
     R,
 )
 
-
-class UnaryAggregate(Generic[Input1, Output], metaclass=abc.ABCMeta):
-    __slots__ = ("count",)
-
-    def __init__(self) -> None:
-        self.count = 0
-
-    @abc.abstractmethod
-    def step(self, input1: Optional[Input1]) -> None:
-        ...
-
-    @abc.abstractmethod
-    def finalize(self) -> Optional[Output]:
-        ...
-
-
-class UnaryWindowAggregate(UnaryAggregate[Input1, Output]):
-    __slots__ = ()
-
-    @abc.abstractmethod
-    def inverse(self, input1: Input1) -> None:
-        ...
-
-    def value(self) -> Optional[Output]:
-        return self.finalize()
-
-
-class BinaryAggregate(Generic[Input1, Input2, Output], metaclass=abc.ABCMeta):
-    __slots__ = ("count",)
-
-    def __init__(self) -> None:
-        self.count = 0
-
-    @abc.abstractmethod
-    def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
-        ...
-
-    @abc.abstractmethod
-    def finalize(self) -> Optional[Output]:
-        ...
-
-
-class BinaryWindowAggregate(BinaryAggregate[Input1, Input2, Output]):
-    __slots__ = ()
-
-    @abc.abstractmethod
-    def inverse(
-        self, input1: Optional[Input1], input2: Optional[Input2]
-    ) -> None:
-        ...
-
-    def value(self) -> Optional[Output]:
-        return self.finalize()
-
-
-Aggregate = Union[UnaryAggregate, BinaryAggregate]
-WindowAggregate = Union[UnaryWindowAggregate, BinaryWindowAggregate]
+T = TypeVar("T")
 
 StartStop = typing.NamedTuple("StartStop", [("start", int), ("stop", int)])
 Ranges = Tuple[StartStop, StartStop, StartStop]
@@ -142,8 +89,7 @@ class FrameClause(abc.ABC):
         current_row: AbstractRow,
         row_id_in_partition: int,
         order_by_columns: Sequence[str],
-        previous_start_stop: Optional[StartStop],
-    ) -> Ranges:
+    ) -> StartStop:
         """Compute the bounds of the window frame.
 
         Parameters
@@ -165,10 +111,6 @@ class FrameClause(abc.ABC):
         current_row_order_by_value, order_by_values = self.setup_window(
             possible_peers, current_row, order_by_columns
         )
-        if previous_start_stop is not None:
-            previous_start, previous_stop = previous_start_stop
-        else:
-            previous_start = previous_stop = 0
 
         preceding = self.preceding
         if preceding is not None:
@@ -191,7 +133,7 @@ class FrameClause(abc.ABC):
                 order_by_values,
             )
         else:
-            if not order_by_values:
+            if not all(order_by_values):
                 # if we don't have an order by then all possible peers are the
                 # actual peers of this row
                 stop = npeers
@@ -203,38 +145,7 @@ class FrameClause(abc.ABC):
 
         new_start = max(start, 0)
         new_stop = min(stop, npeers)
-
-        # start potential removal at the previous starting point
-        #
-        # stop removing up to the new start
-        #
-        # previous_start can at least be equal to new_start. This will produce
-        # a range whose start is larger than it's stop, e.g., seq[1:0]. This
-        # results in removal of no rows, which is what we want when the window
-        # has only increased in size and not shrunk, we would use max here if
-        # for a language that doesn't have the same slice semantics as Python.
-        remove_start = previous_start
-        remove_stop = new_start - previous_start
-
-        # start adding rows from the previous stopping point
-        #
-        # stop adding rows at the new endpoint
-        add_start = previous_stop
-        add_stop = new_stop
-
-        # absolute range is the entire window
-        #
-        # we track the absolute range so that we can determine how the window
-        # changes throughout the iteration over the partitions
-        absolute_range = StartStop(new_start, new_stop)
-        assert (
-            0 <= new_start <= new_stop <= npeers
-        ), f"start == {new_start}, stop == {new_stop}"
-        return (
-            StartStop(remove_start, remove_stop),
-            StartStop(add_start, add_stop),
-            absolute_range,
-        )
+        return StartStop(new_start, new_stop)
 
 
 @attr.s(frozen=True, slots=True)
@@ -428,7 +339,7 @@ def make_key_func(
 
 @attr.s(frozen=True, slots=True)
 class WindowAggregateSpecification(AggregateSpecification):
-    aggregate = attr.ib(type=Type[WindowAggregate])  # type: ignore
+    aggregate = attr.ib(type=Type[Aggregate])  # type: ignore
     getters = attr.ib(type=Tuple[Getter, ...])  # type: ignore
     frame_clause = attr.ib(type=FrameClause)
 
@@ -477,38 +388,18 @@ class WindowAggregateSpecification(AggregateSpecification):
 
         results: List[Tuple[int, Any]] = []
         for partition_key, possible_peers in partitions.items():
-            agg = self.aggregate()
-            previous_start_stop: Optional[StartStop] = None
-
+            arguments = [
+                tuple(getter(peer) for getter in self.getters)
+                for _, peer in possible_peers
+            ]
+            tree = SegmentTree(arguments, self.aggregate)
             for row_id_in_partition, (table_row_index, row) in enumerate(
                 possible_peers
             ):
-                (
-                    remove,
-                    add,
-                    previous_start_stop,
-                ) = frame_clause.compute_window_frame(
-                    possible_peers,
-                    row,
-                    row_id_in_partition,
-                    order_by_columns,
-                    previous_start_stop,
+                start, stop = frame_clause.compute_window_frame(
+                    possible_peers, row, row_id_in_partition, order_by_columns
                 )
-
-                # Aggregate over the rows in the frame.
-                #
-                # Currently implements the "removable cumulative" algorithm
-                # from "Efficient Processing of Window Functions in Analytical
-                # SQL Queries"
-                for _, peer in possible_peers[remove.start : remove.stop]:
-                    args = [getter(peer) for getter in self.getters]
-                    agg.inverse(*args)
-
-                for _, peer in possible_peers[add.start : add.stop]:
-                    args = [getter(peer) for getter in self.getters]
-                    agg.step(*args)
-
-                result = agg.value()
+                result = tree.traverse(start, stop)
                 results.append((table_row_index, result))
 
         # Sort the results in order of the child relation, because we processed
@@ -516,7 +407,7 @@ class WindowAggregateSpecification(AggregateSpecification):
         return map(toolz.second, sorted(results, key=operator.itemgetter(0)))
 
 
-class Count(UnaryWindowAggregate[Input1, int]):
+class Count(UnaryAggregate[Input1, int]):
     __slots__ = ()
 
     def step(self, input1: Optional[Input1]) -> None:
@@ -526,17 +417,22 @@ class Count(UnaryWindowAggregate[Input1, int]):
     def finalize(self) -> Optional[int]:
         return self.count
 
-    def inverse(self, input1: Optional[Input1]) -> None:
-        if input1 is not None:
-            self.count -= 1
+    def update(self, other: "Count[Input1]") -> None:
+        self.count += other.count
 
 
-class Sum(UnaryWindowAggregate[R1, R2]):
+class Sum(UnaryAggregate[R1, R2]):
     __slots__ = ("total",)
 
     def __init__(self) -> None:
         super().__init__()
         self.total = typing.cast(R2, 0)
+
+    def __repr__(self) -> str:
+        total = self.total
+        count = self.count
+        name = type(self).__name__
+        return f"{name}(total={total}, count={count})"
 
     def step(self, input1: Optional[R1]) -> None:
         if input1 is not None:
@@ -546,10 +442,9 @@ class Sum(UnaryWindowAggregate[R1, R2]):
     def finalize(self) -> Optional[R2]:
         return self.total if self.count else None
 
-    def inverse(self, input1: Input1) -> None:
-        if input1 is not None:
-            self.total -= input1
-            self.count -= 1
+    def update(self, other: "Sum[R1, R2]") -> None:
+        self.total += other.total
+        self.count += other.count
 
 
 class Total(Sum[R1, R2]):
@@ -566,23 +461,25 @@ class Mean(Sum[R1, R2]):
         count = self.count
         return self.total / count if count > 0 else None
 
+    def __repr__(self) -> str:
+        name = type(self).__name__
+        total = self.total
+        count = self.count
+        return f"{name}(total={total}, count={count}, mean={total / count})"
 
-class MinMax(UnaryWindowAggregate[Comparable, Comparable]):
-    __slots__ = "current_value", "value_history", "comparator"
+
+class MinMax(UnaryAggregate[Comparable, Comparable]):
+    __slots__ = "current_value", "comparator"
 
     def __init__(
         self, comparator: Callable[[Comparable, Comparable], Comparable]
     ) -> None:
         super().__init__()
         self.current_value: Optional[Comparable] = None
-        self.value_history: List[Optional[Comparable]] = []
         self.comparator = comparator
 
     def step(self, input1: Optional[Comparable]) -> None:
         if input1 is not None:
-            self.count += 1
-            self.value_history.append(self.current_value)
-            assert len(self.value_history) == self.count
             if self.current_value is None:
                 self.current_value = input1
             else:
@@ -593,9 +490,24 @@ class MinMax(UnaryWindowAggregate[Comparable, Comparable]):
     def finalize(self) -> Optional[Comparable]:
         return self.current_value
 
-    def inverse(self, input1: Optional[Comparable]) -> None:
-        if input1 is not None:
-            self.current_value = self.value_history.pop()
+    def update(self, other: "MinMax") -> None:
+        assert self.comparator == other.comparator, (
+            f"self.comparator == {self.comparator}, "
+            f"other.comparator == {other.comparator}"
+        )
+        if self.current_value is not None and other.current_value is not None:
+            self.current_value = self.comparator(
+                self.current_value, other.current_value
+            )
+
+    def __repr__(self) -> str:
+        name = type(self).__name__
+        current_value = self.current_value
+        comparator = self.comparator
+        return (
+            f"{name}(current_value={current_value}, "
+            f"comparator={comparator})"
+        )
 
 
 class Min(MinMax):
@@ -635,6 +547,11 @@ class Covariance(BinaryAggregate[R, R, float]):
         denom = self.count - self.ddof
         return self.cov / denom if denom > 0 else None
 
+    def update(self, other: "Covariance[R]") -> None:
+        raise NotImplementedError(
+            "Covariance not yet implemented for segment tree"
+        )
+
 
 class SampleCovariance(Covariance):
     __slots__ = ()
@@ -650,61 +567,53 @@ class PopulationCovariance(Covariance):
         super().__init__(ddof=0)
 
 
-class First(UnaryWindowAggregate[Input1, Input1]):
-    __slots__ = "current_value", "value_history"
+class CurrentValueAggregate(UnaryAggregate[Input1, Input1]):
+    __slots__ = ("current_value",)
 
     def __init__(self):
         self.current_value: Optional[Input1] = None
-        self.value_history: List[Optional[Input1]] = []
+
+    def finalize(self) -> Optional[Input1]:
+        return self.current_value
+
+
+class First(CurrentValueAggregate[Input1]):
+    __slots__ = ()
 
     def step(self, input1: Optional[Input1]) -> None:
         if self.current_value is None:
-            self.value_history.append(self.current_value)
             self.current_value = input1
 
-    def finalize(self) -> Optional[Input1]:
-        return self.current_value
-
-    def inverse(self, input1: Optional[Input1]) -> None:
-        self.current_value = self.value_history.pop()
+    def update(self, other: "First[Input1]") -> None:
+        if self.current_value is None:
+            self.current_value = other.current_value
 
 
-class Last(UnaryWindowAggregate[Input1, Input1]):
-    __slots__ = "current_value", "value_history"
-
-    def __init__(self):
-        self.current_value: Optional[Input1] = None
-        self.value_history: List[Optional[Input1]] = []
+class Last(CurrentValueAggregate[Input1]):
+    __slots__ = ()
 
     def step(self, input1: Optional[Input1]) -> None:
-        self.value_history.append(self.current_value)
         self.current_value = input1
 
-    def finalize(self) -> Optional[Input1]:
-        return self.current_value
-
-    def inverse(self, input1: Optional[Input1]) -> None:
-        self.current_value = self.value_history.pop()
+    def update(self, other: "Last[Input1]") -> None:
+        self.current_value = other.current_value
 
 
-class Nth(BinaryWindowAggregate[Input1, int, Input1]):
-    __slots__ = "current_value", "current_index", "value_history"
+class Nth(BinaryAggregate[Input1, int, Input1]):
+    __slots__ = "current_value", "current_index"
 
     def __init__(self):
+        super().__init__()
         self.current_value: Optional[Input1] = None
         self.current_index = 0
-        self.value_history: List[Optional[Input1]] = []
 
     def step(self, input1: Optional[Input1], index: Optional[int]) -> None:
         if index is not None and index == self.current_index:
-            self.value_history.append(self.current_value)
             self.current_value = input1
         self.current_index += 1
 
     def finalize(self) -> Optional[Input1]:
         return self.current_value
 
-    def inverse(self, input1: Optional[Input1], index: Optional[int]) -> None:
-        if index is not None and index == self.current_index:
-            self.current_value = self.value_history.pop()
-        self.current_index -= 1
+    def update(self, other: "Nth[Input1]") -> None:
+        raise NotImplementedError("Nth not yet implemented for segment tree")
