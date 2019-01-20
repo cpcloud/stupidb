@@ -28,8 +28,3 @@ INSERT INTO s VALUES
   ('a', 1, -3, 5),
   ('c', 2, -3, 6),
   ('c', 3, -3, 7);
-
-SELECT t.a, t.b, t.e, s.z
-FROM t
-LEFT OUTER JOIN s
-USING (z);
