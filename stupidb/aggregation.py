@@ -495,19 +495,15 @@ class MinMax(UnaryAggregate[Comparable, Comparable]):
             f"self.comparator == {self.comparator}, "
             f"other.comparator == {other.comparator}"
         )
-        if self.current_value is not None and other.current_value is not None:
-            self.current_value = self.comparator(
-                self.current_value, other.current_value
+        if other.current_value is not None:
+            self.current_value = (
+                other.current_value
+                if self.current_value is None
+                else self.comparator(self.current_value, other.current_value)
             )
 
     def __repr__(self) -> str:
-        name = type(self).__name__
-        current_value = self.current_value
-        comparator = self.comparator
-        return (
-            f"{name}(current_value={current_value}, "
-            f"comparator={comparator})"
-        )
+        return f"{type(self).__name__}(current_value={self.current_value})"
 
 
 class Min(MinMax):
@@ -575,6 +571,9 @@ class CurrentValueAggregate(UnaryAggregate[Input1, Input1]):
 
     def finalize(self) -> Optional[Input1]:
         return self.current_value
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}(current_value={self.current_value})"
 
 
 class First(CurrentValueAggregate[Input1]):
