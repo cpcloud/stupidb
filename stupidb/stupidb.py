@@ -171,6 +171,7 @@ class Mutate(Projection):
 
 Aggregations = Mapping[str, AggregateSpecification]
 WindowAggregations = Mapping[str, WindowAggregateSpecification]
+AggregateMapping = Mapping[str, Aggregate]
 
 
 class Aggregation(Relation):
@@ -183,7 +184,7 @@ class Aggregation(Relation):
 
         # initialize aggregates
         grouped_aggs: Mapping[
-            PartitionKey, Mapping[str, Aggregate]
+            PartitionKey, AggregateMapping
         ] = collections.defaultdict(
             lambda: {
                 name: aggspec.aggregate()
@@ -193,7 +194,7 @@ class Aggregation(Relation):
         child = self.child
         for row in child:
             key = child.partition_key(row)
-            aggs = grouped_aggs[key]
+            aggs: AggregateMapping = grouped_aggs[key]
             for name, agg in aggs.items():
                 inputs = [getter(row) for getter in aggregations[name].getters]
                 agg.step(*inputs)
