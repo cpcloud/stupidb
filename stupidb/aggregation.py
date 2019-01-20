@@ -197,7 +197,7 @@ class RangeMode(FrameClause):
     ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:
         # range mode allows no order by
         if not order_by_columns:
-            return (), ()
+            return (), [()]
 
         ncolumns = len(order_by_columns)
         if ncolumns != 1:
