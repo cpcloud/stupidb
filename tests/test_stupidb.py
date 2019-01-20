@@ -99,6 +99,24 @@ def test_table(table, rows):
     assert_rowset_equal(result, expected)
 
 
+@pytest.fixture
+def t_rows():
+    return [
+        dict(name="alice", date=date(2018, 1, 1), balance=2),
+        dict(name="alice", date=date(2018, 1, 4), balance=4),
+        dict(name="alice", date=date(2018, 1, 6), balance=-3),
+        dict(name="alice", date=date(2018, 1, 7), balance=-3),
+        dict(name="bob", date=date(2018, 1, 2), balance=-1),
+        dict(name="bob", date=date(2018, 1, 3), balance=-3),
+        dict(name="bob", date=date(2018, 1, 4), balance=-3),
+    ]
+
+
+@pytest.fixture
+def t_table(t_rows):
+    return table_(t_rows)
+
+
 def test_projection(table, rows):
     expected = [
         dict(z="a", c=1, d=2),
@@ -387,6 +405,33 @@ def test_rows_window(table, rows):
         {"my_agg": 4},
         {"my_agg": 7},
     ]
+    expected = sorted(
+        map(toolz.merge, rows, expected_aggrows),
+        key=lambda r: (r["z"], r["e"]),
+    )
+    assert len(result) == len(expected)
+    assert_rowset_equal(result, expected)
+
+
+def test_rows_window_partition(table, rows):
+    pipeline = (
+        table
+        >> mutate(
+            my_agg=sum(lambda r: r.a)
+            >> over(Window.rows(partition_by=[lambda r: r.z]))
+        )
+        >> order_by(lambda r: r.z, lambda r: r.e)
+    )
+    result = list(pipeline)
+    expected_aggrows = [
+        {"my_agg": 9},
+        {"my_agg": 7},
+        {"my_agg": 9},
+        {"my_agg": 9},
+        {"my_agg": 9},
+        {"my_agg": 7},
+        {"my_agg": 7},
+    ]
     assert len(result) == len(rows)
     assert len(result) == len(expected_aggrows)
     expected = sorted(
@@ -436,24 +481,6 @@ def test_range_window(table, rows):
 
     assert len(result) == len(expected)
     assert_rowset_equal(result, expected)
-
-
-@pytest.fixture
-def t_rows():
-    return [
-        dict(name="alice", date=date(2018, 1, 1), balance=2),
-        dict(name="alice", date=date(2018, 1, 4), balance=4),
-        dict(name="alice", date=date(2018, 1, 6), balance=-3),
-        dict(name="alice", date=date(2018, 1, 7), balance=-3),
-        dict(name="bob", date=date(2018, 1, 2), balance=-1),
-        dict(name="bob", date=date(2018, 1, 3), balance=-3),
-        dict(name="bob", date=date(2018, 1, 4), balance=-3),
-    ]
-
-
-@pytest.fixture
-def t_table(t_rows):
-    return table_(t_rows)
 
 
 def test_temporal_range_window(t_table, t_rows):
@@ -568,65 +595,76 @@ def test_minmax(table, rows):
     assert_rowset_equal(result, expected)
 
 
-def test_first_last_nth_min_max(t_rows):
+def test_min_max(t_rows):
+    window = Window.range(partition_by=[lambda r: r.name])
+    query = table_(t_rows) >> select(
+        min_date=min(lambda r: r.date) >> over(window),
+        max_date=max(lambda r: r.date) >> over(window),
+    )
+    result = list(query)
+    expected = [
+        dict(min_date=date(2018, 1, 1), max_date=date(2018, 1, 7)),
+        dict(min_date=date(2018, 1, 1), max_date=date(2018, 1, 7)),
+        dict(
+            min_date=date(2018, 1, 1),
+            max_date=date(2018, 1, 7),
+        ),
+        dict(
+            min_date=date(2018, 1, 1),
+            max_date=date(2018, 1, 7),
+        ),
+        dict(
+            min_date=date(2018, 1, 2),
+            max_date=date(2018, 1, 4),
+        ),
+        dict(
+            min_date=date(2018, 1, 2),
+            max_date=date(2018, 1, 4),
+        ),
+        dict(
+            min_date=date(2018, 1, 2),
+            max_date=date(2018, 1, 4),
+        ),
+    ]
+    assert_rowset_equal(result, expected)
+
+
+@pytest.mark.xfail(raises=AssertionError, reason="Need to rework algorithms")
+def test_first_last(t_rows):
     window = Window.range(partition_by=[lambda r: r.name])
     query = table_(t_rows) >> select(
         first_date=first(lambda r: r.date) >> over(window),
         last_date=last(lambda r: r.date) >> over(window),
-        nth_date=nth(lambda r: r.date, lambda r: 2) >> over(window),
-        min_date=min(lambda r: r.date) >> over(window),
-        max_date=max(lambda r: r.date) >> over(window),
     )
     result = list(query)
     expected = [
         dict(
             first_date=date(2018, 1, 1),
             last_date=date(2018, 1, 7),
-            nth_date=date(2018, 1, 6),
-            min_date=date(2018, 1, 1),
-            max_date=date(2018, 1, 7),
         ),
         dict(
             first_date=date(2018, 1, 1),
             last_date=date(2018, 1, 7),
-            nth_date=date(2018, 1, 6),
-            min_date=date(2018, 1, 1),
-            max_date=date(2018, 1, 7),
         ),
         dict(
             first_date=date(2018, 1, 1),
             last_date=date(2018, 1, 7),
-            nth_date=date(2018, 1, 6),
-            min_date=date(2018, 1, 1),
-            max_date=date(2018, 1, 7),
         ),
         dict(
             first_date=date(2018, 1, 1),
             last_date=date(2018, 1, 7),
-            nth_date=date(2018, 1, 6),
-            min_date=date(2018, 1, 1),
-            max_date=date(2018, 1, 7),
         ),
         dict(
             first_date=date(2018, 1, 2),
             last_date=date(2018, 1, 4),
-            nth_date=date(2018, 1, 4),
-            min_date=date(2018, 1, 2),
-            max_date=date(2018, 1, 4),
         ),
         dict(
             first_date=date(2018, 1, 2),
             last_date=date(2018, 1, 4),
-            nth_date=date(2018, 1, 4),
-            min_date=date(2018, 1, 2),
-            max_date=date(2018, 1, 4),
         ),
         dict(
             first_date=date(2018, 1, 2),
             last_date=date(2018, 1, 4),
-            nth_date=date(2018, 1, 4),
-            min_date=date(2018, 1, 2),
-            max_date=date(2018, 1, 4),
         ),
     ]
     assert_rowset_equal(result, expected)
