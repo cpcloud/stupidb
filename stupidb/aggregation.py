@@ -636,20 +636,33 @@ class Last(FirstLast[Input1]):
 
 
 class Nth(BinaryAggregate[Input1, int, Input1]):
-    __slots__ = "current_value", "current_index"
+    __slots__ = "current_value", "current_index", "target_index"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *, node_index: Optional[int] = None):
+        super().__init__(node_index=node_index)
         self.current_value: Optional[Input1] = None
         self.current_index = 0
+        self.target_index: Optional[int] = None
+
+    def __repr__(self) -> str:
+        name = type(self).__name__
+        current_value = self.current_value
+        current_index = self.current_index
+        target_index = self.target_index
+        return (f"{name}(current_value={current_value!r}, "
+                f"current_index={current_index!r}, "
+                f"target_index={target_index!r})")
 
     def step(self, input1: Optional[Input1], index: Optional[int]) -> None:
         if index is not None and index == self.current_index:
             self.current_value = input1
         self.current_index += 1
+        self.target_index = index
 
     def finalize(self) -> Optional[Input1]:
         return self.current_value
 
     def update(self, other: "Nth[Input1]") -> None:
-        raise NotImplementedError("Nth not yet implemented for segment tree")
+        raise NotImplementedError(
+            f"Segment tree method update not yet implemented for {type(self)}"
+        )
