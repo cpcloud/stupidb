@@ -649,9 +649,11 @@ class Nth(BinaryAggregate[Input1, int, Input1]):
         current_value = self.current_value
         current_index = self.current_index
         target_index = self.target_index
-        return (f"{name}(current_value={current_value!r}, "
-                f"current_index={current_index!r}, "
-                f"target_index={target_index!r})")
+        return (
+            f"{name}(current_value={current_value!r}, "
+            f"current_index={current_index!r}, "
+            f"target_index={target_index!r})"
+        )
 
     def step(self, input1: Optional[Input1], index: Optional[int]) -> None:
         if index is not None and index == self.current_index:

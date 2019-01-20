@@ -23,7 +23,9 @@ def test_segment_tree_last(start, stop, expected):
     assert result == expected
 
 
-@pytest.mark.xfail(raises=NotImplementedError, reason='Not yet implemented')
+@pytest.mark.xfail(
+    raises=NotImplementedError, reason="Not yet implemented for segment trees"
+)
 @pytest.mark.parametrize(("start", "stop", "n", "expected"), [(0, 3, 0, 1)])
 def test_segment_tree_nth(start, stop, n, expected):
     tree = SegmentTree([(1, n), (2, n), (3, n)], Nth)
