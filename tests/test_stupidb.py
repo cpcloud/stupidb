@@ -605,26 +605,11 @@ def test_min_max(t_rows):
     expected = [
         dict(min_date=date(2018, 1, 1), max_date=date(2018, 1, 7)),
         dict(min_date=date(2018, 1, 1), max_date=date(2018, 1, 7)),
-        dict(
-            min_date=date(2018, 1, 1),
-            max_date=date(2018, 1, 7),
-        ),
-        dict(
-            min_date=date(2018, 1, 1),
-            max_date=date(2018, 1, 7),
-        ),
-        dict(
-            min_date=date(2018, 1, 2),
-            max_date=date(2018, 1, 4),
-        ),
-        dict(
-            min_date=date(2018, 1, 2),
-            max_date=date(2018, 1, 4),
-        ),
-        dict(
-            min_date=date(2018, 1, 2),
-            max_date=date(2018, 1, 4),
-        ),
+        dict(min_date=date(2018, 1, 1), max_date=date(2018, 1, 7)),
+        dict(min_date=date(2018, 1, 1), max_date=date(2018, 1, 7)),
+        dict(min_date=date(2018, 1, 2), max_date=date(2018, 1, 4)),
+        dict(min_date=date(2018, 1, 2), max_date=date(2018, 1, 4)),
+        dict(min_date=date(2018, 1, 2), max_date=date(2018, 1, 4)),
     ]
     assert_rowset_equal(result, expected)
 
@@ -638,33 +623,12 @@ def test_first_last(t_rows):
     )
     result = list(query)
     expected = [
-        dict(
-            first_date=date(2018, 1, 1),
-            last_date=date(2018, 1, 7),
-        ),
-        dict(
-            first_date=date(2018, 1, 1),
-            last_date=date(2018, 1, 7),
-        ),
-        dict(
-            first_date=date(2018, 1, 1),
-            last_date=date(2018, 1, 7),
-        ),
-        dict(
-            first_date=date(2018, 1, 1),
-            last_date=date(2018, 1, 7),
-        ),
-        dict(
-            first_date=date(2018, 1, 2),
-            last_date=date(2018, 1, 4),
-        ),
-        dict(
-            first_date=date(2018, 1, 2),
-            last_date=date(2018, 1, 4),
-        ),
-        dict(
-            first_date=date(2018, 1, 2),
-            last_date=date(2018, 1, 4),
-        ),
+        dict(first_date=date(2018, 1, 1), last_date=date(2018, 1, 7)),
+        dict(first_date=date(2018, 1, 1), last_date=date(2018, 1, 7)),
+        dict(first_date=date(2018, 1, 1), last_date=date(2018, 1, 7)),
+        dict(first_date=date(2018, 1, 1), last_date=date(2018, 1, 7)),
+        dict(first_date=date(2018, 1, 2), last_date=date(2018, 1, 4)),
+        dict(first_date=date(2018, 1, 2), last_date=date(2018, 1, 4)),
+        dict(first_date=date(2018, 1, 2), last_date=date(2018, 1, 4)),
     ]
     assert_rowset_equal(result, expected)
