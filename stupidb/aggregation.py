@@ -473,8 +473,8 @@ class MinMax(UnaryAggregate[Comparable, Comparable]):
 
     def __init__(
         self,
-        comparator: Callable[[Comparable, Comparable], Comparable],
         *,
+        comparator: Callable[[Comparable, Comparable], Comparable],
         node_index: Optional[int] = None,
     ) -> None:
         super().__init__(node_index=node_index)
@@ -513,14 +513,14 @@ class Min(MinMax):
     __slots__ = ()
 
     def __init__(self, *, node_index: Optional[int] = None) -> None:
-        super().__init__(min, node_index=node_index)
+        super().__init__(comparator=min, node_index=node_index)
 
 
 class Max(MinMax):
     __slots__ = ()
 
     def __init__(self, *, node_index: Optional[int] = None) -> None:
-        super().__init__(max, node_index=node_index)
+        super().__init__(comparator=max, node_index=node_index)
 
 
 class Covariance(BinaryAggregate[R, R, float]):
@@ -585,8 +585,8 @@ class FirstLast(CurrentValueAggregate[Input1]):
 
     def __init__(
         self,
-        comparator: Callable[[Comparable, Comparable], bool],
         *,
+        comparator: Callable[[Comparable, Comparable], bool],
         node_index: Optional[int] = None,
     ) -> None:
         super().__init__(node_index=node_index)
@@ -617,7 +617,7 @@ class First(FirstLast[Input1]):
     def __init__(self, *, node_index: Optional[int] = None) -> None:
         # XXX: node indices should never be equal, see assertion in
         # FirstLast.update
-        super().__init__(operator.lt, node_index=node_index)
+        super().__init__(comparator=operator.lt, node_index=node_index)
 
     def step(self, input1: Optional[Input1]) -> None:
         if self.current_value is None:
@@ -628,7 +628,7 @@ class Last(FirstLast[Input1]):
     __slots__ = ()
 
     def __init__(self, *, node_index: Optional[int] = None) -> None:
-        super().__init__(operator.gt, node_index=node_index)
+        super().__init__(comparator=operator.gt, node_index=node_index)
 
     def step(self, input1: Optional[Input1]) -> None:
         if input1 is not None:
