@@ -4,15 +4,17 @@ import abc
 import math
 from typing import (
     Any,
+    ClassVar,
+    Collection,
     Generic,
     Iterator,
+    List,
     MutableSequence,
     Optional,
     Sequence,
     Tuple,
     Type,
     TypeVar,
-    Union,
 )
 
 from stupidb.typehints import Input1, Input2, Output
@@ -62,108 +64,181 @@ class BinaryAggregate(Generic[Input1, Input2, Output], abc.ABC):
         ...
 
 
-Aggregate = Union[UnaryAggregate, BinaryAggregate]
+Aggregate = TypeVar("Aggregate", UnaryAggregate, BinaryAggregate)
 
 
 def build(
-    tree: MutableSequence,
-    leaves: Sequence,
-    node: int,
+    tree: MutableSequence[Aggregate],
+    leaves: Sequence[Tuple[Optional[T], ...]],
+    node_index: int,
     start: int,
     end: int,
+    offset: int,
     aggregate: Type[Aggregate],
 ) -> None:
     """Build a segment tree from `leaves` into `tree`."""
     if start == end:
-        assert tree[node] is None, f"tree[{node}] == {tree[node]}"
-        tree[node] = aggregate()
+        # consider all trees to be complete, and take no action if we traverse
+        # a node that doesn't exist
+        if start > len(leaves) - 1:
+            return
+        assert tree[node_index] is None, f"tree[{node_index}] is not None"
         args = leaves[start]
-        tree[node].step(*args)
+        agg = aggregate()
+        agg.step(*args)
+        tree[node_index] = agg
     else:
-        mid = (start + end) // 2
-        left_node = 2 * node
-        right_node = left_node + 1
-        build(tree, leaves, left_node, start, mid, aggregate)
-        build(tree, leaves, right_node, mid + 1, end, aggregate)
-        if tree[node] is None:
-            tree[node] = aggregate()
-        tree[node].update(tree[left_node])
-        tree[node].update(tree[right_node])
+        midpoint = (start + end) // 2
+        left_node_index = 2 * node_index + (1 - offset)
+        right_node_index = left_node_index + 1
+
+        build(
+            tree, leaves, left_node_index, start, midpoint, offset, aggregate
+        )
+        build(
+            tree,
+            leaves,
+            right_node_index,
+            midpoint + 1,
+            end,
+            offset,
+            aggregate,
+        )
+
+        if tree[node_index] is None:
+            tree[node_index] = aggregate()
+
+        node = tree[node_index]
+        assert node is not None, f"tree[{node_index}] is None"
+
+        left_node = tree[left_node_index]
+        if left_node is not None:
+            node.update(left_node)
+
+        right_node = tree[right_node_index]
+        if right_node is not None:
+            node.update(right_node)
+
+
+def next_power_of_2(value: int) -> int:
+    if not value:
+        return value
+    assert value > 0, f"value == {value}"
+    return 1 << int(math.ceil(math.log2(value)))
 
 
 def make_segment_tree(
-    leaves: Sequence[Tuple[T, ...]], aggregate: Type[Aggregate]
-) -> Sequence[Aggregate]:
-    num_leaves = len(leaves)
-    height = int(math.ceil(math.log2(num_leaves)))
-    num_nodes = 1 << height + 1
-    tree: MutableSequence = [None] * num_nodes
-    build(tree, leaves, 1, 0, num_leaves - 1, aggregate)
+    leaves: Sequence[Tuple[T, ...]],
+    aggregate: Type[Aggregate],
+    starting_index: int,
+) -> Sequence[Optional[Aggregate]]:
+    """Make a segment tree from tuples `leaves` and class `aggregate`."""
+    number_of_leaves = len(leaves)
+    height = int(math.ceil(math.log2(number_of_leaves))) + 1
+    maximum_number_of_nodes = (1 << height) - 1
+    tree: MutableSequence = [None] * maximum_number_of_nodes
+    build(
+        tree,
+        leaves,
+        node_index=starting_index,
+        start=0,
+        # even if we don't have a power-of-2 number of leaves, we need to
+        # traverse as if we do, to make sure that leaves don't get pushed
+        # up to higher levels (thus invalidating the traversal algo) during
+        # the build
+        end=next_power_of_2(number_of_leaves) - 1,
+        offset=starting_index,
+        aggregate=aggregate,
+    )
     return tree
 
 
-def reprtree(tree: Sequence[T], index: int, level: int = 0) -> str:
-    if index > len(tree) - 1:
+def reprtree(
+    nodes: Sequence[T], offset: int, node_index: int, level: int = 0
+) -> str:
+    """Return a string representation of `tree`."""
+    # if node_index is past the maximum possible nodes, return
+    if node_index > len(nodes) - 1:
         return ""
-    node = tree[index]
-    left_child = 2 * index
-    right_child = 2 * index + 1
-    left_subtree = reprtree(tree, left_child, level=level + 1)
-    right_subtree = reprtree(tree, right_child, level=level + 1)
-    return f"{level * '  '}* {node}\n{left_subtree}{right_subtree}"
+    node = nodes[node_index]
+    if node is None:
+        # Don't print null nodes
+        return ""
+    left_child_index = 2 * node_index + (1 - offset)
+    right_child_index = left_child_index + 1
+    left_subtree = reprtree(nodes, offset, left_child_index, level=level + 1)
+    right_subtree = reprtree(nodes, offset, right_child_index, level=level + 1)
+    indent = level * 4 * " "
+    return f"{indent}|-- {node}\n{left_subtree}{right_subtree}"
 
 
-class SegmentTree(Generic[T]):
+class SegmentTree(Collection[Optional[Aggregate]]):
     """A segment tree with element type ``T``."""
+
+    starting_index: ClassVar[int] = 0
 
     def __init__(
         self, leaves: Sequence[Tuple[T, ...]], aggregate: Type[Aggregate]
     ) -> None:
-        self.nodes = make_segment_tree(leaves, aggregate)
-        self.aggregate = aggregate
+        self.nodes: Sequence[Optional[Aggregate]] = make_segment_tree(
+            leaves, aggregate, self.starting_index
+        )
+        self.aggregate: Type[Aggregate] = aggregate
+        self.levels: Sequence[Sequence[Aggregate]] = list(
+            self.iterlevels(self.nodes)
+        )
+
+    @classmethod
+    def iterlevels(
+        cls, nodes: Sequence[Optional[Aggregate]]
+    ) -> Iterator[List[Aggregate]]:
+        """Iterate over every level in the tree starting from the bottom."""
+        offset = 1 - cls.starting_index
+        height = int(math.ceil(math.log2(len(nodes))))
+
+        for level in range(height, 0, -1):
+            start = (1 << max(level - 1, 0)) - offset
+            stop = (1 << level) - offset
+            yield [node for node in nodes[start:stop] if node is not None]
 
     def __repr__(self) -> str:
         # strip because basecase is the empty string
-        return reprtree(self.nodes, index=1).strip()
+        return reprtree(
+            self.nodes, self.starting_index, self.starting_index
+        ).strip()
 
-    @property
-    def height(self) -> int:
-        """Return the number of levels in the tree."""
-        return int(math.log2(len(self)))
+    def __iter__(self) -> Iterator[Optional[Aggregate]]:
+        return iter(self.nodes)
+
+    def __contains__(self, value: Optional[Aggregate]) -> bool:
+        return value in self.nodes
 
     def __len__(self) -> int:
         """Return the number of nodes in the tree."""
         return len(self.nodes)
 
-    def iterlevels(self) -> Iterator[Sequence[Optional[Aggregate]]]:
-        """Iterate over every level in the tree."""
-        nodes = self.nodes
-        for level in range(self.height, -1, -1):
-            level_nodes = nodes[1 << level : 1 << level + 1]
-            if level_nodes:
-                yield level_nodes
-
-    def traverse(self, begin: int, end: int) -> Any:
+    def query(self, begin: int, end: int) -> Any:
         """Aggregate the values between `begin` and `end` using `aggregate`."""
         fanout = 2
         aggregate = self.aggregate()
-        for level in self.iterlevels():
+        levels = self.levels
+        for i, level in enumerate(levels):
             parent_begin = begin // fanout
             parent_end = end // fanout
             if parent_begin == parent_end:
-                for item in filter(None, level[begin:end]):
+                for item in level[begin:end]:
                     aggregate.update(item)
                 result = aggregate.finalize()
                 return result
             group_begin = parent_begin * fanout
             if begin != group_begin:
                 limit = group_begin + fanout
-                for item in filter(None, level[begin:limit]):
+                for item in level[begin:limit]:
                     aggregate.update(item)
                 parent_begin += 1
             group_end = parent_end * fanout
             if end != group_end:
-                for item in filter(None, level[group_end:end]):
+                for item in level[group_end:end]:
                     aggregate.update(item)
             begin = parent_begin
             end = parent_end
