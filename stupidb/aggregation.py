@@ -399,7 +399,7 @@ class WindowAggregateSpecification(AggregateSpecification):
                 start, stop = frame_clause.compute_window_frame(
                     possible_peers, row, row_id_in_partition, order_by_columns
                 )
-                result = tree.traverse(start, stop)
+                result = tree.query(start, stop)
                 results.append((table_row_index, result))
 
         # Sort the results in order of the child relation, because we processed
