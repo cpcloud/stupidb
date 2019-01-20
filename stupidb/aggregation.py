@@ -569,7 +569,7 @@ class PopulationCovariance(Covariance):
 class CurrentValueAggregate(UnaryAggregate[Input1, Input1]):
     __slots__ = ("current_value",)
 
-    def __init__(self, *, node_index: Optional[int] = None):
+    def __init__(self, *, node_index: Optional[int] = None) -> None:
         super().__init__(node_index=node_index)
         self.current_value: Optional[Input1] = None
 
@@ -638,7 +638,7 @@ class Last(FirstLast[Input1]):
 class Nth(BinaryAggregate[Input1, int, Input1]):
     __slots__ = "current_value", "current_index", "target_index"
 
-    def __init__(self, *, node_index: Optional[int] = None):
+    def __init__(self, *, node_index: Optional[int] = None) -> None:
         super().__init__(node_index=node_index)
         self.current_value: Optional[Input1] = None
         self.current_index = 0
