@@ -424,8 +424,8 @@ class Count(UnaryAggregate[Input1, int]):
 class Sum(UnaryAggregate[R1, R2]):
     __slots__ = ("total",)
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *, node_index: Optional[int] = None) -> None:
+        super().__init__(node_index=node_index)
         self.total = typing.cast(R2, 0)
 
     def __repr__(self) -> str:
@@ -472,9 +472,12 @@ class MinMax(UnaryAggregate[Comparable, Comparable]):
     __slots__ = "current_value", "comparator"
 
     def __init__(
-        self, comparator: Callable[[Comparable, Comparable], Comparable]
+        self,
+        comparator: Callable[[Comparable, Comparable], Comparable],
+        *,
+        node_index: Optional[int] = None,
     ) -> None:
-        super().__init__()
+        super().__init__(node_index=node_index)
         self.current_value: Optional[Comparable] = None
         self.comparator = comparator
 
@@ -509,22 +512,22 @@ class MinMax(UnaryAggregate[Comparable, Comparable]):
 class Min(MinMax):
     __slots__ = ()
 
-    def __init__(self) -> None:
-        super().__init__(min)
+    def __init__(self, *, node_index: Optional[int] = None) -> None:
+        super().__init__(min, node_index=node_index)
 
 
 class Max(MinMax):
     __slots__ = ()
 
-    def __init__(self) -> None:
-        super().__init__(max)
+    def __init__(self, *, node_index: Optional[int] = None) -> None:
+        super().__init__(max, node_index=node_index)
 
 
 class Covariance(BinaryAggregate[R, R, float]):
     __slots__ = "meanx", "meany", "cov", "ddof"
 
-    def __init__(self, *, ddof: int) -> None:
-        super().__init__()
+    def __init__(self, *, ddof: int, node_index: Optional[int] = None) -> None:
+        super().__init__(node_index=node_index)
         self.meanx = 0.0
         self.meany = 0.0
         self.cov = 0.0
@@ -552,21 +555,22 @@ class Covariance(BinaryAggregate[R, R, float]):
 class SampleCovariance(Covariance):
     __slots__ = ()
 
-    def __init__(self) -> None:
-        super().__init__(ddof=1)
+    def __init__(self, *, node_index: Optional[int] = None) -> None:
+        super().__init__(ddof=1, node_index=node_index)
 
 
 class PopulationCovariance(Covariance):
     __slots__ = ()
 
-    def __init__(self) -> None:
-        super().__init__(ddof=0)
+    def __init__(self, *, node_index: Optional[int] = None) -> None:
+        super().__init__(ddof=0, node_index=node_index)
 
 
 class CurrentValueAggregate(UnaryAggregate[Input1, Input1]):
     __slots__ = ("current_value",)
 
-    def __init__(self):
+    def __init__(self, *, node_index: Optional[int] = None):
+        super().__init__(node_index=node_index)
         self.current_value: Optional[Input1] = None
 
     def finalize(self) -> Optional[Input1]:
@@ -576,26 +580,59 @@ class CurrentValueAggregate(UnaryAggregate[Input1, Input1]):
         return f"{type(self).__name__}(current_value={self.current_value})"
 
 
-class First(CurrentValueAggregate[Input1]):
-    __slots__ = ()
+class FirstLast(CurrentValueAggregate[Input1]):
+    __slots__ = ("comparator",)
+
+    def __init__(
+        self,
+        comparator: Callable[[Comparable, Comparable], bool],
+        *,
+        node_index: Optional[int] = None,
+    ) -> None:
+        super().__init__(node_index=node_index)
+        self.comparator = comparator
 
     def step(self, input1: Optional[Input1]) -> None:
         if self.current_value is None:
             self.current_value = input1
 
-    def update(self, other: "First[Input1]") -> None:
+    def update(self, other: "FirstLast[Input1]") -> None:
         if self.current_value is None:
             self.current_value = other.current_value
+            self.node_index = other.node_index
+        else:
+            other_index = other.node_index
+            self_index = self.node_index
+            assert other_index is not None
+            assert self_index is not None
+            assert self_index != other_index, f"{self_index} == {other_index}"
+            if self.comparator(other_index, self_index):
+                self.current_value = other.current_value
+                self.node_index = other_index
 
 
-class Last(CurrentValueAggregate[Input1]):
+class First(FirstLast[Input1]):
     __slots__ = ()
 
-    def step(self, input1: Optional[Input1]) -> None:
-        self.current_value = input1
+    def __init__(self, *, node_index: Optional[int] = None) -> None:
+        # XXX: node indices should never be equal, see assertion in
+        # FirstLast.update
+        super().__init__(operator.lt, node_index=node_index)
 
-    def update(self, other: "Last[Input1]") -> None:
-        self.current_value = other.current_value
+    def step(self, input1: Optional[Input1]) -> None:
+        if self.current_value is None:
+            self.current_value = input1
+
+
+class Last(FirstLast[Input1]):
+    __slots__ = ()
+
+    def __init__(self, *, node_index: Optional[int] = None) -> None:
+        super().__init__(operator.gt, node_index=node_index)
+
+    def step(self, input1: Optional[Input1]) -> None:
+        if input1 is not None:
+            self.current_value = input1
 
 
 class Nth(BinaryAggregate[Input1, int, Input1]):

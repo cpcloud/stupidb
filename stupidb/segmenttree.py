@@ -24,10 +24,11 @@ U = TypeVar("U", bound="UnaryAggregate")
 
 
 class UnaryAggregate(Generic[Input1, Output], abc.ABC):
-    __slots__ = ("count",)
+    __slots__ = "count", "node_index"
 
-    def __init__(self) -> None:
+    def __init__(self, *, node_index: Optional[int] = None) -> None:
         self.count = 0
+        self.node_index = node_index
 
     @abc.abstractmethod
     def step(self, input1: Optional[Input1]) -> None:
@@ -46,10 +47,11 @@ B = TypeVar("B", bound="BinaryAggregate")
 
 
 class BinaryAggregate(Generic[Input1, Input2, Output], abc.ABC):
-    __slots__ = ("count",)
+    __slots__ = "count", "node_index"
 
-    def __init__(self) -> None:
+    def __init__(self, *, node_index: Optional[int] = None) -> None:
         self.count = 0
+        self.node_index = node_index
 
     @abc.abstractmethod
     def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
@@ -84,7 +86,7 @@ def build(
             return
         assert tree[node_index] is None, f"tree[{node_index}] is not None"
         args = leaves[start]
-        agg = aggregate()
+        agg = aggregate(node_index=node_index)
         agg.step(*args)
         tree[node_index] = agg
     else:
@@ -106,7 +108,7 @@ def build(
         )
 
         if tree[node_index] is None:
-            tree[node_index] = aggregate()
+            tree[node_index] = aggregate(node_index=node_index)
 
         node = tree[node_index]
         assert node is not None, f"tree[{node_index}] is None"
