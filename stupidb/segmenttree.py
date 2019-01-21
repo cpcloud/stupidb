@@ -1,12 +1,15 @@
-"""Segment tree implementation."""
+"""Segment tree implementation.
 
-import abc
+The implementation is based on `Leis, 2015
+<http://www.vldb.org/pvldb/vol8/p1058-leis.pdf>`_
+
+"""
+
 import math
 from typing import (
     Any,
     ClassVar,
     Collection,
-    Generic,
     Iterator,
     List,
     MutableSequence,
@@ -17,56 +20,9 @@ from typing import (
     TypeVar,
 )
 
-from stupidb.typehints import Input1, Input2, Output
+from stupidb.aggregation import Aggregate
 
 T = TypeVar("T")
-U = TypeVar("U", bound="UnaryAggregate")
-
-
-class UnaryAggregate(Generic[Input1, Output], abc.ABC):
-    __slots__ = "count", "node_index"
-
-    def __init__(self, *, node_index: Optional[int] = None) -> None:
-        self.count = 0
-        self.node_index = node_index
-
-    @abc.abstractmethod
-    def step(self, input1: Optional[Input1]) -> None:
-        ...
-
-    @abc.abstractmethod
-    def finalize(self) -> Optional[Output]:
-        ...
-
-    @abc.abstractmethod
-    def update(self: U, other: U) -> None:
-        ...
-
-
-B = TypeVar("B", bound="BinaryAggregate")
-
-
-class BinaryAggregate(Generic[Input1, Input2, Output], abc.ABC):
-    __slots__ = "count", "node_index"
-
-    def __init__(self, *, node_index: Optional[int] = None) -> None:
-        self.count = 0
-        self.node_index = node_index
-
-    @abc.abstractmethod
-    def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
-        ...
-
-    @abc.abstractmethod
-    def finalize(self) -> Optional[Output]:
-        ...
-
-    @abc.abstractmethod
-    def update(self: B, other: B) -> None:
-        ...
-
-
-Aggregate = TypeVar("Aggregate", UnaryAggregate, BinaryAggregate)
 
 
 def build(

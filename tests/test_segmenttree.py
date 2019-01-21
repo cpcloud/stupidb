@@ -1,6 +1,6 @@
 import pytest
 
-from stupidb.aggregation import First, Last, Nth
+from stupidb.aggregatetypes import First, Last, Nth
 from stupidb.segmenttree import SegmentTree
 
 

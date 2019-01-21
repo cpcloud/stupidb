@@ -1,13 +1,13 @@
-from typing import Any, Callable, Iterable, Mapping, TypeVar
+from typing import Any, Callable, Iterable, Mapping, Optional, TypeVar
 
 from toolz import curry
 
-from stupidb.aggregation import (
-    AggregateSpecification,
+from stupidb.aggregatetypes import (
     Count,
     First,
-    FrameClause,
+    Lag,
     Last,
+    Lead,
     Max,
     Mean,
     Min,
@@ -16,6 +16,10 @@ from stupidb.aggregation import (
     SampleCovariance,
     Sum,
     Total,
+)
+from stupidb.aggregation import (
+    AggregateSpecification,
+    FrameClause,
     WindowAggregateSpecification,
 )
 from stupidb.protocols import Comparable
@@ -211,7 +215,9 @@ V = TypeVar("V")
 
 
 # Aggregations
-def count(getter: Callable[[AbstractRow], V]) -> AggregateSpecification:
+def count(
+    getter: Callable[[AbstractRow], Optional[V]]
+) -> AggregateSpecification:
     return AggregateSpecification(Count, (getter,))
 
 
@@ -223,29 +229,54 @@ def total(getter: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(Total, (getter,))
 
 
-def first(getter: Callable[[AbstractRow], V]) -> AggregateSpecification:
+def first(
+    getter: Callable[[AbstractRow], Optional[V]]
+) -> AggregateSpecification:
     return AggregateSpecification(First, (getter,))
 
 
-def last(getter: Callable[[AbstractRow], V]) -> AggregateSpecification:
+def last(
+    getter: Callable[[AbstractRow], Optional[V]]
+) -> AggregateSpecification:
     return AggregateSpecification(Last, (getter,))
 
 
 def nth(
-    getter: Callable[[AbstractRow], V], index: Callable[[AbstractRow], int]
+    getter: Callable[[AbstractRow], Optional[V]],
+    index: Callable[[AbstractRow], Optional[int]],
 ) -> AggregateSpecification:
     return AggregateSpecification(Nth, (getter, index))
+
+
+def lead(
+    getter: Callable[[AbstractRow], Optional[V]],
+    index: Callable[[AbstractRow], Optional[int]],
+    default: Callable[[AbstractRow], Optional[V]] = lambda row: None,
+) -> AggregateSpecification:
+    return AggregateSpecification(Lead, (getter, index, default))
+
+
+def lag(
+    getter: Callable[[AbstractRow], Optional[V]],
+    index: Callable[[AbstractRow], Optional[int]],
+    default: Callable[[AbstractRow], Optional[V]] = lambda row: None,
+) -> AggregateSpecification:
+    return AggregateSpecification(Lag, (getter, index, default))
 
 
 def mean(getter: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(Mean, (getter,))
 
 
-def min(getter: Callable[[AbstractRow], Comparable]) -> AggregateSpecification:
+def min(
+    getter: Callable[[AbstractRow], Optional[Comparable]]
+) -> AggregateSpecification:
     return AggregateSpecification(Min, (getter,))
 
 
-def max(getter: Callable[[AbstractRow], Comparable]) -> AggregateSpecification:
+def max(
+    getter: Callable[[AbstractRow], Optional[Comparable]]
+) -> AggregateSpecification:
     return AggregateSpecification(Max, (getter,))
 
 

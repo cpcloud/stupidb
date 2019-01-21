@@ -1,5 +1,5 @@
 from numbers import Real
-from typing import Callable, Hashable, Tuple, TypeVar
+from typing import Callable, Hashable, Optional, Tuple, TypeVar
 
 from stupidb.protocols import AdditiveWithInverse
 from stupidb.row import AbstractRow
@@ -12,16 +12,17 @@ OrderBy = Callable[[AbstractRow], AdditiveWithInverse]
 Preceding = Callable[[AbstractRow], AdditiveWithInverse]
 Following = Callable[[AbstractRow], AdditiveWithInverse]
 
-Predicate = Callable[[AbstractRow], bool]
+Predicate = Callable[[AbstractRow], Optional[bool]]
 
 Projector = Callable[[AbstractRow], AbstractRow]
 
 Input = TypeVar("Input")
 Input1 = TypeVar("Input1")
 Input2 = TypeVar("Input2")
+Input3 = TypeVar("Input3")
 Output = TypeVar("Output")
 
 R = TypeVar("R", bound=Real)
 R1 = TypeVar("R1", bound=Real)
 R2 = TypeVar("R2", bound=Real)
-RealGetter = Callable[[AbstractRow], R]
+RealGetter = Callable[[AbstractRow], Optional[R]]
