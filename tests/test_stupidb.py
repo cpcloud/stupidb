@@ -34,6 +34,7 @@ from stupidb.api import (
     over,
     pop_cov,
     right_join,
+    row_number,
     samp_cov,
     select,
     sift,
@@ -670,4 +671,20 @@ def test_lead_lag(t_rows):
         dict(lead_date=None, lag_date=date(2018, 1, 3)),
     ]
     # import pdb; pdb.set_trace()  # noqa
+    assert_rowset_equal(result, expected)
+
+
+def test_row_number(t_rows):
+    window = Window.range(partition_by=[lambda r: r.name])
+    query = table_(t_rows) >> select(row_id=row_number() >> over(window))
+    result = list(query)
+    expected = [
+        dict(row_id=0),
+        dict(row_id=1),
+        dict(row_id=2),
+        dict(row_id=3),
+        dict(row_id=0),
+        dict(row_id=1),
+        dict(row_id=2),
+    ]
     assert_rowset_equal(result, expected)
