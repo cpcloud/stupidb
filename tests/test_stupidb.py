@@ -671,7 +671,6 @@ def test_lead_lag(t_rows):
         dict(lead_date=date(2018, 1, 4), lag_date=date(2018, 1, 2)),
         dict(lead_date=None, lag_date=date(2018, 1, 3)),
     ]
-    # import pdb; pdb.set_trace()  # noqa
     assert_rowset_equal(result, expected)
 
 
@@ -697,7 +696,7 @@ def test_bench_sum(benchmark):
     benchmark(list, query)
 
 
-def test_bench_raw_sum(benchdata, benchmark):
+def test_bench_raw_sum(benchmark):
     def rawsum(rows):
         return builtins.sum(row["a"] for row in rows)
 
