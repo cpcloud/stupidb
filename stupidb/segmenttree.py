@@ -31,7 +31,6 @@ def build(
     node_index: int,
     start: int,
     end: int,
-    offset: int,
     aggregate: Type[AssociativeAggregate],
 ) -> None:
     """Build a segment tree from `leaves` into `tree`."""
@@ -47,19 +46,16 @@ def build(
         tree[node_index] = agg
     else:
         midpoint = (start + end) // 2
-        left_node_index = 2 * node_index + (1 - offset)
+        left_node_index = 2 * node_index + 1
         right_node_index = left_node_index + 1
 
-        build(
-            tree, leaves, left_node_index, start, midpoint, offset, aggregate
-        )
+        build(tree, leaves, left_node_index, start, midpoint, aggregate)
         build(
             tree,
             leaves,
             right_node_index,
             midpoint + 1,
             end,
-            offset,
             aggregate,
         )
 
@@ -88,7 +84,6 @@ def next_power_of_2(value: int) -> int:
 def make_segment_tree(
     leaves: Sequence[Tuple[T, ...]],
     aggregate: Type[AssociativeAggregate],
-    starting_index: int,
 ) -> Sequence[Optional[AssociativeAggregate]]:
     """Make a segment tree from tuples `leaves` and class `aggregate`."""
     number_of_leaves = len(leaves)
@@ -100,22 +95,19 @@ def make_segment_tree(
     build(
         tree,
         leaves,
-        node_index=starting_index,
+        node_index=0,
         start=0,
         # even if we don't have a power-of-2 number of leaves, we need to
         # traverse as if we do, to make sure that leaves don't get pushed
         # up to higher levels (thus invalidating the traversal algo) during
         # the build
         end=next_power_of_2(number_of_leaves) - 1,
-        offset=starting_index,
         aggregate=aggregate,
     )
     return tree
 
 
-def reprtree(
-    nodes: Sequence[T], offset: int, node_index: int, level: int = 0
-) -> str:
+def reprtree(nodes: Sequence[T], node_index: int = 0, level: int = 0) -> str:
     """Return a string representation of `tree`."""
     # if node_index is past the maximum possible nodes, return
     if node_index > len(nodes) - 1:
@@ -124,18 +116,16 @@ def reprtree(
     if node is None:
         # Don't print null nodes
         return ""
-    left_child_index = 2 * node_index + (1 - offset)
+    left_child_index = 2 * node_index + 1
     right_child_index = left_child_index + 1
-    left_subtree = reprtree(nodes, offset, left_child_index, level=level + 1)
-    right_subtree = reprtree(nodes, offset, right_child_index, level=level + 1)
+    left_subtree = reprtree(nodes, left_child_index, level=level + 1)
+    right_subtree = reprtree(nodes, right_child_index, level=level + 1)
     indent = level * 4 * " "
     return f"{indent}|-- {node}\n{left_subtree}{right_subtree}"
 
 
 class SegmentTree(Aggregator[AssociativeAggregate, Result]):
     """A segment tree with element type ``T``."""
-
-    starting_index: ClassVar[int] = 0
 
     def __init__(
         self,
@@ -144,7 +134,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
     ) -> None:
         self.nodes: Sequence[
             Optional[AssociativeAggregate]
-        ] = make_segment_tree(leaves, aggregate, self.starting_index)
+        ] = make_segment_tree(leaves, aggregate)
         self.aggregate: Type[AssociativeAggregate] = aggregate
         self.levels: Sequence[Sequence[AssociativeAggregate]] = list(
             self.iterlevels(self.nodes)
@@ -155,7 +145,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         cls, nodes: Sequence[Optional[AssociativeAggregate]]
     ) -> Iterator[List[AssociativeAggregate]]:
         """Iterate over every level in the tree starting from the bottom."""
-        offset = 1 - cls.starting_index
+        offset = 1
         height = int(math.ceil(math.log2(len(nodes))))
 
         for level in range(height, 0, -1):
@@ -164,10 +154,8 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
             yield [node for node in nodes[start:stop] if node is not None]
 
     def __repr__(self) -> str:
-        # strip because basecase is the empty string
-        return reprtree(
-            self.nodes, self.starting_index, self.starting_index
-        ).strip()
+        # strip because the base case is the empty string
+        return reprtree(self.nodes).strip()
 
     def query(self, begin: int, end: int) -> Optional[Result]:
         """Aggregate the values between `begin` and `end` using `aggregate`."""
