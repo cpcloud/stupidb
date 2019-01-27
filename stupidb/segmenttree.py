@@ -139,7 +139,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         """Iterate over every level in the tree starting from the bottom."""
         height = int(math.ceil(math.log2(len(nodes))))
         for level in range(height, 0, -1):
-            start = (1 << max(level - 1, 0)) - 1
+            start = (1 << level - 1) - 1
             stop = (1 << level) - 1
             yield [node for node in nodes[start:stop] if node is not None]
 
