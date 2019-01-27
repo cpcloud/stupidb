@@ -7,6 +7,7 @@ The implementation is based on `Leis, 2015
 
 import math
 from typing import (
+    ClassVar,
     Iterator,
     List,
     MutableSequence,
@@ -118,6 +119,8 @@ def reprtree(nodes: Sequence[T], node_index: int = 0, level: int = 0) -> str:
 class SegmentTree(Aggregator[AssociativeAggregate, Result]):
     """A segment tree with element type ``T``."""
 
+    fanout: ClassVar[int] = 2
+
     def __init__(
         self,
         leaves: Sequence[Tuple[T, ...]],
@@ -149,7 +152,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
     def query(self, begin: int, end: int) -> Optional[Result]:
         """Aggregate the values between `begin` and `end` using `aggregate`."""
         # TODO: investigate fanout
-        fanout = 2
+        fanout = self.__class__.fanout
         aggregate = self.aggregate()
         levels = self.levels
         for i, level in enumerate(levels):
