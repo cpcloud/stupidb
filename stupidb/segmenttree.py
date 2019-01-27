@@ -149,6 +149,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
 
     def query(self, begin: int, end: int) -> Optional[Result]:
         """Aggregate the values between `begin` and `end` using `aggregate`."""
+        # TODO: investigate fanout
         fanout = 2
         aggregate = self.aggregate()
         levels = self.levels
