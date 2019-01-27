@@ -14,7 +14,7 @@ class Reversed(Sequence[T]):
     def __len__(self) -> int:
         return self.nvalues
 
-    def __getitem__(self, index: int) -> T:
+    def __getitem__(self, index):
         nvalues = self.nvalues
         if -nvalues <= index < nvalues:
             offset = nvalues * (index >= 0) - index - 1
