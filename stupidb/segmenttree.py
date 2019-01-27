@@ -26,7 +26,7 @@ T = TypeVar("T")
 
 
 def build(
-    tree: MutableSequence[AssociativeAggregate],
+    tree: MutableSequence[Optional[AssociativeAggregate]],
     leaves: Sequence[Tuple[Optional[T], ...]],
     node_index: int,
     start: int,
@@ -94,7 +94,9 @@ def make_segment_tree(
     number_of_leaves = len(leaves)
     height = int(math.ceil(math.log2(number_of_leaves))) + 1
     maximum_number_of_nodes = (1 << height) - 1
-    tree: MutableSequence = [None] * maximum_number_of_nodes
+    tree: MutableSequence[Optional[AssociativeAggregate]] = [
+        None
+    ] * maximum_number_of_nodes
     build(
         tree,
         leaves,
