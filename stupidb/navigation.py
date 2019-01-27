@@ -8,6 +8,7 @@ import toolz
 
 from stupidb.aggregatetypes import (
     BinaryAggregate,
+    NullaryAggregate,
     TernaryAggregate,
     UnaryAggregate,
 )
@@ -90,12 +91,49 @@ class TernaryNavigationAggregate(
         ...
 
 
-NavigationAggregate = TypeVar(
-    "NavigationAggregate",
-    UnaryNavigationAggregate,
-    BinaryNavigationAggregate,
-    TernaryNavigationAggregate,
-)
+class NullaryRankingAggregate(NullaryAggregate[Output]):
+    __slots__ = ()
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    @classmethod
+    def prepare(
+        cls, inputs: Sequence[Tuple[()]]
+    ) -> Aggregator["NullaryRankingAggregate", Output]:
+        return NavigationAggregator(inputs, cls)
+
+    @abc.abstractmethod
+    def execute(self, begin: int, end: int) -> Optional[Output]:
+        ...
+
+
+class UnaryRankingAggregate(UnaryAggregate[Input1, Output]):
+    __slots__ = ()
+
+    def __init__(self, inputs1: Sequence[Optional[Input1]]) -> None:
+        self.inputs1 = inputs1
+
+    @classmethod
+    def prepare(
+        cls, inputs: Sequence[Tuple[Optional[Input1]]]
+    ) -> Aggregator["UnaryRankingAggregate", Output]:
+        return NavigationAggregator(inputs, cls)
+
+    @abc.abstractmethod
+    def execute(self, begin: int, end: int) -> Optional[Output]:
+        ...
+
+
+class RowNumber(NullaryRankingAggregate[int]):
+    def __init__(self) -> None:
+        super().__init__()
+        self.row_number = 0
+
+    def execute(self, begin: int, end: int) -> Optional[int]:
+        row_number = self.row_number
+        self.row_number += 1
+        return row_number
 
 
 class LeadLag(TernaryNavigationAggregate[Input1, int, Input1, Input1]):
@@ -219,15 +257,23 @@ class Nth(BinaryNavigationAggregate[Input1, int, Input1]):
         return result
 
 
-class NavigationAggregator(Aggregator[NavigationAggregate, Result]):
+SimpleAggregate = TypeVar(
+    "SimpleAggregate",
+    UnaryNavigationAggregate,
+    BinaryNavigationAggregate,
+    TernaryNavigationAggregate,
+    NullaryRankingAggregate,
+    UnaryRankingAggregate,
+)
+
+
+class NavigationAggregator(Aggregator[SimpleAggregate, Result]):
     __slots__ = ("aggregate",)
 
     def __init__(
-        self,
-        inputs: Sequence[Tuple[T, ...]],
-        aggregate: Type[NavigationAggregate],
+        self, inputs: Sequence[Tuple[T, ...]], aggregate: Type[SimpleAggregate]
     ) -> None:
-        self.aggregate: NavigationAggregate = aggregate(*zip(*inputs))
+        self.aggregate: SimpleAggregate = aggregate(*zip(*inputs))
 
     def query(self, begin: int, end: int) -> Optional[Result]:
         return self.aggregate.execute(begin, end)
