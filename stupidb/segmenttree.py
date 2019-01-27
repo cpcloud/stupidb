@@ -132,21 +132,19 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
             self.iterlevels(self.nodes)
         )
 
-    @classmethod
+    @staticmethod
     def iterlevels(
-        cls, nodes: Sequence[Optional[AssociativeAggregate]]
+        nodes: Sequence[Optional[AssociativeAggregate]]
     ) -> Iterator[List[AssociativeAggregate]]:
         """Iterate over every level in the tree starting from the bottom."""
-        offset = 1
         height = int(math.ceil(math.log2(len(nodes))))
-
         for level in range(height, 0, -1):
-            start = (1 << max(level - 1, 0)) - offset
-            stop = (1 << level) - offset
+            start = (1 << max(level - 1, 0)) - 1
+            stop = (1 << level) - 1
             yield [node for node in nodes[start:stop] if node is not None]
 
     def __repr__(self) -> str:
-        # strip because the base case is the empty string
+        # strip because the base case is the empty string + a newline
         return reprtree(self.nodes).strip()
 
     def query(self, begin: int, end: int) -> Optional[Result]:
