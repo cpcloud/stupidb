@@ -96,7 +96,7 @@ class Sum(UnaryAssociativeAggregate[R1, R2]):
         total = self.total
         count = self.count
         name = type(self).__name__
-        return f"{name}(total={total}, count={count})"
+        return f"{name}(total={total!r}, count={count!r})"
 
     def step(self, input1: Optional[R1]) -> None:
         if input1 is not None:
@@ -129,7 +129,8 @@ class Mean(Sum[R1, R2]):
         name = type(self).__name__
         total = self.total
         count = self.count
-        return f"{name}(total={total}, count={count}, mean={total / count})"
+        mean = self.finalize()
+        return f"{name}(total={total!r}, count={count!r}, mean={mean!r})"
 
 
 class MinMax(UnaryAssociativeAggregate[Comparable, Comparable]):
@@ -156,8 +157,8 @@ class MinMax(UnaryAssociativeAggregate[Comparable, Comparable]):
 
     def update(self, other: "MinMax") -> None:
         assert self.comparator == other.comparator, (
-            f"self.comparator == {self.comparator}, "
-            f"other.comparator == {other.comparator}"
+            f"self.comparator == {self.comparator!r}, "
+            f"other.comparator == {other.comparator!r}"
         )
         if other.current_value is not None:
             self.current_value = (
@@ -167,7 +168,7 @@ class MinMax(UnaryAssociativeAggregate[Comparable, Comparable]):
             )
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(current_value={self.current_value})"
+        return f"{type(self).__name__}(current_value={self.current_value!r})"
 
 
 class Min(MinMax):
@@ -193,6 +194,13 @@ class Covariance(BinaryAssociativeAggregate[R, R, float]):
         self.meany = 0.0
         self.cov = 0.0
         self.ddof = ddof
+
+    def __repr__(self) -> str:
+        name = type(self).__name__
+        return (
+            f"{name}(meanx={self.meanx!r}, meany={self.meany!r}, "
+            f"cov={self.cov!r}, count={self.count!r})"
+        )
 
     def step(self, x: Optional[R], y: Optional[R]) -> None:
         if x is not None and y is not None:

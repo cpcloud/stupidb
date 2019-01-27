@@ -298,5 +298,13 @@ def samp_cov(arg1: RealGetter, arg2: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(SampleCovariance, (arg1, arg2))
 
 
+def var_samp(getter: RealGetter) -> AggregateSpecification:
+    return samp_cov(getter, getter)
+
+
 def pop_cov(arg1: RealGetter, arg2: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(PopulationCovariance, (arg1, arg2))
+
+
+def var_pop(getter: RealGetter) -> AggregateSpecification:
+    return pop_cov(getter, getter)
