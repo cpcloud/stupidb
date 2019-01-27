@@ -117,7 +117,7 @@ def reprtree(nodes: Sequence[T], node_index: int = 0, level: int = 0) -> str:
 
 
 class SegmentTree(Aggregator[AssociativeAggregate, Result]):
-    """A segment tree with element type ``T``."""
+    """A segment tree for window aggregation."""
 
     fanout: ClassVar[int] = 2
 
@@ -140,7 +140,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
     ) -> Iterator[List[AssociativeAggregate]]:
         """Iterate over every level in the tree starting from the bottom."""
         height = int(math.ceil(math.log2(len(nodes))))
-        for level in range(height, 0, -1):
+        for level in range(1, height + 1):
             start = (1 << level - 1) - 1
             stop = (1 << level) - 1
             yield [node for node in nodes[start:stop] if node is not None]
@@ -154,8 +154,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         # TODO: investigate fanout
         fanout = self.__class__.fanout
         aggregate = self.aggregate()
-        levels = self.levels
-        for i, level in enumerate(levels):
+        for i, level in enumerate(reversed(self.levels)):
             parent_begin = begin // fanout
             parent_end = end // fanout
             if parent_begin == parent_end:
