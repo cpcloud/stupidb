@@ -50,14 +50,7 @@ def build(
         right_node_index = left_node_index + 1
 
         build(tree, leaves, left_node_index, start, midpoint, aggregate)
-        build(
-            tree,
-            leaves,
-            right_node_index,
-            midpoint + 1,
-            end,
-            aggregate,
-        )
+        build(tree, leaves, right_node_index, midpoint + 1, end, aggregate)
 
         if tree[node_index] is None:
             tree[node_index] = aggregate()
@@ -82,8 +75,7 @@ def next_power_of_2(value: int) -> int:
 
 
 def make_segment_tree(
-    leaves: Sequence[Tuple[T, ...]],
-    aggregate: Type[AssociativeAggregate],
+    leaves: Sequence[Tuple[T, ...]], aggregate: Type[AssociativeAggregate]
 ) -> Sequence[Optional[AssociativeAggregate]]:
     """Make a segment tree from tuples `leaves` and class `aggregate`."""
     number_of_leaves = len(leaves)
