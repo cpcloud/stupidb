@@ -23,7 +23,13 @@ from typing import (
 
 import toolz
 
-from stupidb.aggregatetypes import BinaryAggregate, UnaryAggregate
+from stupidb.aggregatetypes import (
+    BinaryAggregate,
+    NullaryAggregate,
+    TernaryAggregate,
+    UnaryAggregate,
+)
+from stupidb.aggregator import Aggregator
 from stupidb.row import AbstractRow
 from stupidb.typehints import (
     Following,
@@ -35,7 +41,13 @@ from stupidb.typehints import (
 
 T = TypeVar("T")
 
-Aggregate = TypeVar("Aggregate", UnaryAggregate, BinaryAggregate)
+ConcreteAggregate = TypeVar(
+    "ConcreteAggregate",
+    NullaryAggregate,
+    UnaryAggregate,
+    BinaryAggregate,
+    TernaryAggregate,
+)
 
 StartStop = typing.NamedTuple("StartStop", [("start", int), ("stop", int)])
 Ranges = Tuple[StartStop, StartStop, StartStop]
@@ -313,13 +325,13 @@ class Window:
 Getter = Callable[[AbstractRow], Any]
 
 
-class AggregateSpecification(Generic[Aggregate]):
+class AggregateSpecification(Generic[ConcreteAggregate]):
     __slots__ = "aggregate", "getters"
 
     def __init__(
-        self, aggregate: Type[Aggregate], getters: Tuple[Getter, ...]
+        self, aggregate: Type[ConcreteAggregate], getters: Tuple[Getter, ...]
     ) -> None:
-        self.aggregate: Type[Aggregate] = aggregate
+        self.aggregate: Type[ConcreteAggregate] = aggregate
         self.getters = getters
 
 
@@ -339,16 +351,17 @@ def make_key_func(
     return key
 
 
-class WindowAggregateSpecification(AggregateSpecification[Aggregate]):
-    __slots__ = ("frame_clause",)
+class WindowAggregateSpecification(Generic[ConcreteAggregate]):
+    __slots__ = "aggregate", "getters", "frame_clause"
 
     def __init__(
         self,
-        aggregate: Type[Aggregate],
+        aggregate: Type[ConcreteAggregate],
         getters: Tuple[Getter, ...],
         frame_clause: FrameClause,
     ) -> None:
-        super().__init__(aggregate, getters)
+        self.aggregate: Type[ConcreteAggregate] = aggregate
+        self.getters = getters
         self.frame_clause = frame_clause
 
     def compute(self, rows: Iterable[AbstractRow]) -> Iterator[T]:
@@ -424,8 +437,10 @@ class WindowAggregateSpecification(AggregateSpecification[Aggregate]):
             # interior nodes. Each node (both leaves and non-leaves) is a state
             # of the aggregation. The leaves are the initial states, the root
             # is the final state.
-            aggregate: Type[Aggregate] = self.aggregate
-            aggregator = aggregate.prepare(arguments)
+            aggregate = self.aggregate
+            aggregator: Aggregator[ConcreteAggregate, T] = aggregate.prepare(
+                arguments
+            )
 
             # For every row in the set of possible peers of the current row
             # compute the window frame, and query the segment tree for the

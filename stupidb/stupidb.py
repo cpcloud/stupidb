@@ -50,7 +50,7 @@ from typing import Union as Union_
 import toolz as toolz
 
 from stupidb.aggregation import (
-    Aggregate,
+    ConcreteAggregate,
     AggregateSpecification,
     WindowAggregateSpecification,
 )
@@ -171,7 +171,7 @@ class Mutate(Projection):
 
 Aggregations = Mapping[str, AggregateSpecification]
 WindowAggregations = Mapping[str, WindowAggregateSpecification]
-AggregateMapping = Mapping[str, Aggregate]
+AggregateMapping = Mapping[str, ConcreteAggregate]
 
 
 class Aggregation(Relation):
