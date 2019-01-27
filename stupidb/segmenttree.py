@@ -7,7 +7,6 @@ The implementation is based on `Leis, 2015
 
 import math
 from typing import (
-    ClassVar,
     Iterator,
     List,
     MutableSequence,
