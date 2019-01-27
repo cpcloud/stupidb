@@ -6,6 +6,7 @@
 import builtins
 import itertools
 import operator
+import random
 from datetime import date, timedelta
 from typing import Callable, Iterable, Iterator, TypeVar
 
@@ -688,3 +689,17 @@ def test_row_number(t_rows):
         dict(row_id=2),
     ]
     assert_rowset_equal(result, expected)
+
+
+def test_bench_sum(benchmark):
+    benchdata = [{"a": random.normalvariate(0.0, 1.0)} for _ in range(10000)]
+    query = table_(benchdata) >> aggregate(sum_a=sum(lambda r: r.a))
+    benchmark(list, query)
+
+
+def test_bench_raw_sum(benchdata, benchmark):
+    def rawsum(rows):
+        return builtins.sum(row["a"] for row in rows)
+
+    benchdata = [{"a": random.normalvariate(0.0, 1.0)} for _ in range(10000)]
+    benchmark(rawsum, benchdata)
