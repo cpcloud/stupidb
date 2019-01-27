@@ -57,7 +57,7 @@ class BinaryAssociativeAggregate(BinaryAggregate[Input1, Input2, Output]):
 
     @classmethod
     def prepare(
-        cls, inputs: Sequence[Tuple[Input1, Input2]]
+        cls, inputs: Sequence[Tuple[Optional[Input1], Optional[Input2]]]
     ) -> Aggregator["BinaryAssociativeAggregate", Output]:
         from stupidb.segmenttree import SegmentTree
 
