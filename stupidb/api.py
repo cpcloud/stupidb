@@ -2,26 +2,22 @@ from typing import Any, Callable, Iterable, Mapping, Optional, TypeVar
 
 from toolz import curry
 
-from stupidb.aggregatetypes import (
-    Count,
-    First,
-    Lag,
-    Last,
-    Lead,
-    Max,
-    Mean,
-    Min,
-    Nth,
-    PopulationCovariance,
-    SampleCovariance,
-    Sum,
-    Total,
-)
 from stupidb.aggregation import (
     AggregateSpecification,
     FrameClause,
     WindowAggregateSpecification,
 )
+from stupidb.associative import (
+    Count,
+    Max,
+    Mean,
+    Min,
+    PopulationCovariance,
+    SampleCovariance,
+    Sum,
+    Total,
+)
+from stupidb.navigation import First, Lag, Last, Lead, Nth
 from stupidb.protocols import Comparable
 from stupidb.row import AbstractRow
 from stupidb.stupidb import (
@@ -250,18 +246,32 @@ def nth(
 
 def lead(
     getter: Callable[[AbstractRow], Optional[V]],
-    index: Callable[[AbstractRow], Optional[int]],
-    default: Callable[[AbstractRow], Optional[V]] = lambda row: None,
+    index: Callable[[AbstractRow], int],
+    default: Optional[Callable[[AbstractRow], Optional[V]]] = None,
 ) -> AggregateSpecification:
-    return AggregateSpecification(Lead, (getter, index, default))
+    return AggregateSpecification(
+        Lead,
+        (
+            getter,
+            index,
+            default if default is not None else (lambda row: None),
+        ),
+    )
 
 
 def lag(
     getter: Callable[[AbstractRow], Optional[V]],
-    index: Callable[[AbstractRow], Optional[int]],
-    default: Callable[[AbstractRow], Optional[V]] = lambda row: None,
+    index: Callable[[AbstractRow], int],
+    default: Optional[Callable[[AbstractRow], Optional[V]]] = None,
 ) -> AggregateSpecification:
-    return AggregateSpecification(Lag, (getter, index, default))
+    return AggregateSpecification(
+        Lag,
+        (
+            getter,
+            index,
+            default if default is not None else (lambda row: None),
+        ),
+    )
 
 
 def mean(getter: RealGetter) -> AggregateSpecification:

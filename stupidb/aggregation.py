@@ -9,6 +9,7 @@ from typing import (
     Callable,
     Collection,
     Dict,
+    Generic,
     Hashable,
     Iterable,
     Iterator,
@@ -20,10 +21,9 @@ from typing import (
     TypeVar,
 )
 
-import attr
 import toolz
 
-from stupidb.aggregatetypes import Aggregate
+from stupidb.aggregatetypes import BinaryAggregate, UnaryAggregate
 from stupidb.row import AbstractRow
 from stupidb.typehints import (
     Following,
@@ -35,17 +35,25 @@ from stupidb.typehints import (
 
 T = TypeVar("T")
 
+Aggregate = TypeVar("Aggregate", UnaryAggregate, BinaryAggregate)
+
 StartStop = typing.NamedTuple("StartStop", [("start", int), ("stop", int)])
 Ranges = Tuple[StartStop, StartStop, StartStop]
 AggregationResultPair = Tuple[int, T]
 
 
-@attr.s(frozen=True, slots=True)
 class FrameClause(abc.ABC):
-    order_by = attr.ib(type=Collection[OrderBy])
-    partition_by = attr.ib(type=Collection[PartitionBy])
-    preceding = attr.ib(type=Optional[Preceding])  # type: ignore
-    following = attr.ib(type=Optional[Following])  # type: ignore
+    def __init__(
+        self,
+        order_by: Collection[OrderBy],
+        partition_by: Collection[PartitionBy],
+        preceding: Optional[Preceding],
+        following: Optional[Following],
+    ) -> None:
+        self.order_by = order_by
+        self.partition_by = partition_by
+        self.preceding = preceding
+        self.following = following
 
     @abc.abstractmethod
     def find_partition_begin(
@@ -141,7 +149,6 @@ class FrameClause(abc.ABC):
         return StartStop(new_start, new_stop)
 
 
-@attr.s(frozen=True, slots=True)
 class RowsMode(FrameClause):
     def find_partition_begin(
         self,
@@ -180,7 +187,6 @@ class RowsMode(FrameClause):
         return tuple(map(current_row.__getitem__, order_by_columns)), cols
 
 
-@attr.s(frozen=True, slots=True)
 class RangeMode(FrameClause):
     def setup_window(
         self,
@@ -284,7 +290,6 @@ class RangeMode(FrameClause):
         return bisected_index
 
 
-@attr.s(frozen=True, slots=True)
 class Window:
     @staticmethod
     def rows(
@@ -308,10 +313,14 @@ class Window:
 Getter = Callable[[AbstractRow], Any]
 
 
-@attr.s(frozen=True, slots=True)
-class AggregateSpecification:
-    aggregate = attr.ib(type=Type[Aggregate])  # type: ignore
-    getters = attr.ib(type=Tuple[Getter, ...])  # type: ignore
+class AggregateSpecification(Generic[Aggregate]):
+    __slots__ = "aggregate", "getters"
+
+    def __init__(
+        self, aggregate: Type[Aggregate], getters: Tuple[Getter, ...]
+    ) -> None:
+        self.aggregate: Type[Aggregate] = aggregate
+        self.getters = getters
 
 
 def compute_partition_key(
@@ -330,16 +339,20 @@ def make_key_func(
     return key
 
 
-@attr.s(frozen=True, slots=True)
-class WindowAggregateSpecification(AggregateSpecification):
-    aggregate = attr.ib(type=Type[Aggregate])  # type: ignore
-    getters = attr.ib(type=Tuple[Getter, ...])  # type: ignore
-    frame_clause = attr.ib(type=FrameClause)
+class WindowAggregateSpecification(AggregateSpecification[Aggregate]):
+    __slots__ = ("frame_clause",)
+
+    def __init__(
+        self,
+        aggregate: Type[Aggregate],
+        getters: Tuple[Getter, ...],
+        frame_clause: FrameClause,
+    ) -> None:
+        super().__init__(aggregate, getters)
+        self.frame_clause = frame_clause
 
     def compute(self, rows: Iterable[AbstractRow]) -> Iterator[T]:
         """Aggregate `rows` over a window."""
-        from stupidb.segmenttree import SegmentTree
-
         frame_clause = self.frame_clause
         partition_by = frame_clause.partition_by
         order_by = frame_clause.order_by
@@ -399,11 +412,20 @@ class WindowAggregateSpecification(AggregateSpecification):
                 tuple(getter(peer) for getter in self.getters)
                 for _, peer in possible_peers
             ]
-            # Construct a segment tree using `arguments` as the leaves, with
-            # `aggregate` instances as the interior nodes. Each node (both
-            # leaves and non-leaves) is a state of the aggregation. The leaves
-            # are the initial states, the root is the final state.
-            tree = SegmentTree(arguments, self.aggregate)
+
+            # Construct an aggregator for the function being computed
+            #
+            # For navigation functions like lead, lag, first, last and nth, we
+            # construct a simple structure that computes the current value
+            # of the navigation function given the inputs.
+            #
+            # For associative aggregations we construct a segment tree using
+            # `arguments` as the leaves, with `aggregate` instances as the
+            # interior nodes. Each node (both leaves and non-leaves) is a state
+            # of the aggregation. The leaves are the initial states, the root
+            # is the final state.
+            aggregate: Type[Aggregate] = self.aggregate
+            aggregator = aggregate.prepare(arguments)
 
             # For every row in the set of possible peers of the current row
             # compute the window frame, and query the segment tree for the
@@ -414,7 +436,7 @@ class WindowAggregateSpecification(AggregateSpecification):
                 start, stop = frame_clause.compute_window_frame(
                     possible_peers, row, row_id_in_partition, order_by_columns
                 )
-                result = tree.query(start, stop)
+                result = aggregator.query(start, stop)
                 results.append((table_row_index, result))
 
         # Sort the results in order of the child relation, because we processed

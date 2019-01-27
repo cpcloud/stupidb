@@ -7,9 +7,7 @@ The implementation is based on `Leis, 2015
 
 import math
 from typing import (
-    Any,
     ClassVar,
-    Collection,
     Iterator,
     List,
     MutableSequence,
@@ -20,19 +18,21 @@ from typing import (
     TypeVar,
 )
 
-from stupidb.aggregation import Aggregate
+from stupidb.aggregator import Aggregator
+from stupidb.associative import AssociativeAggregate
+from stupidb.typehints import Result
 
 T = TypeVar("T")
 
 
 def build(
-    tree: MutableSequence[Aggregate],
+    tree: MutableSequence[AssociativeAggregate],
     leaves: Sequence[Tuple[Optional[T], ...]],
     node_index: int,
     start: int,
     end: int,
     offset: int,
-    aggregate: Type[Aggregate],
+    aggregate: Type[AssociativeAggregate],
 ) -> None:
     """Build a segment tree from `leaves` into `tree`."""
     if start == end:
@@ -42,7 +42,7 @@ def build(
             return
         assert tree[node_index] is None, f"tree[{node_index}] is not None"
         args = leaves[start]
-        agg = aggregate(node_index=node_index)
+        agg = aggregate()
         agg.step(*args)
         tree[node_index] = agg
     else:
@@ -64,7 +64,7 @@ def build(
         )
 
         if tree[node_index] is None:
-            tree[node_index] = aggregate(node_index=node_index)
+            tree[node_index] = aggregate()
 
         node = tree[node_index]
         assert node is not None, f"tree[{node_index}] is None"
@@ -87,9 +87,9 @@ def next_power_of_2(value: int) -> int:
 
 def make_segment_tree(
     leaves: Sequence[Tuple[T, ...]],
-    aggregate: Type[Aggregate],
+    aggregate: Type[AssociativeAggregate],
     starting_index: int,
-) -> Sequence[Optional[Aggregate]]:
+) -> Sequence[Optional[AssociativeAggregate]]:
     """Make a segment tree from tuples `leaves` and class `aggregate`."""
     number_of_leaves = len(leaves)
     height = int(math.ceil(math.log2(number_of_leaves))) + 1
@@ -130,26 +130,28 @@ def reprtree(
     return f"{indent}|-- {node}\n{left_subtree}{right_subtree}"
 
 
-class SegmentTree(Collection[Optional[Aggregate]]):
+class SegmentTree(Aggregator[AssociativeAggregate, Result]):
     """A segment tree with element type ``T``."""
 
     starting_index: ClassVar[int] = 0
 
     def __init__(
-        self, leaves: Sequence[Tuple[T, ...]], aggregate: Type[Aggregate]
+        self,
+        leaves: Sequence[Tuple[T, ...]],
+        aggregate: Type[AssociativeAggregate],
     ) -> None:
-        self.nodes: Sequence[Optional[Aggregate]] = make_segment_tree(
-            leaves, aggregate, self.starting_index
-        )
-        self.aggregate: Type[Aggregate] = aggregate
-        self.levels: Sequence[Sequence[Aggregate]] = list(
+        self.nodes: Sequence[
+            Optional[AssociativeAggregate]
+        ] = make_segment_tree(leaves, aggregate, self.starting_index)
+        self.aggregate: Type[AssociativeAggregate] = aggregate
+        self.levels: Sequence[Sequence[AssociativeAggregate]] = list(
             self.iterlevels(self.nodes)
         )
 
     @classmethod
     def iterlevels(
-        cls, nodes: Sequence[Optional[Aggregate]]
-    ) -> Iterator[List[Aggregate]]:
+        cls, nodes: Sequence[Optional[AssociativeAggregate]]
+    ) -> Iterator[List[AssociativeAggregate]]:
         """Iterate over every level in the tree starting from the bottom."""
         offset = 1 - cls.starting_index
         height = int(math.ceil(math.log2(len(nodes))))
@@ -165,17 +167,7 @@ class SegmentTree(Collection[Optional[Aggregate]]):
             self.nodes, self.starting_index, self.starting_index
         ).strip()
 
-    def __iter__(self) -> Iterator[Optional[Aggregate]]:
-        return iter(self.nodes)
-
-    def __contains__(self, value: Optional[Aggregate]) -> bool:
-        return value in self.nodes
-
-    def __len__(self) -> int:
-        """Return the number of nodes in the tree."""
-        return len(self.nodes)
-
-    def query(self, begin: int, end: int) -> Any:
+    def query(self, begin: int, end: int) -> Optional[Result]:
         """Aggregate the values between `begin` and `end` using `aggregate`."""
         fanout = 2
         aggregate = self.aggregate()
@@ -200,3 +192,4 @@ class SegmentTree(Collection[Optional[Aggregate]]):
                     aggregate.update(item)
             begin = parent_begin
             end = parent_end
+        return None

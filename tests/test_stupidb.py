@@ -635,7 +635,6 @@ def test_first_last(t_rows):
     assert_rowset_equal(result, expected)
 
 
-@pytest.mark.xfail(raises=NotImplementedError, reason="Not yet implemented")
 def test_nth(t_rows):
     query = table_(t_rows) >> select(
         nth_date=nth(lambda r: r.date, lambda r: 1)
@@ -654,21 +653,21 @@ def test_nth(t_rows):
     assert_rowset_equal(result, expected)
 
 
-@pytest.mark.xfail(raises=NotImplementedError, reason="Not yet implemented")
 def test_lead_lag(t_rows):
     window = Window.range(partition_by=[lambda r: r.name])
     query = table_(t_rows) >> select(
-        first_date=lead(lambda r: r.date, lambda r: 1) >> over(window),
-        last_date=lag(lambda r: r.date, lambda r: 1) >> over(window),
+        lead_date=lead(lambda r: r.date, lambda r: 1) >> over(window),
+        lag_date=lag(lambda r: r.date, lambda r: 1) >> over(window),
     )
     result = list(query)
     expected = [
-        dict(first_date=date(2018, 1, 1), last_date=date(2018, 1, 7)),
-        dict(first_date=date(2018, 1, 1), last_date=date(2018, 1, 7)),
-        dict(first_date=date(2018, 1, 1), last_date=date(2018, 1, 7)),
-        dict(first_date=date(2018, 1, 1), last_date=date(2018, 1, 7)),
-        dict(first_date=date(2018, 1, 2), last_date=date(2018, 1, 4)),
-        dict(first_date=date(2018, 1, 2), last_date=date(2018, 1, 4)),
-        dict(first_date=date(2018, 1, 2), last_date=date(2018, 1, 4)),
+        dict(lead_date=date(2018, 1, 4), lag_date=None),
+        dict(lead_date=date(2018, 1, 6), lag_date=date(2018, 1, 1)),
+        dict(lead_date=date(2018, 1, 7), lag_date=date(2018, 1, 4)),
+        dict(lead_date=None, lag_date=date(2018, 1, 6)),
+        dict(lead_date=date(2018, 1, 3), lag_date=None),
+        dict(lead_date=date(2018, 1, 4), lag_date=date(2018, 1, 2)),
+        dict(lead_date=None, lag_date=date(2018, 1, 3)),
     ]
+    # import pdb; pdb.set_trace()  # noqa
     assert_rowset_equal(result, expected)
