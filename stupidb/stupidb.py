@@ -50,8 +50,8 @@ from typing import Union as Union_
 import toolz as toolz
 
 from stupidb.aggregation import (
-    ConcreteAggregate,
     AggregateSpecification,
+    ConcreteAggregate,
     WindowAggregateSpecification,
 )
 from stupidb.row import AbstractRow, JoinedRow, Row
