@@ -17,7 +17,7 @@ from stupidb.associative import (
     Sum,
     Total,
 )
-from stupidb.navigation import First, Lag, Last, Lead, Nth
+from stupidb.navigation import First, Lag, Last, Lead, Nth, RowNumber
 from stupidb.protocols import Comparable
 from stupidb.row import AbstractRow
 from stupidb.stupidb import (
@@ -242,6 +242,10 @@ def nth(
     index: Callable[[AbstractRow], Optional[int]],
 ) -> AggregateSpecification:
     return AggregateSpecification(Nth, (getter, index))
+
+
+def row_number():
+    return AggregateSpecification(RowNumber, ())
 
 
 def lead(
