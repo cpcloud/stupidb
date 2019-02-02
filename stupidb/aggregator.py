@@ -3,10 +3,10 @@ from typing import Generic, Optional, TypeVar
 
 from stupidb.typehints import Result
 
-Aggregate = TypeVar("Aggregate", covariant=True)
+AggregateClass = TypeVar("AggregateClass", covariant=True)
 
 
-class Aggregator(Generic[Aggregate, Result], abc.ABC):
+class Aggregator(Generic[AggregateClass, Result], abc.ABC):
     @abc.abstractmethod
     def query(self, begin: int, end: int) -> Optional[Result]:
         ...
