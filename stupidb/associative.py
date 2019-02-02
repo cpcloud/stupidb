@@ -255,7 +255,7 @@ class Variance(UnaryAssociativeAggregate[R, float]):
     __slots__ = ("aggregator",)
 
     def __init__(self, ddof: int) -> None:
-        self.aggregator: Covariance[R, R] = Covariance(ddof=ddof)
+        self.aggregator = Covariance[R, R](ddof=ddof)
 
     def step(self, x: Optional[R]) -> None:
         self.aggregator.step(x, x)
