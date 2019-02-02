@@ -9,23 +9,27 @@ StupiDB's user facing API is heavily inspired by dpylr.
 Constructing a Relation
 -----------------------
 You can construct a relation (a table) by calling the table function with a
-list of mappings::
+list of mappings
 
-    from stupidb import *
-    from datetime import date, timedelta
-    today = date.today()
-    rows = [
-        {"name": "Alice", "balance": 400, "date": today}
-        {"name": "Alice", "balance": 300, "date": today + timedelta(days=1)}
-        {"name": "Alice", "balance": 100, "date": today + timedelta(days=2)}
-        {"name": "Bob", "balance": -150, "date": today + timedelta(days-4)}
-        {"name": "Bob", "balance": 200, "date": today + timedelta(days=-3)}
-    ]
-    t = table(rows)
+.. code-block:: python
+
+   >>> from stupidb import *
+   >>> from datetime import date, timedelta
+   >>> today = date.today()
+   >>> days = timedelta(days=1)
+   >>> rows = [
+   ...     {"name": "Alice", "balance": 400, "date": today},
+   ...     {"name": "Alice", "balance": 300, "date": today + 1 * days},
+   ...     {"name": "Alice", "balance": 100, "date": today + 2 * days},
+   ...     {"name": "Bob", "balance": -150, "date": today - 4 * days)},
+   ...     {"name": "Bob", "balance": 200, "date": today - 3 * days},
+   ... ]
+   >>> t = table(rows)
 
 .. note::
 
-   The examples that follow will use the variable ``t``.
+   The examples that follow assume you've executed the above code in a Python
+   interpreter.
 
 Since every relation in StupiDB implements the iterator protocol, you can
 materialize the rows of a relation by calling ``list`` on the relation.
@@ -54,9 +58,8 @@ Projection (``SELECT``)
 -----------------------
 .. code-block:: python
 
-   name_and_bal = t >> select(n=lambda r:.name, b=lambda r: r.balance)
-   bal_times_2 = name_and_bal >> mutate(bal2=lambda r: r.b * 2)
-   list(bal_times_2)
+   >>> name_and_bal = t >> select(n=lambda r:.name, b=lambda r: r.balance)
+   >>> bal_times_2 = name_and_bal >> mutate(bal2=lambda r: r.b * 2)
 
 The :func:`~stupidb.api.mutate` function preserves the child table in the
 result, while :func:`~stupidb.api.select` does not.
@@ -73,16 +76,19 @@ Simple Aggregation
 ------------------
 .. code-block:: python
 
-   agg = t >> aggregate(
-       my_sum=sum(lambda r: r.balance), my_avg=mean(lambda r: r.balance)
-   )
+   >>> agg = t >> aggregate(
+   ...     my_sum=sum(lambda r: r.balance),
+   ...     my_avg=mean(lambda r: r.balance)
+   ... )
 
 ``GROUP BY``
 ------------
 .. code-block:: python
 
-   gb = (t >> group_by(lambda r: r.name)
-           >> aggregate(dollars_over_time=sum(lambda r: r.balance))
+   >>> gb = (
+   ...     t >> group_by(lambda r: r.name)
+   ...       >> aggregate(bal_over_time=sum(lambda r: r.balance))
+   ... )
 
 ``ORDER BY``
 ------------
@@ -90,7 +96,9 @@ To sort in ascending order of the specified columns:
 
 .. code-block:: python
 
-   ob = t >> order_by(lambda r: r.name, lambda r: r.date)
+   >>> ob = t >> order_by(lambda r: r.name, lambda r: r.date)
+
+Currently there is no convenient way to sort descending.
 
 Joins
 -----
@@ -110,7 +118,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   t >> cross_join(t)
+   >>> t >> cross_join(t)
 
 ``INNER JOIN``
 ~~~~~~~~~~~~~~
@@ -127,7 +135,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   t >> inner_join(t, lambda left, right: left.name == right.name)
+   >>> t >> inner_join(t, lambda left, right: left.name == right.name)
 
 ``LEFT JOIN``
 ~~~~~~~~~~~~~
@@ -139,7 +147,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   t >> left_join(t, lambda left, right: left.name == right.name)
+   >>> t >> left_join(t, lambda left, right: left.name == right.name)
 
 ``RIGHT JOIN``
 ~~~~~~~~~~~~~~
@@ -150,7 +158,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   t >> right_join(t, lambda left, right: left.balance < right.balance)
+   >>> t >> right_join(t, lambda left, right: left.balance < right.balance)
 
 Set Operations
 --------------
@@ -169,7 +177,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   t >> union(t)
+   >>> t >> union(t)
 
 ``INTERSECT``
 ~~~~~~~~~~~~~
@@ -185,7 +193,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   t >> intersect(t)
+   >>> t >> intersect(t)
 
 ``DIFFERENCE``
 ~~~~~~~~~~~~~~
@@ -201,14 +209,14 @@ In stupidb this is:
 
 .. code-block:: python
 
-   t >> difference(t)
+   >>> t >> difference(t)
 
 Aggregations
 ------------
 StupiDB is focused on creating the right abstractions. Aggregations are no
 exception. To that end there is really one goal:
 
-#. **Easy creation of custom aggregates, including window functions.**
+**Easy creation of custom aggregates, including window functions.**
 
 The UD(A)F interface is heavily inspired by SQLite's aggregate function
 interface, so there isn't anything new here with respect to the API.
