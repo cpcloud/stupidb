@@ -443,8 +443,8 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             )
 
             # For every row in the set of possible peers of the current row
-            # compute the window frame, and query the segment tree for the
-            # value of the aggregation within that frame.
+            # compute the window frame, and query the aggregator for the value
+            # of the aggregation within that frame.
             for row_id_in_partition, (table_row_index, row) in enumerate(
                 possible_peers
             ):
