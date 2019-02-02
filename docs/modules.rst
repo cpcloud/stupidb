@@ -1,5 +1,5 @@
-stupidb
-=======
+StupiDB Modules
+===============
 
 .. toctree::
    :maxdepth: 4
