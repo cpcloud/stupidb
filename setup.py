@@ -22,6 +22,7 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         "Natural Language :: English",
+        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
     ],
     description="A really stupid database",
@@ -35,5 +36,5 @@ setup(
     url="https://github.com/cpcloud/stupidb",
     version="0.1.0",
     zip_safe=False,
-    python_requires=">=3.7",
+    python_requires=">=3.6",
 )

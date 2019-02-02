@@ -31,9 +31,28 @@ def build(
     node_index: int,
     start: int,
     end: int,
-    aggregate: Type[AssociativeAggregate],
+    aggregate_type: Type[AssociativeAggregate],
 ) -> None:
-    """Build a segment tree from `leaves` into `tree`."""
+    """Build a segment tree from `leaves` into `tree`.
+
+    Parameters
+    ----------
+    tree
+        A mutable sequence of
+        :class:`~stupidb.associative.AssociativeAggregate` instances.
+    leaves
+        A sequence of tuples that make up the full range of the partition to
+        aggregate.
+    node_index
+        The current node's index.
+    start
+        The starting node's index.
+    end
+        The last node's index.
+    aggregate_type
+        The class of the aggregate that makes up the tree.
+
+    """
     if start == end:
         # consider all trees to be complete, and take no action if we traverse
         # a node that doesn't exist
@@ -41,7 +60,7 @@ def build(
             return
         assert tree[node_index] is None, f"tree[{node_index}] is not None"
         args = leaves[start]
-        agg = aggregate()
+        agg = aggregate_type()
         agg.step(*args)
         tree[node_index] = agg
     else:
@@ -49,11 +68,13 @@ def build(
         left_node_index = 2 * node_index + 1
         right_node_index = left_node_index + 1
 
-        build(tree, leaves, left_node_index, start, midpoint, aggregate)
-        build(tree, leaves, right_node_index, midpoint + 1, end, aggregate)
+        build(tree, leaves, left_node_index, start, midpoint, aggregate_type)
+        build(
+            tree, leaves, right_node_index, midpoint + 1, end, aggregate_type
+        )
 
         if tree[node_index] is None:
-            tree[node_index] = aggregate()
+            tree[node_index] = aggregate_type()
 
         node = tree[node_index]
         assert node is not None, f"tree[{node_index}] is None"
@@ -68,16 +89,35 @@ def build(
 
 
 def next_power_of_2(value: int) -> int:
+    """Compute the next power of two of an integer.
+
+    Parameters
+    ----------
+    value
+        The value whose next power of two to compute.
+
+    """
     if not value:
         return value
+    if value < 0:
+        raise ValueError(f"Invalid value: {value:d}")
     assert value > 0, f"value == {value}"
     return 1 << int(math.ceil(math.log2(value)))
 
 
 def make_segment_tree(
-    leaves: Sequence[Tuple[T, ...]], aggregate: Type[AssociativeAggregate]
+    leaves: Sequence[Tuple[T, ...]], aggregate_type: Type[AssociativeAggregate]
 ) -> Sequence[Optional[AssociativeAggregate]]:
-    """Make a segment tree from tuples `leaves` and class `aggregate`."""
+    """Make a segment tree from tuples `leaves` and class `aggregate`.
+
+    Parameters
+    ----------
+    leaves
+        A sequence of tuples that make up the leaves of the segment tree
+    aggregate_type
+        The aggregate class whose instances compose the tree.
+
+    """
     number_of_leaves = len(leaves)
     height = int(math.ceil(math.log2(number_of_leaves))) + 1
     maximum_number_of_nodes = (1 << height) - 1
@@ -94,13 +134,24 @@ def make_segment_tree(
         # up to higher levels (thus invalidating the traversal algo) during
         # the build
         end=next_power_of_2(number_of_leaves) - 1,
-        aggregate=aggregate,
+        aggregate_type=aggregate_type,
     )
     return tree
 
 
 def reprtree(nodes: Sequence[T], node_index: int = 0, level: int = 0) -> str:
-    """Return a string representation of `tree`."""
+    """Return a string representation of `tree`.
+
+    Parameters
+    ----------
+    nodes
+        A sequence of nodes of a tree
+    node_index
+        The current node's index
+    level
+        The current level of the tree
+
+    """
     # if node_index is past the maximum possible nodes, return
     if node_index > len(nodes) - 1:
         return ""
@@ -117,7 +168,15 @@ def reprtree(nodes: Sequence[T], node_index: int = 0, level: int = 0) -> str:
 
 
 class SegmentTree(Aggregator[AssociativeAggregate, Result]):
-    """A segment tree for window aggregation."""
+    """A segment tree for window aggregation.
+
+    Attributes
+    ----------
+    nodes
+    aggregate_type
+    levels
+
+    """
 
     fanout: ClassVar[int] = 2
 
