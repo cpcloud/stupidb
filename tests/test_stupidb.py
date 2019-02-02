@@ -81,24 +81,9 @@ def assert_rowset_equal(left, right):
 
 
 @pytest.fixture
-def table(rows):
-    return table_(rows)
-
-
-@pytest.fixture
-def left_table(table):
-    return table
-
-
-@pytest.fixture
-def right_table(right):
-    return table_(right)
-
-
-@pytest.fixture
-def test_table(table, rows):
+def test_table(rows):
     expected = rows[:]
-    op = table_(rows)
+    op = table(rows)
     result = list(op)
     assert_rowset_equal(result, expected)
 
@@ -118,10 +103,10 @@ def t_rows():
 
 @pytest.fixture
 def t_table(t_rows):
-    return table_(t_rows)
+    return table(t_rows)
 
 
-def test_projection(table, rows):
+def test_projection(rows):
     expected = [
         dict(z="a", c=1, d=2),
         dict(z="b", c=2, d=-1),
@@ -131,14 +116,14 @@ def test_projection(table, rows):
         dict(z="b", c=2, d=-3),
         dict(z="b", c=3, d=-3),
     ]
-    pipeline = table >> select(
+    pipeline = table(rows) >> select(
         c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"]
     )
     result = list(pipeline)
     assert_rowset_equal(result, expected)
 
 
-def test_selection(table, rows):
+def test_selection(rows):
     expected = [
         dict(z="a", c=1, d=2),
         dict(z="a", c=1, d=-3),
@@ -149,14 +134,14 @@ def test_selection(table, rows):
         dict(z="b", c=3, d=-3),
     ]
     selection = (
-        table
+        table(rows)
         >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
         >> sift(lambda r: True)
     )
     assert_rowset_equal(selection, expected)
 
 
-def test_group_by(table, rows):
+def test_group_by(rows):
     expected = [
         {"c": 1, "mean": -0.5, "total": -1, "z": "a"},
         {"c": 2, "mean": -2.0, "total": -4, "z": "b"},
@@ -165,7 +150,7 @@ def test_group_by(table, rows):
         {"c": 3, "mean": -3.0, "total": -3, "z": "b"},
     ]
     gb = (
-        table
+        table(rows)
         >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
         >> sift(lambda r: True)
         >> group_by(c=lambda r: r["c"], z=lambda r: r["z"])
@@ -175,10 +160,10 @@ def test_group_by(table, rows):
     assert_rowset_equal(result, expected)
 
 
-def test_cross_join(left_table, right_table, left, right):
+def test_cross_join(left, right):
     join = (
-        left_table
-        >> cross_join(right_table)
+        table(left)
+        >> cross_join(table(right))
         >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
     )
     result = list(join)
@@ -191,11 +176,11 @@ def test_cross_join(left_table, right_table, left, right):
     assert_rowset_equal(result, expected)
 
 
-def test_inner_join(left_table, right_table, left):
+def test_inner_join(left, right):
     join = (
-        left_table
+        table(left)
         >> inner_join(
-            right_table,
+            table(right),
             lambda r: (
                 r.left["z"] == "a"
                 and r.right["z"] == "a"
@@ -220,10 +205,10 @@ def test_inner_join(left_table, right_table, left):
     assert_rowset_equal(result, expected)
 
 
-def test_left_join(left_table, right_table, left):
+def test_left_join(left, right):
     join = (
-        left_table
-        >> left_join(right_table, lambda r: r.left["z"] == r.right["z"])
+        table(left)
+        >> left_join(table(right), lambda r: r.left["z"] == r.right["z"])
         >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
     )
     result = list(join)
@@ -247,10 +232,10 @@ def test_left_join(left_table, right_table, left):
     assert_rowset_equal(result, expected)
 
 
-def test_right_join(left_table, right_table, left):
+def test_right_join(left, right):
     join = (
-        left_table
-        >> right_join(right_table, lambda r: r.left["z"] == r.right["z"])
+        table(left)
+        >> right_join(table(right), lambda r: r.left["z"] == r.right["z"])
         >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
     )
     result = list(join)
@@ -292,10 +277,8 @@ def test_semi_join():
         dict(z="b", a=3, b=-3),
     ]
 
-    pipeline = table_(rows) >> sift(
-        lambda r: exists(
-            table_(other_rows) >> sift(lambda o: r["z"] == o["z"])
-        )
+    pipeline = table(rows) >> sift(
+        lambda r: exists(table(other_rows) >> sift(lambda o: r["z"] == o["z"]))
     )
     result = list(pipeline)
     assert result == rows
@@ -313,27 +296,25 @@ def test_semi_join_not_all_rows_match():
     ]
     other_rows = [dict(z="b", a=2, b=-3), dict(z="b", a=3, b=-3)]
 
-    pipeline = table_(rows) >> sift(
-        lambda r: exists(
-            table_(other_rows) >> sift(lambda o: r["z"] == o["z"])
-        )
+    pipeline = table(rows) >> sift(
+        lambda r: exists(table(other_rows) >> sift(lambda o: r["z"] == o["z"]))
     )
     result = list(pipeline)
     expected = [row for row in rows if row["z"] == "b"]
     assert result == expected
 
 
-def test_right_shiftable(table, right_table):
+def test_right_shiftable(rows):
     pipeline = (
-        table
+        table(rows)
         >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
         >> sift(lambda r: True)
         >> group_by(c=lambda r: r["c"], z=lambda r: r["z"])
         >> aggregate(
             total=sum(lambda r: r["d"]),
             mean=mean(lambda r: r["d"]),
-            my_samp_cov=samp_cov(lambda r: r["d"], lambda r: r["d"]),
-            my_pop_cov=pop_cov(lambda r: r["d"], lambda r: r["d"]),
+            my_samp_cov=cov_samp(lambda r: r["d"], lambda r: r["d"]),
+            my_pop_cov=cov_pop(lambda r: r["d"], lambda r: r["d"]),
         )
     )
 
@@ -383,9 +364,9 @@ def test_right_shiftable(table, right_table):
     assert_rowset_equal(result, expected)
 
 
-def test_rows_window(table, rows):
+def test_rows_window(rows):
     pipeline = (
-        table
+        table(rows)
         >> mutate(
             my_agg=sum(lambda r: r["a"])
             >> over(
@@ -417,9 +398,9 @@ def test_rows_window(table, rows):
     assert_rowset_equal(result, expected)
 
 
-def test_rows_window_partition(table, rows):
+def test_rows_window_partition(rows):
     pipeline = (
-        table
+        table(rows)
         >> mutate(
             my_agg=sum(lambda r: r.a)
             >> over(Window.rows(partition_by=[lambda r: r.z]))
@@ -446,9 +427,9 @@ def test_rows_window_partition(table, rows):
     assert_rowset_equal(result, expected)
 
 
-def test_range_window(table, rows):
+def test_range_window(rows):
     pipeline = (
-        table
+        table(rows)
         >> mutate(
             my_agg=sum(lambda r: r["a"])
             >> over(
@@ -547,8 +528,8 @@ def test_temporal_range_window(t_table, t_rows):
     assert_rowset_equal(result, expected)
 
 
-def test_agg(table, rows):
-    pipeline = table >> aggregate(
+def test_agg(rows):
+    pipeline = table(rows) >> aggregate(
         sum=sum(lambda r: r["e"]),
         mean=mean(lambda r: r["e"]),
         count=count(lambda r: r["e"]),
@@ -558,7 +539,7 @@ def test_agg(table, rows):
     assert result["mean"] == result["sum"] / result["count"]
 
 
-def test_invalid_agg(table, rows):
+def test_invalid_agg(rows):
     with pytest.raises(TypeError, match="Invalid projection"):
         select(
             not_an_agg=lambda r: r["e"],
@@ -581,8 +562,8 @@ def cumagg(seq: Iterable[T], combine: Callable[[T, U], U]) -> Iterator[U]:
         yield result
 
 
-def test_cumsum(table):
-    query = table >> select(
+def test_cumsum(rows):
+    query = table(rows) >> select(
         my_cumsum=sum(lambda r: r.e)
         >> over(Window.rows(order_by=[lambda r: r.e]))
     )
@@ -591,8 +572,10 @@ def test_cumsum(table):
     assert result == expected
 
 
-def test_minmax(table, rows):
-    query = table >> aggregate(min=min(lambda r: r.e), max=max(lambda r: r.e))
+def test_minmax(rows):
+    query = table(rows) >> aggregate(
+        min=min(lambda r: r.e), max=max(lambda r: r.e)
+    )
     result = list(query)
     e = [r["e"] for r in rows]
     expected = [dict(min=builtins.min(e), max=builtins.max(e))]
@@ -601,7 +584,7 @@ def test_minmax(table, rows):
 
 def test_min_max(t_rows):
     window = Window.range(partition_by=[lambda r: r.name])
-    query = table_(t_rows) >> select(
+    query = table(t_rows) >> select(
         min_date=min(lambda r: r.date) >> over(window),
         max_date=max(lambda r: r.date) >> over(window),
     )
@@ -620,7 +603,7 @@ def test_min_max(t_rows):
 
 def test_first_last(t_rows):
     window = Window.range(partition_by=[lambda r: r.name])
-    query = table_(t_rows) >> select(
+    query = table(t_rows) >> select(
         first_date=first(lambda r: r.date) >> over(window),
         last_date=last(lambda r: r.date) >> over(window),
     )
@@ -638,7 +621,7 @@ def test_first_last(t_rows):
 
 
 def test_nth(t_rows):
-    query = table_(t_rows) >> select(
+    query = table(t_rows) >> select(
         nth_date=nth(lambda r: r.date, lambda r: 1)
         >> over(Window.range(partition_by=[lambda r: r.name]))
     )
@@ -657,7 +640,7 @@ def test_nth(t_rows):
 
 def test_lead_lag(t_rows):
     window = Window.range(partition_by=[lambda r: r.name])
-    query = table_(t_rows) >> select(
+    query = table(t_rows) >> select(
         lead_date=lead(lambda r: r.date, lambda r: 1) >> over(window),
         lag_date=lag(lambda r: r.date, lambda r: 1) >> over(window),
     )
@@ -676,7 +659,7 @@ def test_lead_lag(t_rows):
 
 def test_row_number(t_rows):
     window = Window.range(partition_by=[lambda r: r.name])
-    query = table_(t_rows) >> select(row_id=row_number() >> over(window))
+    query = table(t_rows) >> select(row_id=row_number() >> over(window))
     result = list(query)
     expected = [
         dict(row_id=0),
@@ -692,7 +675,7 @@ def test_row_number(t_rows):
 
 def test_bench_sum(benchmark):
     benchdata = [{"a": random.normalvariate(0.0, 1.0)} for _ in range(10000)]
-    query = table_(benchdata) >> aggregate(sum_a=sum(lambda r: r.a))
+    query = table(benchdata) >> aggregate(sum_a=sum(lambda r: r.a))
     benchmark(list, query)
 
 
