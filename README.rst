@@ -37,8 +37,8 @@ Features
 
 Non-Features
 ------------
-* Stupid simple in-memory format
-* Stupidly easy to read codebase
+* Stupid simple in-memory format: ``Iterable[Mapping[str, Any]]``
+* Stupidly clean codebase
 
 Credits
 -------
