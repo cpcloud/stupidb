@@ -34,7 +34,6 @@ Features
 * Idiotic user defined aggregates, including custom dumb window aggregates
 * Scales down, not up
 * Probably doesn't work with your microservice
-* Not even close to 100% test coverage
 
 Non-Features
 ------------
