@@ -124,12 +124,12 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
     def __init__(
         self,
         leaves: Sequence[Tuple[T, ...]],
-        aggregate: Type[AssociativeAggregate],
+        aggregate_type: Type[AssociativeAggregate],
     ) -> None:
         self.nodes: Sequence[
             Optional[AssociativeAggregate]
-        ] = make_segment_tree(leaves, aggregate)
-        self.aggregate: Type[AssociativeAggregate] = aggregate
+        ] = make_segment_tree(leaves, aggregate_type)
+        self.aggregate_type: Type[AssociativeAggregate] = aggregate_type
         self.levels: Sequence[Sequence[AssociativeAggregate]] = list(
             self.iterlevels(self.nodes)
         )
@@ -153,7 +153,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         """Aggregate the values between `begin` and `end` using `aggregate`."""
         # TODO: investigate fanout
         fanout = self.__class__.fanout
-        aggregate = self.aggregate()
+        aggregate: AssociativeAggregate = self.aggregate_type()
         for i, level in enumerate(reversed(self.levels)):
             parent_begin = begin // fanout
             parent_end = end // fanout

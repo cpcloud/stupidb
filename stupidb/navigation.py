@@ -271,9 +271,11 @@ class NavigationAggregator(Aggregator[SimpleAggregate, Result]):
     __slots__ = ("aggregate",)
 
     def __init__(
-        self, inputs: Sequence[Tuple[T, ...]], aggregate: Type[SimpleAggregate]
+        self,
+        inputs: Sequence[Tuple[T, ...]],
+        aggregate_type: Type[SimpleAggregate],
     ) -> None:
-        self.aggregate: SimpleAggregate = aggregate(*zip(*inputs))
+        self.aggregate: SimpleAggregate = aggregate_type(*zip(*inputs))
 
     def query(self, begin: int, end: int) -> Optional[Result]:
         return self.aggregate.execute(begin, end)
