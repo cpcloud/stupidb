@@ -20,6 +20,7 @@ class Aggregator(Generic[AggregateClass, Result], abc.ABC):
     stupidb.navigation.NavigationAggregator
 
     """
+
     @abc.abstractmethod
     def query(self, begin: int, end: int) -> Optional[Result]:
         """Query the aggregator over the range from `begin` to `end`."""

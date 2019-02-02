@@ -228,7 +228,6 @@ class FirstLast(UnaryNavigationAggregate[Input1, Input1]):
         try:
             return self.cache[begin, end]
         except KeyError:
-
             try:
                 value = toolz.first(
                     filter(
