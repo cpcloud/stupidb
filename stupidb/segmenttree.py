@@ -1,7 +1,34 @@
-"""Segment tree implementation.
+r"""Segment tree implementation.
 
 The implementation is based on `Leis, 2015
 <http://www.vldb.org/pvldb/vol8/p1058-leis.pdf>`_
+
+The segment tree implementation here uses
+:class:`~stupidb.associative.AssociativeAggregate` instances as its nodes. The
+leaves are computed by call the
+:meth:`~stupidb.associative.AssociativeAggregate.step` method when the tree
+construction bottoms out. On the way back up the tree each aggregation instance
+is updated based on its children by calling the
+:meth:`~stupidb.associative.AssociativeAggregate.update` method. This method
+takes another instance of the same aggregation as input and updates the calling
+instance based on the value of the intermediate state of its input (the other
+aggregation).
+
+Each interior node contains an intermediate state of aggregation such that it
+is possible to compute a range query of any given aggregation in
+:math:`O\left(\log{N}\right)` time rather than :math:`O\left(N\right)`.
+
+The results in window aggregations having :math:`O\left(n\log{N}\right)` worst
+case behavior rather than :math:`O\left(N^{2}\right)`, which is the behavior of
+naive window aggregation implementations.
+
+A previous iteration of stupidb had :math:`O\left(N\right)` worst case behavior
+for some aggregations such as those base on ``sum``, but the segment tree
+provides a generic solution for any associative aggregate, including ``min``
+and ``max`` as well as the typical ``sum`` based aggregations.
+
+A future iteration might allow switching the aggregation algorithm based on the
+aggregate to achieve optimal behavior from all aggregates.
 
 """
 
@@ -173,8 +200,13 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
     Attributes
     ----------
     nodes
+        The nodes of the segment tree
     aggregate_type
+        The class of the aggregate to use
     levels
+        A list of the nodes in each level of the tree
+    fanout
+        The number of leaves to aggregate into each interior node
 
     """
 
@@ -197,19 +229,36 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
     def iterlevels(
         nodes: Sequence[Optional[AssociativeAggregate]]
     ) -> Iterator[List[AssociativeAggregate]]:
-        """Iterate over every level in the tree starting from the bottom."""
+        """Iterate over every level in the tree starting from the bottom.
+
+        Parameters
+        ----------
+        nodes
+            The nodes of the tree whose levels will be yielded.
+
+        """
         height = int(math.ceil(math.log2(len(nodes))))
+        getitem = nodes.__getitem__
         for level in range(1, height + 1):
             start = (1 << level - 1) - 1
             stop = (1 << level) - 1
-            yield [node for node in nodes[start:stop] if node is not None]
+            yield list(filter(None, map(getitem, range(start, stop))))
 
     def __repr__(self) -> str:
         # strip because the base case is the empty string + a newline
         return reprtree(self.nodes).strip()
 
     def query(self, begin: int, end: int) -> Optional[Result]:
-        """Aggregate the values between `begin` and `end` using `aggregate`."""
+        """Aggregate the values between `begin` and `end` using `aggregate`.
+
+        Parameters
+        ----------
+        begin
+            The start of the range to aggregate
+        end
+            The end of the range to aggregate
+
+        """
         # TODO: investigate fanout
         fanout = self.__class__.fanout
         aggregate: AssociativeAggregate = self.aggregate_type()
