@@ -1,5 +1,5 @@
 =======
-stupidb
+StupiDB
 =======
 
 .. image:: https://img.shields.io/pypi/v/stupidb.svg
