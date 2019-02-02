@@ -1,5 +1,5 @@
 Welcome to stupidb's documentation!
-======================================
+===================================
 
 .. toctree::
    :maxdepth: 2
