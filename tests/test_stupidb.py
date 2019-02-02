@@ -7,6 +7,7 @@ import builtins
 import itertools
 import operator
 import random
+import statistics
 from datetime import date, timedelta
 from typing import Callable, Iterable, Iterator, TypeVar
 
@@ -17,6 +18,8 @@ from stupidb.aggregation import Window
 from stupidb.api import (
     aggregate,
     count,
+    cov_pop,
+    cov_samp,
     cross_join,
     exists,
     first,
@@ -33,15 +36,16 @@ from stupidb.api import (
     nth,
     order_by,
     over,
-    pop_cov,
     right_join,
     row_number,
-    samp_cov,
     select,
     sift,
+    stdev_samp,
     sum,
+    table,
+    var_samp,
 )
-from stupidb.api import table as table_
+from stupidb.row import Row
 
 
 @pytest.fixture
@@ -685,3 +689,34 @@ def test_bench_raw_sum(benchmark):
 
     benchdata = [{"a": random.normalvariate(0.0, 1.0)} for _ in range(10000)]
     benchmark(rawsum, benchdata)
+
+
+def test_variance_window(t_rows):
+    window = Window.range(partition_by=[lambda r: r.name])
+    query = table(t_rows) >> select(
+        name=lambda r: r.name,
+        var=var_samp(lambda r: r.balance) >> over(window),
+        std=stdev_samp(lambda r: r.balance) >> over(window),
+    )
+    result = list(query)
+    alice = [row["balance"] for row in t_rows if row["name"] == "alice"]
+    bob = [row["balance"] for row in t_rows if row["name"] == "bob"]
+    expected = {
+        Row(
+            dict(
+                name="alice",
+                var=statistics.variance(alice),
+                std=statistics.stdev(alice),
+            ),
+            _id=1
+        ),
+        Row(
+            dict(
+                name="bob",
+                var=statistics.variance(bob),
+                std=statistics.stdev(bob),
+            ),
+            _id=2
+        ),
+    }
+    assert set(result) == expected
