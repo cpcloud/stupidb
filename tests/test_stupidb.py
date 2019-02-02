@@ -708,7 +708,7 @@ def test_variance_window(t_rows):
                 var=statistics.variance(alice),
                 std=statistics.stdev(alice),
             ),
-            _id=1
+            _id=1,
         ),
         Row(
             dict(
@@ -716,7 +716,7 @@ def test_variance_window(t_rows):
                 var=statistics.variance(bob),
                 std=statistics.stdev(bob),
             ),
-            _id=2
+            _id=2,
         ),
     }
     assert set(result) == expected
