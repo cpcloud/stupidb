@@ -19,15 +19,15 @@ class UnaryAssociativeAggregate(UnaryAggregate[Input1, Output]):
 
     @abc.abstractmethod
     def step(self, input1: Optional[Input1]) -> None:
-        ...
+        """Perform a single step of the aggregation."""
 
     @abc.abstractmethod
     def finalize(self) -> Optional[Output]:
-        ...
+        """Compute the value of the aggregation from its current state."""
 
     @abc.abstractmethod
     def update(self: UA, other: UA) -> None:
-        ...
+        """Update this aggregation based on another of the same type."""
 
     @classmethod
     def prepare(
@@ -46,15 +46,15 @@ class BinaryAssociativeAggregate(BinaryAggregate[Input1, Input2, Output]):
 
     @abc.abstractmethod
     def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
-        ...
+        """Perform a single step of the aggregation."""
 
     @abc.abstractmethod
     def finalize(self) -> Optional[Output]:
-        ...
+        """Compute the value of the aggregation from its current state."""
 
     @abc.abstractmethod
     def update(self: BA, other: BA) -> None:
-        ...
+        """Update this aggregation based on another of the same type."""
 
     @classmethod
     def prepare(
@@ -78,6 +78,9 @@ class Count(UnaryAssociativeAggregate[Input1, int]):
     def step(self, input1: Optional[Input1]) -> None:
         if input1 is not None:
             self.count += 1
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}(count={self.count!r})"
 
     def finalize(self) -> Optional[int]:
         return self.count
@@ -186,7 +189,7 @@ class Max(MinMax):
         super().__init__(comparator=max)
 
 
-class Covariance(BinaryAssociativeAggregate[R, R, float]):
+class Covariance(BinaryAssociativeAggregate[R1, R2, float]):
     __slots__ = "meanx", "meany", "cov", "ddof"
 
     def __init__(self, *, ddof: int) -> None:
@@ -203,7 +206,7 @@ class Covariance(BinaryAssociativeAggregate[R, R, float]):
             f"cov={self.cov!r}, count={self.count!r})"
         )
 
-    def step(self, x: Optional[R], y: Optional[R]) -> None:
+    def step(self, x: Optional[R1], y: Optional[R2]) -> None:
         if x is not None and y is not None:
             self.count += 1
             count = self.count
@@ -216,7 +219,7 @@ class Covariance(BinaryAssociativeAggregate[R, R, float]):
         denom = self.count - self.ddof
         return self.cov / denom if denom > 0 else None
 
-    def update(self, other: "Covariance[R]") -> None:
+    def update(self, other: "Covariance[R1, R2]") -> None:
         new_count = self.count + other.count
         self.cov += (
             other.cov
@@ -234,14 +237,14 @@ class Covariance(BinaryAssociativeAggregate[R, R, float]):
         self.count = new_count
 
 
-class SampleCovariance(Covariance[R]):
+class SampleCovariance(Covariance[R1, R2]):
     __slots__ = ()
 
     def __init__(self) -> None:
         super().__init__(ddof=1)
 
 
-class PopulationCovariance(Covariance[R]):
+class PopulationCovariance(Covariance[R1, R2]):
     __slots__ = ()
 
     def __init__(self) -> None:
@@ -252,7 +255,7 @@ class Variance(UnaryAssociativeAggregate[R, float]):
     __slots__ = ("aggregator",)
 
     def __init__(self, ddof: int) -> None:
-        self.aggregator: Covariance[R] = Covariance(ddof=ddof)
+        self.aggregator: Covariance[R, R] = Covariance(ddof=ddof)
 
     def step(self, x: Optional[R]) -> None:
         self.aggregator.step(x, x)
