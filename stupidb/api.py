@@ -13,7 +13,11 @@ from stupidb.associative import (
     Mean,
     Min,
     PopulationCovariance,
+    PopulationStandardDeviation,
+    PopulationVariance,
     SampleCovariance,
+    SampleStandardDeviation,
+    SampleVariance,
     Sum,
     Total,
 )
@@ -231,17 +235,15 @@ def first(
     return AggregateSpecification(First, (getter,))
 
 
-def last(
-    getter: Callable[[AbstractRow], Optional[V]]
-) -> AggregateSpecification:
-    return AggregateSpecification(Last, (getter,))
+def last(x: Callable[[AbstractRow], Optional[V]]) -> AggregateSpecification:
+    return AggregateSpecification(Last, (x,))
 
 
 def nth(
-    getter: Callable[[AbstractRow], Optional[V]],
+    x: Callable[[AbstractRow], Optional[V]],
     index: Callable[[AbstractRow], Optional[int]],
 ) -> AggregateSpecification:
-    return AggregateSpecification(Nth, (getter, index))
+    return AggregateSpecification(Nth, (x, index))
 
 
 def row_number():
@@ -249,62 +251,61 @@ def row_number():
 
 
 def lead(
-    getter: Callable[[AbstractRow], Optional[V]],
+    x: Callable[[AbstractRow], Optional[V]],
     index: Callable[[AbstractRow], int],
     default: Optional[Callable[[AbstractRow], Optional[V]]] = None,
 ) -> AggregateSpecification:
     return AggregateSpecification(
         Lead,
-        (
-            getter,
-            index,
-            default if default is not None else (lambda row: None),
-        ),
+        (x, index, default if default is not None else (lambda row: None)),
     )
 
 
 def lag(
-    getter: Callable[[AbstractRow], Optional[V]],
+    x: Callable[[AbstractRow], Optional[V]],
     index: Callable[[AbstractRow], int],
     default: Optional[Callable[[AbstractRow], Optional[V]]] = None,
 ) -> AggregateSpecification:
     return AggregateSpecification(
-        Lag,
-        (
-            getter,
-            index,
-            default if default is not None else (lambda row: None),
-        ),
+        Lag, (x, index, default if default is not None else (lambda row: None))
     )
 
 
-def mean(getter: RealGetter) -> AggregateSpecification:
-    return AggregateSpecification(Mean, (getter,))
+def mean(x: RealGetter) -> AggregateSpecification:
+    return AggregateSpecification(Mean, (x,))
 
 
 def min(
-    getter: Callable[[AbstractRow], Optional[Comparable]]
+    x: Callable[[AbstractRow], Optional[Comparable]]
 ) -> AggregateSpecification:
-    return AggregateSpecification(Min, (getter,))
+    return AggregateSpecification(Min, (x,))
 
 
 def max(
-    getter: Callable[[AbstractRow], Optional[Comparable]]
+    x: Callable[[AbstractRow], Optional[Comparable]]
 ) -> AggregateSpecification:
-    return AggregateSpecification(Max, (getter,))
+    return AggregateSpecification(Max, (x,))
 
 
-def samp_cov(arg1: RealGetter, arg2: RealGetter) -> AggregateSpecification:
-    return AggregateSpecification(SampleCovariance, (arg1, arg2))
+def cov_samp(x: RealGetter, y: RealGetter) -> AggregateSpecification:
+    return AggregateSpecification(SampleCovariance, (x, y))
 
 
-def var_samp(getter: RealGetter) -> AggregateSpecification:
-    return samp_cov(getter, getter)
+def var_samp(x: RealGetter) -> AggregateSpecification:
+    return AggregateSpecification(SampleVariance, (x,))
 
 
-def pop_cov(arg1: RealGetter, arg2: RealGetter) -> AggregateSpecification:
-    return AggregateSpecification(PopulationCovariance, (arg1, arg2))
+def stdev_samp(x: RealGetter) -> AggregateSpecification:
+    return AggregateSpecification(SampleStandardDeviation, (x,))
 
 
-def var_pop(getter: RealGetter) -> AggregateSpecification:
-    return pop_cov(getter, getter)
+def cov_pop(x: RealGetter, y: RealGetter) -> AggregateSpecification:
+    return AggregateSpecification(PopulationCovariance, (x, y))
+
+
+def var_pop(x: RealGetter) -> AggregateSpecification:
+    return AggregateSpecification(PopulationVariance, (x,))
+
+
+def stdev_pop(x: RealGetter) -> AggregateSpecification:
+    return AggregateSpecification(PopulationStandardDeviation, (x,))

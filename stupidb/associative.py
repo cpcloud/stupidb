@@ -1,6 +1,7 @@
 """Abstract and concrete aggregation types."""
 
 import abc
+import math
 import typing
 from typing import Callable, Optional, Sequence, Tuple, TypeVar
 
@@ -216,19 +217,84 @@ class Covariance(BinaryAssociativeAggregate[R, R, float]):
         return self.cov / denom if denom > 0 else None
 
     def update(self, other: "Covariance[R]") -> None:
-        raise NotImplementedError(
-            "Covariance not yet implemented for segment tree"
+        new_count = self.count + other.count
+        self.cov = (
+            self.cov
+            + other.cov
+            + (self.meanx - other.meanx)
+            * (self.meany - other.meany)
+            * (self.count * other.count)
+            / new_count
         )
+        self.meanx = (
+            self.count * self.meanx + other.count * other.meanx
+        ) / new_count
+        self.meany = (
+            self.count * self.meany + other.count * other.meany
+        ) / new_count
+        self.count = new_count
 
 
-class SampleCovariance(Covariance):
+class SampleCovariance(Covariance[R]):
     __slots__ = ()
 
     def __init__(self) -> None:
         super().__init__(ddof=1)
 
 
-class PopulationCovariance(Covariance):
+class PopulationCovariance(Covariance[R]):
+    __slots__ = ()
+
+    def __init__(self) -> None:
+        super().__init__(ddof=0)
+
+
+class Variance(UnaryAssociativeAggregate[R, float]):
+    __slots__ = ("aggregator",)
+
+    def __init__(self, ddof: int) -> None:
+        self.aggregator: Covariance[R] = Covariance(ddof=ddof)
+
+    def step(self, x: Optional[R]) -> None:
+        self.aggregator.step(x, x)
+
+    def finalize(self) -> Optional[float]:
+        return self.aggregator.finalize()
+
+    def update(self, other: "Variance[R]") -> None:
+        self.aggregator.update(other.aggregator)
+
+
+class SampleVariance(Variance[R]):
+    __slots__ = ()
+
+    def __init__(self) -> None:
+        super().__init__(ddof=1)
+
+
+class PopulationVariance(Variance[R]):
+    __slots__ = ()
+
+    def __init__(self) -> None:
+        super().__init__(ddof=0)
+
+
+class StandardDeviation(Variance[R]):
+    __slots__ = ("aggregator",)
+
+    def finalize(self) -> Optional[float]:
+        variance = super().finalize()
+        return math.sqrt(variance) if variance is not None else None
+
+
+class SampleStandardDeviation(StandardDeviation[R]):
+    __slots__ = ()
+
+    def __init__(self) -> None:
+        super().__init__(ddof=1)
+
+
+class PopulationStandardDeviation(StandardDeviation[R]):
     __slots__ = ()
 
     def __init__(self) -> None:
