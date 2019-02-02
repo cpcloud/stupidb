@@ -356,11 +356,11 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
 
     def __init__(
         self,
-        aggregate: Type[ConcreteAggregate],
+        aggregate_type: Type[ConcreteAggregate],
         getters: Tuple[Getter, ...],
         frame_clause: FrameClause,
     ) -> None:
-        self.aggregate: Type[ConcreteAggregate] = aggregate
+        self.aggregate_type: Type[ConcreteAggregate] = aggregate_type
         self.getters = getters
         self.frame_clause = frame_clause
 
@@ -417,6 +417,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         results: List[AggregationResultPair] = []
 
         # Aggregate over each partition
+        aggregate_type = self.aggregate_type
         for partition_key, possible_peers in partitions.items():
             # Pull out the arguments using the user provided getter functions.
             # We only need to do this once per partition, because that's the
@@ -437,10 +438,9 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             # interior nodes. Each node (both leaves and non-leaves) is a state
             # of the aggregation. The leaves are the initial states, the root
             # is the final state.
-            aggregate = self.aggregate
-            aggregator: Aggregator[ConcreteAggregate, T] = aggregate.prepare(
-                arguments
-            )
+            aggregator: Aggregator[
+                ConcreteAggregate, T
+            ] = aggregate_type.prepare(arguments)
 
             # For every row in the set of possible peers of the current row
             # compute the window frame, and query the aggregator for the value
