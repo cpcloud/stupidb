@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""StupiDB. The stupidest database.
+"""StupiDB. The stupidest database you'll ever come across.
 
 This is project designed to illustate the concepts that underly a typical
 relational database implementation, starting at naive execution of table-stakes
@@ -8,23 +8,6 @@ features up to rule-based query optimization.
 
 Please do not use this for any other reason than learning. There are no
 guarantees here except that there will be bugs.
-
-Features
---------
-* Projection
-* Selection
-* Cross, Inner, Left, and Right joins
-* Group by
-* Custom aggregations are the same as built-ins
-* Window functions including support for both range and rows
-* Iterator model where naively possible
-* Disregards the latest buzzwords
-* Scales down
-
-Requirements
-------------
-* All implementations must be as naive as possible
-* Unless an optimization is ridiculously trivial, don't implement it
 
 """
 
