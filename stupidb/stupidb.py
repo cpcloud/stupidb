@@ -187,7 +187,7 @@ class Aggregation(Relation):
             PartitionKey, AggregateMapping
         ] = collections.defaultdict(
             lambda: {
-                name: aggspec.aggregate()
+                name: aggspec.aggregate_type()
                 for name, aggspec in aggregations.items()
             }
         )
