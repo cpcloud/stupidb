@@ -218,9 +218,8 @@ class Covariance(BinaryAssociativeAggregate[R, R, float]):
 
     def update(self, other: "Covariance[R]") -> None:
         new_count = self.count + other.count
-        self.cov = (
-            self.cov
-            + other.cov
+        self.cov += (
+            other.cov
             + (self.meanx - other.meanx)
             * (self.meany - other.meany)
             * (self.count * other.count)
