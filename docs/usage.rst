@@ -4,7 +4,8 @@ Usage
 
 API
 ---
-StupiDB's user facing API is heavily inspired by dpylr.
+StupiDB's user facing API is heavily inspired by `dpylr
+<https://dplyr.tidyverse.org>`_.
 
 Constructing a Relation
 -----------------------
