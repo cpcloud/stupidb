@@ -352,7 +352,7 @@ def make_key_func(
 
 
 class WindowAggregateSpecification(Generic[ConcreteAggregate]):
-    __slots__ = "aggregate", "getters", "frame_clause"
+    __slots__ = "aggregate_type", "getters", "frame_clause"
 
     def __init__(
         self,
