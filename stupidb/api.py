@@ -1,3 +1,17 @@
+"""StupiDB user-facing API.
+
+.. note::
+
+   The join functions all take `right`, `predicate` and then `left` as
+   arguments, **in that order**.
+
+   This is intentional, and is the way the functions must be written to enable
+   `currying <https://en.wikipedia.org/wiki/Currying>`_.  Currying is the
+   technique that allows us to use the right shift operator (``>>``) to chain
+   operations.
+
+"""
+
 from typing import Any, Callable, Iterable, Mapping, Optional, TypeVar
 
 from toolz import curry
@@ -47,12 +61,14 @@ from stupidb.stupidb import (
 from stupidb.typehints import OrderBy, RealGetter
 
 
-class shiftable(curry):
-    def __rrshift__(self, other):
+class _shiftable(curry):
+    """Shiftable curry."""
+
+    def __rrshift__(self, other: Relation) -> "_shiftable":
         return self(other)
 
 
-@shiftable
+@_shiftable
 def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     """Construct a relation from an iterable of mappings.
 
@@ -65,25 +81,25 @@ def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     return Relation.from_iterable(rows)
 
 
-@shiftable
-def cross_join(right: Relation, left: Relation) -> Relation:
+@_shiftable
+def cross_join(right: Relation, left: Relation) -> Join:
     """Return the Cartesian product of tuples from `left` and `right`.
 
     Parameters
     ----------
-    left
-        A relation
     right
+        A relation
+    left
         A relation
 
     """
     return Join(left, right, lambda row: True)
 
 
-@shiftable
+@_shiftable
 def inner_join(
     right: Relation, predicate: Predicate, left: Relation
-) -> Relation:
+) -> Join:
     """Join `left` and `right` relations using `predicate`.
 
     Drop rows if `predicate` returns ``False``.
@@ -99,10 +115,10 @@ def inner_join(
     return Join(left, right, predicate)
 
 
-@shiftable
+@_shiftable
 def left_join(
     right: Relation, predicate: Predicate, left: Relation
-) -> Relation:
+) -> LeftJoin:
     """Join `left` and `right` relations using `predicate`.
 
     Drop rows if `predicate` returns ``False``.  Returns at least one of every
@@ -119,10 +135,10 @@ def left_join(
     return LeftJoin(left, right, predicate)
 
 
-@shiftable
+@_shiftable
 def right_join(
     right: Relation, predicate: Predicate, left: Relation
-) -> Relation:
+) -> RightJoin:
     """Join `left` and `right` relations using `predicate`.
 
     Drop rows if `predicate` returns ``False``.  Returns at least one of every
@@ -139,12 +155,12 @@ def right_join(
     return RightJoin(left, right, predicate)
 
 
-@shiftable
-def _order_by(order_by: Tuple[OrderBy, ...], child: Relation) -> Relation:
+@_shiftable
+def _order_by(order_by: Tuple[OrderBy, ...], child: Relation) -> SortBy:
     return SortBy(child, order_by)
 
 
-def order_by(*order_by: OrderBy) -> Relation:
+def order_by(*order_by: OrderBy) -> SortBy:
     """Order the rows of the child operator according to `order_by`.
 
     Parameters
@@ -156,14 +172,14 @@ def order_by(*order_by: OrderBy) -> Relation:
     return _order_by(order_by)
 
 
-@shiftable
+@_shiftable
 def _select(
     projectors: Mapping[str, FullProjector], child: Relation
-) -> Relation:
+) -> Projection:
     return Projection(child, projectors)
 
 
-def select(**projectors: FullProjector) -> Relation:
+def select(**projectors: FullProjector) -> Projection:
     """Subset or compute columns from `projectors`.
 
     Parameters
@@ -183,14 +199,14 @@ def select(**projectors: FullProjector) -> Relation:
     return _select(projectors)
 
 
-@shiftable
+@_shiftable
 def _mutate(
     mutators: Mapping[str, FullProjector], child: Relation
-) -> Relation:
+) -> Mutate:
     return Mutate(child, mutators)
 
 
-def mutate(**mutators: FullProjector) -> Relation:
+def mutate(**mutators: FullProjector) -> Mutate:
     """Add new columns specified by `mutators`.
 
     Parameters
@@ -210,8 +226,8 @@ def mutate(**mutators: FullProjector) -> Relation:
     return _mutate(mutators)
 
 
-@shiftable
-def sift(predicate: Predicate, child: Relation) -> Relation:
+@_shiftable
+def sift(predicate: Predicate, child: Relation) -> Selection:
     """Filter rows in `child` according to `predicate`.
 
     Parameters
@@ -233,17 +249,25 @@ def exists(relation: Relation) -> bool:
     return any(relation)
 
 
-@shiftable
-def _aggregate(aggregations: Aggregations, child: Relation) -> Relation:
+@_shiftable
+def _aggregate(aggregations: Aggregations, child: Relation) -> Aggregation:
     return Aggregation(child, aggregations)
 
 
-def aggregate(**aggregations: AggregateSpecification) -> Relation:
-    """Aggregate values from the child operator using `aggregations`."""
+def aggregate(**aggregations: AggregateSpecification) -> Aggregation:
+    """Aggregate values from the child operator using `aggregations`.
+
+    Parameters
+    ----------
+    aggregations
+        A mapping from ``str`` column names to
+        :class:`~stupidb.aggregation.AggregateSpecification` instances.
+
+    """
     return _aggregate(aggregations)
 
 
-@shiftable
+@_shiftable
 def over(
     window: FrameClause, child: AggregateSpecification
 ) -> WindowAggregateSpecification:
@@ -270,14 +294,14 @@ def over(
     )
 
 
-@shiftable
+@_shiftable
 def _group_by(
     group_by: Mapping[str, PartitionBy], child: Relation
-) -> Relation:
+) -> GroupBy:
     return GroupBy(child, group_by)
 
 
-def group_by(**group_by: PartitionBy) -> Relation:
+def group_by(**group_by: PartitionBy) -> GroupBy:
     """Group the rows of the child operator according to `group_by`.
 
     Parameters
@@ -302,8 +326,8 @@ def group_by(**group_by: PartitionBy) -> Relation:
 
 
 # Set operations
-@shiftable
-def union(right: Relation, left: Relation) -> Relation:
+@_shiftable
+def union(right: Relation, left: Relation) -> Union:
     """Compute the set union of `left` and `right`.
 
     Parameters
@@ -317,8 +341,8 @@ def union(right: Relation, left: Relation) -> Relation:
     return Union(left, right)
 
 
-@shiftable
-def intersection(right: Relation, left: Relation) -> Relation:
+@_shiftable
+def intersection(right: Relation, left: Relation) -> Intersection:
     """Compute the set intersection of `left` and `right`.
 
     Parameters
@@ -332,8 +356,8 @@ def intersection(right: Relation, left: Relation) -> Relation:
     return Intersection(left, right)
 
 
-@shiftable
-def difference(right: Relation, left: Relation) -> Relation:
+@_shiftable
+def difference(right: Relation, left: Relation) -> Difference:
     """Compute the set difference of `left` and `right`.
 
     Parameters
@@ -352,7 +376,14 @@ V = TypeVar("V")
 
 # Aggregations
 def count(x: Callable[[AbstractRow], Optional[V]]) -> AggregateSpecification:
-    """Count the number of non-NULL values of `x`."""
+    """Count the number of non-NULL values of `x`.
+
+    Parameters
+    ----------
+    x
+        A column getter.
+
+    """
     return AggregateSpecification(Count, (x,))
 
 
@@ -362,7 +393,7 @@ def sum(x: RealGetter) -> AggregateSpecification:
     Parameters
     ----------
     x
-        A function produce a column from an :class:`~stupidb.row.AbstractRow`.
+        A column getter.
 
     """
     return AggregateSpecification(Sum, (x,))
@@ -374,21 +405,35 @@ def total(x: RealGetter) -> AggregateSpecification:
     Parameters
     ----------
     x
-        A function produce a column from an :class:`~stupidb.row.AbstractRow`.
+        A column getter.
 
     """
     return AggregateSpecification(Total, (x,))
 
 
 def first(
-    getter: Callable[[AbstractRow], Optional[V]]
+    x: Callable[[AbstractRow], Optional[V]]
 ) -> AggregateSpecification:
-    """Compute the first row of `x` over a window."""
-    return AggregateSpecification(First, (getter,))
+    """Compute the first row of `x` over a window.
+
+    Parameters
+    ----------
+    x
+        A column getter.
+
+    """
+    return AggregateSpecification(First, (x,))
 
 
 def last(x: Callable[[AbstractRow], Optional[V]]) -> AggregateSpecification:
-    """Compute the last row of `x` over a window."""
+    """Compute the last row of `x` over a window.
+
+    Parameters
+    ----------
+    x
+        A column getter.
+
+    """
     return AggregateSpecification(Last, (x,))
 
 
@@ -409,7 +454,7 @@ def nth(
     return AggregateSpecification(Nth, (x, i))
 
 
-def row_number():
+def row_number() -> AggregateSpecification:
     """Compute the row number over a window."""
     return AggregateSpecification(RowNumber, ())
 
@@ -437,49 +482,116 @@ def lag(
 
 
 def mean(x: RealGetter) -> AggregateSpecification:
-    """Average of a column."""
+    """Average of a column.
+
+    Parameters
+    ----------
+    x
+        A column selector.
+
+    """
     return AggregateSpecification(Mean, (x,))
 
 
 def min(
     x: Callable[[AbstractRow], Optional[Comparable]]
 ) -> AggregateSpecification:
-    """Minimum of a column."""
+    """Minimum of a column.
+
+    Parameters
+    ----------
+    x
+        A column selector.
+
+    """
     return AggregateSpecification(Min, (x,))
 
 
 def max(
     x: Callable[[AbstractRow], Optional[Comparable]]
 ) -> AggregateSpecification:
-    """Maximum of a column."""
+    """Maximum of a column.
+
+    Parameters
+    ----------
+    x
+        A column selector.
+
+    """
     return AggregateSpecification(Max, (x,))
 
 
 def cov_samp(x: RealGetter, y: RealGetter) -> AggregateSpecification:
-    """Sample covariance of two columns."""
+    """Sample covariance of two columns.
+
+    Parameters
+    ----------
+    x
+        A column selector.
+    y
+        A column selector.
+
+    """
     return AggregateSpecification(SampleCovariance, (x, y))
 
 
 def var_samp(x: RealGetter) -> AggregateSpecification:
-    """Sample variance of a column."""
+    """Sample variance of a column.
+
+    Parameters
+    ----------
+    x
+        A column selector.
+
+    """
     return AggregateSpecification(SampleVariance, (x,))
 
 
 def stdev_samp(x: RealGetter) -> AggregateSpecification:
-    """Sample standard deviation of a column."""
+    """Sample standard deviation of a column.
+
+    Parameters
+    ----------
+    x
+        A column selector.
+
+    """
     return AggregateSpecification(SampleStandardDeviation, (x,))
 
 
 def cov_pop(x: RealGetter, y: RealGetter) -> AggregateSpecification:
-    """Population covariance of two columns."""
+    """Population covariance of two columns.
+
+    Parameters
+    ----------
+    x
+        A column selector.
+    y
+        A column selector.
+
+    """
     return AggregateSpecification(PopulationCovariance, (x, y))
 
 
 def var_pop(x: RealGetter) -> AggregateSpecification:
-    """Population variance of a column."""
+    """Population variance of a column.
+
+    Parameters
+    ----------
+    x
+        A column selector.
+
+    """
     return AggregateSpecification(PopulationVariance, (x,))
 
 
 def stdev_pop(x: RealGetter) -> AggregateSpecification:
-    """Population standard deviation of a column."""
+    """Population standard deviation of a column.
+
+    Parameters
+    ----------
+    x
+        A column selector.
+
+    """
     return AggregateSpecification(PopulationStandardDeviation, (x,))
