@@ -1,8 +1,17 @@
-"""Navigation function interface and implementation."""
+"""Navigation and simple window function interface and implementation."""
 
 import abc
 import operator
-from typing import Callable, ClassVar, Optional, Sequence, Tuple, Type, TypeVar
+from typing import (
+    Callable,
+    ClassVar,
+    MutableMapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+)
 
 import toolz
 
@@ -33,7 +42,7 @@ class UnaryNavigationAggregate(UnaryAggregate[Input1, Output]):
 
     @abc.abstractmethod
     def execute(self, begin: int, end: int) -> Optional[Output]:
-        ...
+        """Execute the aggregation over the range from `begin` to `end`."""
 
 
 class BinaryNavigationAggregate(BinaryAggregate[Input1, Input2, Output]):
@@ -126,6 +135,8 @@ class UnaryRankingAggregate(UnaryAggregate[Input1, Output]):
 
 
 class RowNumber(NullaryRankingAggregate[int]):
+    __slots__ = ("row_number",)
+
     def __init__(self) -> None:
         super().__init__()
         self.row_number = 0
@@ -143,7 +154,7 @@ class LeadLag(TernaryNavigationAggregate[Input1, int, Input1, Input1]):
 
     """
 
-    __slots__ = ("index",)
+    __slots__ = "index", "ninputs"
     offset_operation: ClassVar[Callable[[int, int], int]]
 
     @classmethod
@@ -161,7 +172,13 @@ class LeadLag(TernaryNavigationAggregate[Input1, int, Input1, Input1]):
         self.ninputs = len(inputs)
 
     def execute(self, begin: int, end: int) -> Optional[Input1]:
-        """`begin` and `end` are ignored in lead/lag."""
+        """Compute the value of the navigation function `lead` or `lag`.
+
+        Notes
+        -----
+        `begin` and `end` are ignored in lead/lag, by definition.
+
+        """
         index = self.index
         offset = self.__class__.offset(index, self.inputs2[index])
         default = self.inputs3[index]
@@ -196,17 +213,32 @@ class FirstLast(UnaryNavigationAggregate[Input1, Input1]):
     The difference between first and last is where the search for non NULL
     values starts.
 
+    This aggregation keeps a cache of computed aggregations keyed by the begin
+    and end of the range it's been queried over.
+
     """
 
-    __slots__ = ()
+    __slots__ = ("cache",)
+
+    def __init__(self, inputs1: Sequence[Optional[Input1]]) -> None:
+        super().__init__(inputs1)
+        self.cache: MutableMapping[Tuple[int, int], Optional[Input1]] = {}
 
     def execute(self, begin: int, end: int) -> Optional[Input1]:
         try:
-            return toolz.first(
-                filter(None, map(self.inputs1.__getitem__, range(begin, end)))
-            )
-        except StopIteration:
-            return None
+            return self.cache[begin, end]
+        except KeyError:
+
+            try:
+                value = toolz.first(
+                    filter(
+                        None, map(self.inputs1.__getitem__, range(begin, end))
+                    )
+                )
+            except StopIteration:
+                value = None
+            self.cache[begin, end] = value
+            return value
 
 
 class First(FirstLast[Input1]):
@@ -223,7 +255,7 @@ class Last(FirstLast[Input1]):
 class Nth(BinaryNavigationAggregate[Input1, int, Input1]):
     """Compute the nth row in a window frame."""
 
-    __slots__ = ("index",)
+    __slots__ = "index", "cache"
 
     def __init__(
         self,
@@ -232,27 +264,36 @@ class Nth(BinaryNavigationAggregate[Input1, int, Input1]):
     ) -> None:
         super().__init__(inputs1, inputs2)
         self.index = 0
+        self.cache: MutableMapping[Tuple[int, int], Optional[Input1]] = {}
 
     def execute(self, begin: int, end: int) -> Optional[Input1]:
-        current_index = self.index
+        try:
+            return self.cache[begin, end]
+        except KeyError:
+            current_index = self.index
 
-        # the current position in the frame
-        frame_position = begin + current_index
+            # the current position in the frame
+            frame_position = begin + current_index
 
-        if frame_position >= end:
-            # if the current position is past the end of the window, return
-            # None
-            result = None
-        else:
-            # compute the offset relative to the current row
-            target_index = self.inputs2[frame_position]
-            ninputs = end - begin
-
-            if target_index is not None and -ninputs <= target_index < ninputs:
-                result = self.inputs1[target_index]
-            else:
-                # if the user asked for a row outside the frame, return None
+            if frame_position >= end:
+                # if the current position is past the end of the window, return
+                # None
                 result = None
+            else:
+                # compute the offset relative to the current row
+                target_index = self.inputs2[frame_position]
+                ninputs = end - begin
+
+                if (
+                    target_index is not None
+                    and -ninputs <= target_index < ninputs
+                ):
+                    result = self.inputs1[target_index]
+                else:
+                    # if the user asked for a row outside the frame, return
+                    # None
+                    result = None
+            self.cache[begin, end] = result
         self.index += 1
         return result
 
@@ -268,6 +309,21 @@ SimpleAggregate = TypeVar(
 
 
 class NavigationAggregator(Aggregator[SimpleAggregate, Result]):
+    """Custom aggregator for simple window functions.
+
+    "Navigation" is slightly too specific here, this should almost certainly be
+    renamed.
+
+    This aggregator is useful for a subset of window functions whose underlying
+    binary combine operator is not associative or easy to express without
+    special knowledge of the underlying aggregator representation.
+
+    See Also
+    --------
+    stupidb.segmenttree.associative.AssociativeAggregate
+
+    """
+
     __slots__ = ("aggregate",)
 
     def __init__(
@@ -275,7 +331,9 @@ class NavigationAggregator(Aggregator[SimpleAggregate, Result]):
         inputs: Sequence[Tuple[T, ...]],
         aggregate_type: Type[SimpleAggregate],
     ) -> None:
-        self.aggregate: SimpleAggregate = aggregate_type(*zip(*inputs))
+        self.aggregate: SimpleAggregate = aggregate_type(  # type: ignore
+            *zip(*inputs)
+        )
 
     def query(self, begin: int, end: int) -> Optional[Result]:
         return self.aggregate.execute(begin, end)

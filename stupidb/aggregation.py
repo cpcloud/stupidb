@@ -1,4 +1,4 @@
-"""Algorithsm for aggregation."""
+"""Algorithms for aggregation."""
 
 import abc
 import bisect
@@ -55,6 +55,8 @@ AggregationResultPair = Tuple[int, T]
 
 
 class FrameClause(abc.ABC):
+    """Class for computing frame boundaries."""
+
     def __init__(
         self,
         order_by: Collection[OrderBy],
@@ -75,7 +77,25 @@ class FrameClause(abc.ABC):
         current_row_order_by_value: Optional[OrderingKey],
         order_by_values: Sequence[OrderingKey],
     ) -> int:
-        ...
+        """Find the beginning of a window in a partition.
+
+        Parameters
+        ----------
+        current_row
+            The row relative to which we are computing the window.
+        row_id_in_partition
+            The zero-based index of `current_row` in possible_peers.
+        current_row_order_by_value
+            The value of the ORDER BY key in the current row.
+        order_by_values
+            The order by values for the current partition.
+
+        Returns
+        -------
+        int
+            The start point of the window in the current partition
+
+        """
 
     @abc.abstractmethod
     def find_partition_end(
@@ -85,7 +105,25 @@ class FrameClause(abc.ABC):
         current_row_order_by_value: Optional[OrderingKey],
         order_by_values: Sequence[OrderingKey],
     ) -> int:
-        ...
+        """Find the end of a window in a partition.
+
+        Parameters
+        ----------
+        current_row
+            The row relative to which we are computing the window.
+        row_id_in_partition
+            The zero-based index of `current_row` in possible_peers.
+        current_row_order_by_value
+            The value of the ORDER BY key in the current row.
+        order_by_values
+            The order by values for the current partition.
+
+        Returns
+        -------
+        int
+            The end point of the window in the current partition
+
+        """
 
     @abc.abstractmethod
     def setup_window(
@@ -94,7 +132,7 @@ class FrameClause(abc.ABC):
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
     ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:
-        ...
+        """Compute the current row's ordering keys."""
 
     def compute_window_frame(
         self,
@@ -108,17 +146,18 @@ class FrameClause(abc.ABC):
         Parameters
         ----------
         possible_peers
-            The sequence of possible rows that the window could consist of.
+            The sequence of possible rows of which the window could consist.
         current_row
             The row relative to which we are computing the window.
         row_id_in_partition
             The zero-based index of `current_row` in possible_peers.
         order_by_columns
-            The columns by which we have ordered our window.
+            The columns by which we have ordered our window, if any.
 
         Returns
         -------
         Ranges
+            The start and stop of the window frame.
 
         """
         current_row_order_by_value, order_by_values = self.setup_window(
@@ -162,6 +201,18 @@ class FrameClause(abc.ABC):
 
 
 class RowsMode(FrameClause):
+    """A frame clause implementation for window function ``ROWS`` mode.
+
+    ``ROWS`` mode computes the window frame relative to the difference between
+    the row index of the current row and what is given by ``preceding`` and
+    ``following``.
+
+    See Also
+    --------
+    RangeMode
+
+    """
+
     def find_partition_begin(
         self,
         current_row: AbstractRow,
@@ -200,6 +251,17 @@ class RowsMode(FrameClause):
 
 
 class RangeMode(FrameClause):
+    """A frame clause implementation for window function ``RANGE`` mode.
+
+    ``RANGE`` mode computes the window frame relative to the difference between
+    ``preceding`` and ``following`` and the current row's ordering key.
+
+    See Also
+    --------
+    RowsMode
+
+    """
+
     def setup_window(
         self,
         possible_peers: Sequence[Tuple[int, AbstractRow]],
@@ -230,25 +292,6 @@ class RangeMode(FrameClause):
         current_row_order_by_values: Optional[OrderingKey],
         order_by_values: Sequence[OrderingKey],
     ) -> int:
-        """Find the beginning of a window in a partition.
-
-        Parameters
-        ----------
-        current_row
-            The row relative to which we are computing the window.
-        row_id_in_partition
-            The zero-based index of `current_row` in possible_peers.
-        current_row_order_by_value
-            The value of the ORDER BY key in the current row.
-        order_by_values
-            The order by values for the current partition.
-
-        Returns
-        -------
-        int
-            The start point of the window in the current partition
-
-        """
         assert (
             current_row_order_by_values is not None
         ), "current_row_order_by_value is None"
@@ -269,25 +312,6 @@ class RangeMode(FrameClause):
         current_row_order_by_values: Optional[OrderingKey],
         order_by_values: Sequence[OrderingKey],
     ) -> int:
-        """Find the end of a window in a partition.
-
-        Parameters
-        ----------
-        current_row
-            The row relative to which we are computing the window.
-        row_id_in_partition
-            The zero-based index of `current_row` in possible_peers.
-        current_row_order_by_value
-            The value of the ORDER BY key in the current row.
-        order_by_values
-            The order by values for the current partition.
-
-        Returns
-        -------
-        int
-            The end point of the window in the current partition
-
-        """
         assert (
             current_row_order_by_values is not None
         ), "current_row_order_by_values is None"
@@ -303,6 +327,8 @@ class RangeMode(FrameClause):
 
 
 class Window:
+    """A namespace class providing the user-facing API for windowing modes."""
+
     @staticmethod
     def rows(
         order_by: Collection[OrderBy] = (),
@@ -310,6 +336,16 @@ class Window:
         preceding: Optional[Preceding] = None,
         following: Optional[Following] = None,
     ) -> FrameClause:
+        """Construct a ``ROWS`` mode frame clause.
+
+        ``ROWS`` windows are useful for computing over windows that can be
+        determined by relative row index alone.
+
+        See Also
+        --------
+        Window.range
+
+        """
         return RowsMode(order_by, partition_by, preceding, following)
 
     @staticmethod
@@ -319,6 +355,16 @@ class Window:
         preceding: Optional[Preceding] = None,
         following: Optional[Following] = None,
     ) -> FrameClause:
+        """Construct a ``RANGE`` mode frame clause.
+
+        ``RANGE`` windows can be used to compute over windows whose bounds are
+        not easily determined by row number such as time based windows.
+
+        See Also
+        --------
+        Window.rows
+
+        """
         return RangeMode(order_by, partition_by, preceding, following)
 
 
@@ -326,12 +372,14 @@ Getter = Callable[[AbstractRow], Any]
 
 
 class AggregateSpecification(Generic[ConcreteAggregate]):
-    __slots__ = "aggregate", "getters"
+    __slots__ = "aggregate_type", "getters"
 
     def __init__(
-        self, aggregate: Type[ConcreteAggregate], getters: Tuple[Getter, ...]
+        self,
+        aggregate_type: Type[ConcreteAggregate],
+        getters: Tuple[Getter, ...],
     ) -> None:
-        self.aggregate: Type[ConcreteAggregate] = aggregate
+        self.aggregate_type: Type[ConcreteAggregate] = aggregate_type
         self.getters = getters
 
 

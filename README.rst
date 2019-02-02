@@ -12,14 +12,15 @@ stupidb
         :target: https://stupidb.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-Are you tired of software that's too smart? Try StupiDB, the stupidest
-database you'll ever come across.
+Are you tired of software that's too smart? Try StupiDB, the stupidest database
+you'll ever come across.
 
 StupiDB was built to understand how a relational database might be implemented.
 
-Systems like PostgreSQL are extremely complex. It's hard for to me to imagine
-what implementing the simplest, stupidest core of something like PostgreSQL
-would look like, so I decided to write my own.
+Systems like PostgreSQL are extremely complex. It was hard for to me to imagine
+what implementing the core of a relational database like PostgreSQL would look
+like just by tinkering with and reading the source code, so I decided to write
+my own.
 
 * Free software: Apache Software License 2.0
 * Documentation: https://stupidb.readthedocs.io.
@@ -28,18 +29,17 @@ Features
 --------
 * Stupid joins
 * Stupid window functions
+* Woefully naive set operations
 * Sophomoric group bys
-* Stupidly scales down
-* Doesn't work with your microservice
-* No documentation
+* Idiotic user defined aggregates, including custom dumb window aggregates
+* Scales down, not up
+* Probably doesn't work with your microservice
 * Not even close to 100% test coverage
 
 Non-Features
 ------------
 * Stupid simple in-memory format
 * Stupidly easy to read codebase
-* User defined aggregates, including custom stupid window aggregates
-* "Volanco" tuple-at-a-time model
 
 Credits
 -------

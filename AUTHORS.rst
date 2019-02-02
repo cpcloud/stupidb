@@ -5,7 +5,7 @@ Credits
 Development Lead
 ----------------
 
-* Charles Phillip Cloud <cpcloud@gmail.com>
+* Phillip Cloud <cpcloud@gmail.com>
 
 Contributors
 ------------

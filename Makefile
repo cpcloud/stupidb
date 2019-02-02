@@ -53,23 +53,20 @@ clean-test: ## remove test and coverage artifacts
 ISORT_OPTIONS := --trailing-comma --recursive
 BLACK_OPTIONS := --line-length=79 --py36
 
-formatimports:
+format-imports:
 	isort $(ISORT_OPTIONS) .
 
-format: formatimports
+format: format-imports
 	black $(BLACK_OPTIONS) .
 
 checkformat:
 	black $(BLACK_OPTIONS) --check .
 
 lint: checkformat ## check style with flake8
-	flake8 stupidb tests
+	flake8 .
 
 test: ## run tests quickly with the default Python
-	py.test
-
-test-all: ## run tests on every Python version with tox
-	tox
+	pytest
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source stupidb -m pytest
@@ -78,12 +75,9 @@ coverage: ## check code coverage quickly with the default Python
 	$(BROWSER) htmlcov/index.html
 
 docs: ## generate Sphinx HTML documentation, including API docs
-	rm -f docs/stupidb.rst
-	rm -f docs/modules.rst
-	sphinx-apidoc -o docs/ stupidb
+	sphinx-apidoc --separate --force -o docs/ stupidb
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
-	$(BROWSER) docs/_build/html/index.html
 
 servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
@@ -94,7 +88,10 @@ release: dist ## package and upload a release
 dist: clean ## builds source and wheel package
 	python setup.py sdist
 	python setup.py bdist_wheel
-	ls -l dist
+	ls -ltr dist
 
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
+
+develop: clean  ## install the package in development mode
+	python setup.py develop

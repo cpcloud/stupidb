@@ -3,21 +3,16 @@
 
 """The setup script."""
 
-from typing import List
+import pathlib
 
 from setuptools import find_packages, setup
 
-with open("README.rst") as readme_file:
-    readme = readme_file.read()
+readme = pathlib.Path("README.rst").read_text()
+history = pathlib.Path("HISTORY.rst").read_text()
 
-with open("HISTORY.rst") as history_file:
-    history = history_file.read()
-
-requirements: List[str] = []
-
-setup_requirements = ["pytest-runner"]
-
-test_requirements = ["pytest"]
+requirements = (
+    pathlib.Path("requirements_dev.txt").read_text().strip().splitlines()
+)
 
 setup(
     author="Phillip Cloud",
@@ -27,22 +22,18 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         "Natural Language :: English",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
     ],
-    description="A really slow database",
+    description="A really stupid database",
     install_requires=requirements,
     license="Apache Software License 2.0",
-    long_description=readme + "\n\n" + history,
+    long_description="{}\n\n{}".format(readme, history),
     include_package_data=True,
     keywords="stupidb",
     name="stupidb",
     packages=find_packages(include=["stupidb"]),
-    setup_requires=setup_requirements,
-    test_suite="tests",
-    tests_require=test_requirements,
     url="https://github.com/cpcloud/stupidb",
     version="0.1.0",
     zip_safe=False,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
 )

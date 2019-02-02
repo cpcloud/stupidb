@@ -1,3 +1,5 @@
+"""Various type definitions used throughout stupidb."""
+
 from numbers import Real
 from typing import Callable, Hashable, Optional, Tuple, TypeVar
 
