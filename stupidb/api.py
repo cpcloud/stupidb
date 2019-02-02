@@ -12,8 +12,10 @@
 
 """
 
+import inspect
 from typing import Any, Callable, Iterable, Mapping, Optional, TypeVar
 
+import toolz.functoolz
 from toolz import curry
 
 from stupidb.aggregation import (
@@ -64,6 +66,14 @@ from stupidb.typehints import OrderBy, RealGetter
 class _shiftable(curry):
     """Shiftable curry."""
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.__annotations__ = self.func.__annotations__
+
+    @property
+    def __signature__(self) -> inspect.Signature:
+        return inspect.signature(self.func)
+
     def __rrshift__(self, other: Relation) -> "_shiftable":
         return self(other)
 
@@ -97,9 +107,7 @@ def cross_join(right: Relation, left: Relation) -> Join:
 
 
 @_shiftable
-def inner_join(
-    right: Relation, predicate: Predicate, left: Relation
-) -> Join:
+def inner_join(right: Relation, predicate: Predicate, left: Relation) -> Join:
     """Join `left` and `right` relations using `predicate`.
 
     Drop rows if `predicate` returns ``False``.
@@ -200,9 +208,7 @@ def select(**projectors: FullProjector) -> Projection:
 
 
 @_shiftable
-def _mutate(
-    mutators: Mapping[str, FullProjector], child: Relation
-) -> Mutate:
+def _mutate(mutators: Mapping[str, FullProjector], child: Relation) -> Mutate:
     return Mutate(child, mutators)
 
 
@@ -295,9 +301,7 @@ def over(
 
 
 @_shiftable
-def _group_by(
-    group_by: Mapping[str, PartitionBy], child: Relation
-) -> GroupBy:
+def _group_by(group_by: Mapping[str, PartitionBy], child: Relation) -> GroupBy:
     return GroupBy(child, group_by)
 
 
@@ -411,9 +415,7 @@ def total(x: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(Total, (x,))
 
 
-def first(
-    x: Callable[[AbstractRow], Optional[V]]
-) -> AggregateSpecification:
+def first(x: Callable[[AbstractRow], Optional[V]]) -> AggregateSpecification:
     """Compute the first row of `x` over a window.
 
     Parameters
