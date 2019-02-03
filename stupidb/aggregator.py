@@ -17,7 +17,7 @@ class Aggregator(Generic[AggregateClass, Result], abc.ABC):
 
     See Also
     --------
-    stupidb.segmenttree.SegmentTree
+    stupidb.associative.SegmentTree
     stupidb.navigation.NavigationAggregator
 
     """

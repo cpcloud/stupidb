@@ -13,9 +13,9 @@ Submodules
    stupidb.associative
    stupidb.navigation
    stupidb.protocols
+   stupidb.ranking
    stupidb.reversed
    stupidb.row
-   stupidb.segmenttree
    stupidb.stupidb
    stupidb.typehints
 
