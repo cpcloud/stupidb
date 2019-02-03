@@ -29,7 +29,6 @@ from typing import (
     NoReturn,
     Set,
     Tuple,
-    TypeVar,
 )
 from typing import Union as Union_
 
@@ -37,7 +36,6 @@ import toolz as toolz
 
 from stupidb.aggregation import (
     AggregateSpecification,
-    ConcreteAggregate,
     WindowAggregateSpecification,
 )
 from stupidb.row import AbstractRow, JoinedRow, Row
@@ -51,6 +49,8 @@ from stupidb.typehints import (
 
 
 class Partitionable(abc.ABC):
+    __slots__ = ("rows",)
+
     def __init__(self, rows: Iterable[AbstractRow]) -> None:
         self.rows = rows
 
@@ -63,6 +63,8 @@ class Partitionable(abc.ABC):
 
 class Relation(Partitionable):
     """A relation."""
+
+    __slots__ = ("child",)
 
     def __init__(self, child: Partitionable) -> None:
         self.child = child
@@ -86,6 +88,8 @@ FullProjector = Union_[Projector, WindowAggregateSpecification]
 
 
 class Projection(Relation):
+    __slots__ = "aggregations", "projections"
+
     def __init__(
         self, child: Relation, projections: Mapping[str, FullProjector]
     ) -> None:
@@ -143,6 +147,8 @@ class Projection(Relation):
 
 
 class Mutate(Projection):
+    __slots__ = ()
+
     def __iter__(self) -> Iterator[AbstractRow]:
         # reasign self.child here to avoid clobbering its iteration
         # we need to use it twice: once for the computed columns (self.child)
@@ -193,6 +199,8 @@ class Aggregation(Relation):
 
 
 class Selection(Relation):
+    __slots__ = ("predicate",)
+
     def __init__(self, child: Relation, predicate: Predicate) -> None:
         super().__init__(child)
         self.predicate = predicate
@@ -203,6 +211,8 @@ class Selection(Relation):
 
 
 class GroupBy(Relation):
+    __slots__ = ("group_by",)
+
     def __init__(
         self, child: Relation, group_by: Mapping[str, PartitionBy]
     ) -> None:
@@ -216,6 +226,8 @@ class GroupBy(Relation):
 
 
 class SortBy(Relation):
+    __slots__ = ("order_by",)
+
     def __init__(self, child: Relation, order_by: Tuple[OrderBy, ...]) -> None:
         super().__init__(child)
         self.order_by = order_by
@@ -233,6 +245,8 @@ class SortBy(Relation):
 
 
 class Join(Relation):
+    __slots__ = "left", "right", "predicate"
+
     def __init__(
         self, left: Relation, right: Relation, predicate: Predicate
     ) -> None:
@@ -259,18 +273,22 @@ class Join(Relation):
 
 
 class CrossJoin(Join):
+    __slots__ = ()
+
     def __init__(self, left: Relation, right: Relation) -> None:
         super().__init__(left, right, lambda row: True)
 
 
 class InnerJoin(Join):
-    pass
+    __slots__ = ()
 
 
 MatchProvider = Callable[[AbstractRow], AbstractRow]
 
 
 class AsymmetricJoin(Join):
+    __slots__ = ()
+
     @property
     @abc.abstractmethod
     def match_provider(self) -> MatchProvider:
@@ -303,6 +321,8 @@ class AsymmetricJoin(Join):
 
 
 class LeftJoin(AsymmetricJoin):
+    __slots__ = ()
+
     @property
     def match_provider(self) -> MatchProvider:
         return operator.attrgetter("left")
@@ -316,6 +336,8 @@ class LeftJoin(AsymmetricJoin):
 
 
 class RightJoin(AsymmetricJoin):
+    __slots__ = ()
+
     @property
     def match_provider(self) -> MatchProvider:
         return operator.attrgetter("right")
@@ -332,12 +354,18 @@ items = methodcaller("items")
 
 
 class SetOperation(Relation):
+    """A generic set operation."""
+
+    __slots__ = "left", "right"
+
     def __init__(self, left: Relation, right: Relation) -> None:
         self.left = left
         self.right = right
 
 
 class Union(SetOperation):
+    __slots__ = ()
+
     def __iter__(self) -> Iterator[AbstractRow]:
         return toolz.unique(
             toolz.concatv(self.left, self.right),
@@ -349,6 +377,8 @@ SetOperand = FrozenSet[Tuple[Tuple[str, Any], ...]]
 
 
 class InefficientSetOperation(SetOperation):
+    __slots__ = ()
+
     def __iter__(self) -> Iterator[AbstractRow]:
         itemize = toolz.compose(frozenset, functools.partial(map, items))
         return (
@@ -365,7 +395,9 @@ class InefficientSetOperation(SetOperation):
         ...
 
 
-class Intersection(InefficientSetOperation):
+class Intersect(InefficientSetOperation):
+    __slots__ = ()
+
     def binary_operation(
         self, left: SetOperand, right: SetOperand
     ) -> SetOperand:
@@ -373,6 +405,8 @@ class Intersection(InefficientSetOperation):
 
 
 class Difference(InefficientSetOperation):
+    __slots__ = ()
+
     def binary_operation(
         self, left: SetOperand, right: SetOperand
     ) -> SetOperand:
