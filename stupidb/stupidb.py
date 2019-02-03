@@ -156,7 +156,6 @@ class Mutate(Projection):
 
 
 Aggregations = Mapping[str, AggregateSpecification]
-WindowAggregations = Mapping[str, WindowAggregateSpecification]
 AggregateMapping = Mapping[str, ConcreteAggregate]
 
 
