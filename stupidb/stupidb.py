@@ -37,14 +37,10 @@ from stupidb.aggregation import (
     AggregateSpecification,
     WindowAggregateSpecification,
 )
-from stupidb.associative import (
-    AbstractAssociativeAggregate,
-    AssociativeAggregate,
-)
+from stupidb.associative import AssociativeAggregate
 from stupidb.row import AbstractRow, JoinedRow, Row
 from stupidb.typehints import (
     OrderBy,
-    Output,
     PartitionBy,
     PartitionKey,
     Predicate,
