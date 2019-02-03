@@ -32,41 +32,33 @@ help:
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 clean-build: ## remove build artifacts
-	rm -fr build/
-	rm -fr dist/
-	rm -fr .eggs/
-	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -f {} +
+	rm -fr build/ dist/ .eggs/
+	find . -name '*.egg-info' -or -name '*.egg' -exec rm -fr {} +
 
 clean-pyc: ## remove Python file artifacts
-	find . -name '*.pyc' -exec rm -f {} +
-	find . -name '*.pyo' -exec rm -f {} +
-	find . -name '*~' -exec rm -f {} +
+	find . -name '*.py[co]' -or -name '*~' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -fr {} +
 
 clean-test: ## remove test and coverage artifacts
-	rm -fr .tox/
-	rm -f .coverage
-	rm -fr htmlcov/
-	rm -fr .pytest_cache
-
-ISORT_OPTIONS := --trailing-comma --recursive
-BLACK_OPTIONS := --line-length=79 --py36
+	rm -fr .tox/ .coverage htmlcov/ .pytest_cache
 
 format-imports:
-	isort $(ISORT_OPTIONS) .
+	isort --apply --recursive
 
 format: format-imports
-	black $(BLACK_OPTIONS) .
+	black .
 
-checkformat:
-	black $(BLACK_OPTIONS) --check .
+check:
+	black --check .
 
-lint: checkformat ## check style with flake8
+lint: check ## check style with flake8
 	flake8 .
 
 test: ## run tests quickly with the default Python
-	pytest
+	pytest --benchmark-disable
+
+bench:  ## run benchmarks
+	pytest --benchmark-only
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source stupidb -m pytest --benchmark-disable

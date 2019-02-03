@@ -1,0 +1,10 @@
+[tool.black]
+line-length = 79
+py36 = true
+
+[tool.isort]
+trailing_comma = true
+line_length = 79
+use_parentheses = true
+atomic = true
+multi_line_output = 3
