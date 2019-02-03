@@ -40,6 +40,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
+    "sphinx.ext.intersphinx",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -85,6 +86,8 @@ pygments_style = "sphinx"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
+
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 
 # -- Options for HTML output -------------------------------------------
