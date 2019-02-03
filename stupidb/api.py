@@ -15,7 +15,6 @@
 import inspect
 from typing import Any, Callable, Iterable, Mapping, Optional, TypeVar
 
-import toolz.functoolz
 from toolz import curry
 
 from stupidb.aggregation import (
@@ -42,11 +41,11 @@ from stupidb.protocols import Comparable
 from stupidb.row import AbstractRow
 from stupidb.stupidb import (
     Aggregation,
-    Aggregations,
     Difference,
     FullProjector,
     GroupBy,
-    Intersection,
+    Intersect,
+    IntersectAll,
     Join,
     LeftJoin,
     Mutate,
@@ -59,6 +58,7 @@ from stupidb.stupidb import (
     SortBy,
     Tuple,
     Union,
+    UnionAll,
 )
 from stupidb.typehints import OrderBy, RealGetter
 
@@ -66,7 +66,7 @@ from stupidb.typehints import OrderBy, RealGetter
 class _shiftable(curry):
     """Shiftable curry."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__annotations__ = self.func.__annotations__
 
@@ -85,7 +85,7 @@ def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     Parameters
     ----------
     rows
-        An iterable of mappings whose keys are strings.
+        An iterable of mappings whose keys are :class:`str` instances.
 
     """
     return Relation.from_iterable(rows)
@@ -117,7 +117,7 @@ def inner_join(right: Relation, predicate: Predicate, left: Relation) -> Join:
     right
         A relation
     predicate
-        A callable taking two arguments and returning a ``bool``.
+        A callable taking two arguments and returning a :class:`bool`.
 
     """
     return Join(left, right, predicate)
@@ -137,7 +137,7 @@ def left_join(
     right
         A relation
     predicate
-        A callable taking two arguments and returning a ``bool``.
+        A callable taking two arguments and returning a :class:`bool`.
 
     """
     return LeftJoin(left, right, predicate)
@@ -157,7 +157,7 @@ def right_join(
     right
         A relation
     predicate
-        A callable taking two arguments and returning a ``bool``.
+        A callable taking two arguments and returning a :class:`bool`.
 
     """
     return RightJoin(left, right, predicate)
@@ -193,7 +193,7 @@ def select(**projectors: FullProjector) -> Projection:
     Parameters
     ----------
     projectors
-        A mapping from ``str`` to ``FullProjector`` instances.
+        A mapping from :class:`str` to ``FullProjector`` instances.
 
     """
     valid_projectors = {
@@ -218,7 +218,7 @@ def mutate(**mutators: FullProjector) -> Mutate:
     Parameters
     ----------
     projectors
-        A mapping from ``str`` to ``FullProjector`` instances.
+        A mapping from :class:`str` to ``FullProjector`` instances.
 
     Notes
     -----
@@ -256,7 +256,9 @@ def exists(relation: Relation) -> bool:
 
 
 @_shiftable
-def _aggregate(aggregations: Aggregations, child: Relation) -> Aggregation:
+def _aggregate(
+    aggregations: Mapping[str, AggregateSpecification], child: Relation
+) -> Aggregation:
     return Aggregation(child, aggregations)
 
 
@@ -266,7 +268,7 @@ def aggregate(**aggregations: AggregateSpecification) -> Aggregation:
     Parameters
     ----------
     aggregations
-        A mapping from ``str`` column names to
+        A mapping from :class:`str` column names to
         :class:`~stupidb.aggregation.AggregateSpecification` instances.
 
     """
@@ -311,8 +313,8 @@ def group_by(**group_by: PartitionBy) -> GroupBy:
     Parameters
     ----------
     group_by
-        A mapping of ``str`` (column names) to functions that compute grouping
-        keys.
+        A mapping of :class:`str` column names to functions that compute
+        grouping keys.
 
     Notes
     -----
@@ -332,7 +334,7 @@ def group_by(**group_by: PartitionBy) -> GroupBy:
 # Set operations
 @_shiftable
 def union(right: Relation, left: Relation) -> Union:
-    """Compute the set union of `left` and `right`.
+    """Compute the union of `left` and `right`, ignoring duplicate rows.
 
     Parameters
     ----------
@@ -340,14 +342,18 @@ def union(right: Relation, left: Relation) -> Union:
          A relation
     left
          A relation
+
+    See Also
+    --------
+    union_all
 
     """
     return Union(left, right)
 
 
 @_shiftable
-def intersection(right: Relation, left: Relation) -> Intersection:
-    """Compute the set intersection of `left` and `right`.
+def union_all(right: Relation, left: Relation) -> UnionAll:
+    """Compute the union of `left` and `right`, preserving duplicate rows.
 
     Parameters
     ----------
@@ -356,8 +362,50 @@ def intersection(right: Relation, left: Relation) -> Intersection:
     left
          A relation
 
+    See Also
+    --------
+    union
+
     """
-    return Intersection(left, right)
+    return UnionAll(left, right)
+
+
+@_shiftable
+def intersect(right: Relation, left: Relation) -> IntersectAll:
+    """Compute the intersection of `left` and `right`, ignoring duplicate rows.
+
+    Parameters
+    ----------
+    right
+         A relation
+    left
+         A relation
+
+    See Also
+    --------
+    intersect_all
+
+    """
+    return IntersectAll(left, right)
+
+
+@_shiftable
+def intersect_all(right: Relation, left: Relation) -> IntersectAll:
+    """Compute the intersection of `left` and `right`, preserving duplicates.
+
+    Parameters
+    ----------
+    right
+         A relation
+    left
+         A relation
+
+    See Also
+    --------
+    intersect
+
+    """
+    return IntersectAll(left, right)
 
 
 @_shiftable
@@ -378,7 +426,7 @@ def difference(right: Relation, left: Relation) -> Difference:
 V = TypeVar("V")
 
 
-# Aggregations
+# Aggregate functions
 def count(x: Callable[[AbstractRow], Optional[V]]) -> AggregateSpecification:
     """Count the number of non-NULL values of `x`.
 

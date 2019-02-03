@@ -353,7 +353,7 @@ class RightJoin(AsymmetricJoin):
         return row.left.keys()
 
 
-items = methodcaller("items")
+SetOperand = FrozenSet[Tuple[Tuple[str, Any], ...]]
 
 
 class SetOperation(Relation):
@@ -365,29 +365,51 @@ class SetOperation(Relation):
         self.left = left
         self.right = right
 
+    @staticmethod
+    def itemize(mappings: Iterable[AbstractRow]) -> SetOperand:
+        return frozenset(map(methodcaller("items"), mappings))
+
 
 class Union(SetOperation):
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
         return toolz.unique(
-            toolz.concatv(self.left, self.right),
-            key=toolz.compose(frozenset, items),
+            itertools.chain(self.left, self.right),
+            key=toolz.compose(frozenset, methodcaller("items")),
         )
 
 
-SetOperand = FrozenSet[Tuple[Tuple[str, Any], ...]]
+class UnionAll(SetOperation):
+    __slots__ = ()
+
+    def __iter__(self) -> Iterator[AbstractRow]:
+        for id, row in enumerate(itertools.chain(self.left, self.right)):
+            yield row.renew_id(id)
+
+
+class IntersectAll(SetOperation):
+    __slots__ = ()
+
+    def __iter__(self) -> Iterator[AbstractRow]:
+        right_set = self.itemize(self.right)
+        filter_function = toolz.compose(
+            right_set.__contains__, methodcaller("items")
+        )
+        for id, row in enumerate(filter(filter_function, self.left)):
+            yield row.renew_id(id)
 
 
 class InefficientSetOperation(SetOperation):
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
-        itemize = toolz.compose(frozenset, functools.partial(map, items))
         return (
             Row.from_mapping(dict(row), _id=id)
             for id, row in enumerate(
-                self.binary_operation(itemize(self.left), itemize(self.right))
+                self.binary_operation(
+                    self.itemize(self.left), self.itemize(self.right)
+                )
             )
         )
 
