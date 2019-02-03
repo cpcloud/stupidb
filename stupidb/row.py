@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Iterator, Mapping, NoReturn, Hashable
+from typing import Any, Hashable, Iterator, Mapping
 
 import toolz
 
@@ -35,7 +35,7 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
         return hash(tuple(tuple(item) for item in self.data.items()))
 
     def __eq__(self, other: Any) -> bool:
-        return self.data == getattr(other, 'data', other)
+        return self.data == getattr(other, "data", other)
 
     def __ne__(self, other: Any) -> bool:
         return not (self == other)

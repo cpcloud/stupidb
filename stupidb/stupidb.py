@@ -195,9 +195,7 @@ class Aggregation(Generic[AssociativeAggregate], Relation):
         child = self.child
         for row in child:
             key = child.partition_key(row)
-            aggs: Mapping[str, AssociativeAggregate] = grouped_aggs[
-                key
-            ]
+            aggs: Mapping[str, AssociativeAggregate] = grouped_aggs[key]
             for name, agg in aggs.items():
                 inputs = [getter(row) for getter in aggregations[name].getters]
                 agg.step(*inputs)
