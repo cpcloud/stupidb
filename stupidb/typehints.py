@@ -28,5 +28,4 @@ R = TypeVar("R", bound=Real)
 R1 = TypeVar("R1", bound=Real)
 R2 = TypeVar("R2", bound=Real)
 Result = TypeVar("Result")
-RealGetter = Callable[[AbstractRow], Optional[R]]
 Getter = Callable[[AbstractRow], Any]

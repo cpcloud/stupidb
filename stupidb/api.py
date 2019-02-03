@@ -61,7 +61,7 @@ from stupidb.stupidb import (
     Union,
     UnionAll,
 )
-from stupidb.typehints import R1, R2, OrderBy, R, RealGetter
+from stupidb.typehints import R1, R2, OrderBy, R
 
 
 class _shiftable(curry):
@@ -440,7 +440,7 @@ def count(x: Callable[[AbstractRow], Optional[V]]) -> AggregateSpecification:
     return AggregateSpecification(Count, (x,))
 
 
-def sum(x: RealGetter) -> AggregateSpecification:
+def sum(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Compute the sum of `x`, with an empty column summing to NULL.
 
     Parameters
@@ -452,7 +452,7 @@ def sum(x: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(Sum, (x,))
 
 
-def total(x: RealGetter) -> AggregateSpecification:
+def total(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Compute the sum of `x`, with an empty column summing to zero.
 
     Parameters
@@ -563,7 +563,7 @@ def lag(
     return AggregateSpecification(Lag, (x, n, default))
 
 
-def mean(x: RealGetter[R]) -> AggregateSpecification:
+def mean(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Average of a column.
 
     Parameters
@@ -603,7 +603,9 @@ def max(
     return AggregateSpecification(Max, (x,))
 
 
-def cov_samp(x: RealGetter[R1], y: RealGetter[R2]) -> AggregateSpecification:
+def cov_samp(
+    x: Callable[[AbstractRow], R1], y: Callable[[AbstractRow], R2]
+) -> AggregateSpecification:
     """Sample covariance of two columns.
 
     Parameters
@@ -617,7 +619,7 @@ def cov_samp(x: RealGetter[R1], y: RealGetter[R2]) -> AggregateSpecification:
     return AggregateSpecification(SampleCovariance, (x, y))
 
 
-def var_samp(x: RealGetter[R]) -> AggregateSpecification:
+def var_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Sample variance of a column.
 
     Parameters
@@ -629,7 +631,7 @@ def var_samp(x: RealGetter[R]) -> AggregateSpecification:
     return AggregateSpecification(SampleVariance, (x,))
 
 
-def stdev_samp(x: RealGetter[R]) -> AggregateSpecification:
+def stdev_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Sample standard deviation of a column.
 
     Parameters
@@ -641,7 +643,9 @@ def stdev_samp(x: RealGetter[R]) -> AggregateSpecification:
     return AggregateSpecification(SampleStandardDeviation, (x,))
 
 
-def cov_pop(x: RealGetter[R1], y: RealGetter[R2]) -> AggregateSpecification:
+def cov_pop(
+    x: Callable[[AbstractRow], R1], y: Callable[[AbstractRow], R2]
+) -> AggregateSpecification:
     """Population covariance of two columns.
 
     Parameters
@@ -655,7 +659,7 @@ def cov_pop(x: RealGetter[R1], y: RealGetter[R2]) -> AggregateSpecification:
     return AggregateSpecification(PopulationCovariance, (x, y))
 
 
-def var_pop(x: RealGetter[R]) -> AggregateSpecification:
+def var_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Population variance of a column.
 
     Parameters
@@ -667,7 +671,7 @@ def var_pop(x: RealGetter[R]) -> AggregateSpecification:
     return AggregateSpecification(PopulationVariance, (x,))
 
 
-def stdev_pop(x: RealGetter[R]) -> AggregateSpecification:
+def stdev_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Population standard deviation of a column.
 
     Parameters
