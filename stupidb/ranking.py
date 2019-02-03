@@ -21,7 +21,7 @@ class RankingAggregator(Aggregator["RankingAggregate", Result]):
 
     See Also
     --------
-    stupidb.simple.SimpleAggregator
+    stupidb.navigation.NavigationAggregator
 
     """
 

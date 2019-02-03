@@ -24,7 +24,7 @@ from stupidb.typehints import Input1, Input2, Input3, Output, Result
 T = TypeVar("T")
 
 
-class SimpleAggregator(Aggregator["NavigationAggregate", Result]):
+class NavigationAggregator(Aggregator["NavigationAggregate", Result]):
     """Custom aggregator for simple window functions.
 
     This aggregator is useful for a subset of window functions whose underlying
@@ -57,7 +57,7 @@ class NavigationAggregate(Aggregate[Output]):
     """Base class for navigation aggregate functions."""
 
     __slots__ = ()
-    aggregator_class = SimpleAggregator
+    aggregator_class = NavigationAggregator
 
     @abc.abstractmethod
     def execute(self, begin: int, end: int) -> Optional[Output]:
