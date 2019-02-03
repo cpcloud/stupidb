@@ -55,13 +55,10 @@ lint: check ## check style with flake8
 	flake8 .
 
 test: ## run tests quickly with the default Python
-	pytest --benchmark-disable
-
-bench:  ## run benchmarks
-	pytest --benchmark-only
+	pytest
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source stupidb -m pytest --benchmark-disable
+	coverage run --source stupidb -m pytest
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html

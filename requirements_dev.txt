@@ -12,4 +12,3 @@ watchdog==0.9.0
 wheel==0.32.1
 toolz==0.9.0
 sphinx-autodoc-typehints
-pytest-benchmark==3.0.0
