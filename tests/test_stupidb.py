@@ -6,7 +6,6 @@
 import builtins
 import itertools
 import operator
-import random
 import statistics
 from datetime import date, timedelta
 from typing import Callable, Iterable, Iterator, TypeVar
@@ -36,6 +35,7 @@ from stupidb.api import (
     nth,
     order_by,
     over,
+    rank,
     right_join,
     row_number,
     select,
@@ -677,20 +677,6 @@ def test_row_number(t_rows):
     assert_rowset_equal(result, expected)
 
 
-def test_bench_sum(benchmark):
-    benchdata = [{"a": random.normalvariate(0.0, 1.0)} for _ in range(10000)]
-    query = table(benchdata) >> aggregate(sum_a=sum(lambda r: r.a))
-    benchmark(list, query)
-
-
-def test_bench_raw_sum(benchmark):
-    def rawsum(rows):
-        return builtins.sum(row["a"] for row in rows)
-
-    benchdata = [{"a": random.normalvariate(0.0, 1.0)} for _ in range(10000)]
-    benchmark(rawsum, benchdata)
-
-
 def test_variance_window(t_rows):
     window = Window.range(partition_by=[lambda r: r.name])
     query = table(t_rows) >> select(
@@ -720,3 +706,15 @@ def test_variance_window(t_rows):
         ),
     }
     assert set(result) == expected
+
+
+def test_rank(t_rows):
+    window = Window.rows(order_by=[lambda r: r.date])
+    query = (
+        table(t_rows)
+        >> select(date=lambda r: r.date, ranked=rank() >> over(window))
+        >> order_by(lambda r: r.date)
+    )
+    result = [row.ranked for row in query]
+    expected = [0, 1, 2, 3, 3, 4, 5]
+    assert result == expected

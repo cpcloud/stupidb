@@ -296,7 +296,7 @@ class AbstractAssociativeAggregate(Aggregate[Output]):
     """Base class for aggregations with an associative binary operation."""
 
     __slots__ = ("count",)
-    aggregator_class = SegmentTree
+    aggregator_class: ClassVar[Type[SegmentTree]] = SegmentTree
 
     def __init__(self) -> None:
         self.count = 0

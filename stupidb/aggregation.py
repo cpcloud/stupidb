@@ -23,13 +23,18 @@ from typing import (
 
 import toolz
 
-from stupidb.aggregatetypes import (
-    BinaryAggregate,
-    NullaryAggregate,
-    TernaryAggregate,
-    UnaryAggregate,
-)
+from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
+from stupidb.associative import (
+    BinaryAssociativeAggregate,
+    UnaryAssociativeAggregate,
+)
+from stupidb.navigation import (
+    BinaryNavigationAggregate,
+    TernaryNavigationAggregate,
+    UnaryNavigationAggregate,
+)
+from stupidb.ranking import RankingAggregate
 from stupidb.row import AbstractRow
 from stupidb.typehints import (
     Following,
@@ -40,15 +45,6 @@ from stupidb.typehints import (
 )
 
 T = TypeVar("T")
-
-ConcreteAggregate = TypeVar(
-    "ConcreteAggregate",
-    NullaryAggregate,
-    UnaryAggregate,
-    BinaryAggregate,
-    TernaryAggregate,
-    covariant=True,
-)
 
 StartStop = typing.NamedTuple("StartStop", [("start", int), ("stop", int)])
 Ranges = Tuple[StartStop, StartStop, StartStop]
@@ -370,6 +366,16 @@ class Window:
 
 
 Getter = Callable[[AbstractRow], Any]
+A = TypeVar("A")
+ConcreteAggregate = TypeVar(
+    "ConcreteAggregate",
+    UnaryAssociativeAggregate,
+    BinaryAssociativeAggregate,
+    UnaryNavigationAggregate,
+    BinaryNavigationAggregate,
+    TernaryNavigationAggregate,
+    RankingAggregate,
+)
 
 
 class AggregateSpecification(Generic[ConcreteAggregate]):
@@ -478,15 +484,8 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
 
         # Aggregate over each partition
         aggregate_type = self.aggregate_type
+        getters = self.getters
         for partition_key, possible_peers in partitions.items():
-            # Pull out the arguments using the user provided getter functions.
-            # We only need to do this once per partition, because that's the
-            # only time the arguments potentially change.
-            arguments = [
-                tuple(getter(peer) for getter in self.getters)
-                for _, peer in possible_peers
-            ]
-
             # Construct an aggregator for the function being computed
             #
             # For navigation functions like lead, lag, first, last and nth, we
@@ -498,9 +497,9 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             # interior nodes. Each node (both leaves and non-leaves) is a state
             # of the aggregation. The leaves are the initial states, the root
             # is the final state.
-            aggregator: Aggregator[
-                ConcreteAggregate, T
-            ] = aggregate_type.prepare(arguments)
+            aggregator: Aggregator[Aggregate, T] = aggregate_type.prepare(
+                possible_peers, getters, order_by_columns
+            )
 
             # For every row in the set of possible peers of the current row
             # compute the window frame, and query the aggregator for the value

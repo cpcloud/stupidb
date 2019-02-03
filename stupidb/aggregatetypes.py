@@ -1,76 +1,29 @@
 """Abstract and concrete aggregation types."""
 
 import abc
-from typing import Generic, Optional, Sequence, Tuple, TypeVar
+from typing import ClassVar, Generic, Sequence, Tuple, Type
 
 from stupidb.aggregator import Aggregator
-from stupidb.typehints import Input1, Input2, Input3, Output
+from stupidb.row import AbstractRow
+from stupidb.typehints import Getter, Output
 
 
-class NullaryAggregate(Generic[Output], abc.ABC):
-    """An aggregate or window function with zero arguments."""
-
-    __slots__ = ()
-
-    @classmethod
-    @abc.abstractmethod
-    def prepare(
-        cls, inputs: Sequence[Tuple[()]]
-    ) -> Aggregator["NullaryAggregate[Output]", Output]:
-        """Prepare an aggregation of this type for computation."""
-
-
-NA = TypeVar("NA", bound=NullaryAggregate)
-
-
-class UnaryAggregate(Generic[Input1, Output], abc.ABC):
-    """An aggregate or window function with one argument."""
+class Aggregate(Generic[Output], abc.ABC):
+    """An aggregate or window function."""
 
     __slots__ = ()
+    aggregator_class: ClassVar[Type[Aggregator]]
 
     @classmethod
-    @abc.abstractmethod
-    def prepare(
-        cls, inputs: Sequence[Tuple[Optional[Input1]]]
-    ) -> Aggregator["UnaryAggregate[Input1, Output]", Output]:
-        """Prepare aggregation of this type for computation."""
-
-
-UA = TypeVar("UA", bound=UnaryAggregate)
-
-
-class BinaryAggregate(Generic[Input1, Input2, Output], abc.ABC):
-    """An aggregate or window function with two arguments."""
-
-    __slots__ = ()
-
-    @classmethod
-    @abc.abstractmethod
-    def prepare(
-        cls, inputs: Sequence[Tuple[Optional[Input1], Optional[Input2]]]
-    ) -> Aggregator["BinaryAggregate[Input1, Input2, Output]", Output]:
-        """Prepare aggregation of this type for computation."""
-
-
-BA = TypeVar("BA", bound=BinaryAggregate)
-
-
-class TernaryAggregate(Generic[Input1, Input2, Input3, Output], abc.ABC):
-    """An aggregate or window function with three arguments."""
-
-    __slots__ = ()
-
-    @classmethod
-    @abc.abstractmethod
     def prepare(
         cls,
-        inputs: Sequence[
-            Tuple[Optional[Input1], Optional[Input2], Optional[Input3]]
-        ],
-    ) -> Aggregator[
-        "TernaryAggregate[Input1, Input2, Input3, Output]", Output
-    ]:
-        """Prepare aggregation of this type for computation."""
-
-
-TA = TypeVar("TA", bound=TernaryAggregate)
+        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        getters: Tuple[Getter, ...],
+        order_by_columns: Sequence[str],
+    ) -> Aggregator["Aggregate[Output]", Output]:
+        """Prepare an aggregation of this type for computation."""
+        arguments = [
+            tuple(getter(peer) for getter in getters)
+            for _, peer in possible_peers
+        ]
+        return cls.aggregator_class(arguments, cls)

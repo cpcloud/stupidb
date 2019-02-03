@@ -5,6 +5,7 @@ import operator
 from typing import (
     Callable,
     ClassVar,
+    Generic,
     MutableMapping,
     Optional,
     Sequence,
@@ -15,18 +16,57 @@ from typing import (
 
 import toolz
 
-from stupidb.aggregatetypes import (
-    BinaryAggregate,
-    NullaryAggregate,
-    TernaryAggregate,
-    UnaryAggregate,
-)
+from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
 from stupidb.reversed import Reversed
 from stupidb.typehints import Input1, Input2, Input3, Output, Result
 
+T = TypeVar("T")
 
-class UnaryNavigationAggregate(UnaryAggregate[Input1, Output]):
+
+class SimpleAggregator(Aggregator["NavigationAggregate", Result]):
+    """Custom aggregator for simple window functions.
+
+    This aggregator is useful for a subset of window functions whose underlying
+    binary combine operator (if it even exists) is not associative or easy to
+    express without special knowledge of the underlying aggregator
+    representation.
+
+    See Also
+    --------
+    stupidb.ranking.RankingAggregator
+
+    """
+
+    __slots__ = ("aggregate",)
+
+    def __init__(
+        self,
+        inputs: Sequence[Tuple[T, ...]],
+        aggregate_type: Type["NavigationAggregate"],
+    ) -> None:
+        self.aggregate: "NavigationAggregate" = aggregate_type(  # type: ignore
+            *zip(*inputs)
+        )
+
+    def query(self, begin: int, end: int) -> Optional[Result]:
+        return self.aggregate.execute(begin, end)
+
+
+class NavigationAggregate(Aggregate[Output]):
+    """Base class for navigation aggregate functions."""
+
+    __slots__ = ()
+    aggregator_class = SimpleAggregator
+
+    @abc.abstractmethod
+    def execute(self, begin: int, end: int) -> Optional[Output]:
+        """Execute the aggregation over the range from `begin` to `end`."""
+
+
+class UnaryNavigationAggregate(
+    Generic[Input1, Output], NavigationAggregate[Output]
+):
     """Navigation function taking one argument."""
 
     __slots__ = ("inputs1",)
@@ -34,18 +74,10 @@ class UnaryNavigationAggregate(UnaryAggregate[Input1, Output]):
     def __init__(self, inputs1: Sequence[Optional[Input1]]) -> None:
         self.inputs1 = inputs1
 
-    @classmethod
-    def prepare(
-        cls, inputs: Sequence[Tuple[Optional[Input1]]]
-    ) -> Aggregator["UnaryNavigationAggregate[Input1, Output]", Output]:
-        return NavigationAggregator(inputs, cls)
 
-    @abc.abstractmethod
-    def execute(self, begin: int, end: int) -> Optional[Output]:
-        """Execute the aggregation over the range from `begin` to `end`."""
-
-
-class BinaryNavigationAggregate(BinaryAggregate[Input1, Input2, Output]):
+class BinaryNavigationAggregate(
+    Generic[Input1, Input2, Output], NavigationAggregate[Output]
+):
     """Navigation function taking two arguments."""
 
     __slots__ = "inputs1", "inputs2"
@@ -58,21 +90,9 @@ class BinaryNavigationAggregate(BinaryAggregate[Input1, Input2, Output]):
         self.inputs1 = inputs1
         self.inputs2 = inputs2
 
-    @classmethod
-    def prepare(
-        cls, inputs: Sequence[Tuple[Optional[Input1], Optional[Input2]]]
-    ) -> Aggregator[
-        "BinaryNavigationAggregate[Input1, Input2, Output]", Output
-    ]:
-        return NavigationAggregator(inputs, cls)
-
-    @abc.abstractmethod
-    def execute(self, begin: int, end: int) -> Optional[Output]:
-        ...
-
 
 class TernaryNavigationAggregate(
-    TernaryAggregate[Input1, Input2, Input3, Output]
+    Generic[Input1, Input2, Input3, Output], NavigationAggregate[Output]
 ):
     """Navigation function taking three arguments."""
 
@@ -87,68 +107,6 @@ class TernaryNavigationAggregate(
         self.inputs1 = inputs1
         self.inputs2 = inputs2
         self.inputs3 = inputs3
-
-    @classmethod
-    def prepare(
-        cls,
-        inputs: Sequence[
-            Tuple[Optional[Input1], Optional[Input2], Optional[Input3]]
-        ],
-    ) -> Aggregator[
-        "TernaryNavigationAggregate[Input1, Input2, Input3, Output]", Output
-    ]:
-        return NavigationAggregator(inputs, cls)
-
-    @abc.abstractmethod
-    def execute(self, begin: int, end: int) -> Optional[Output]:
-        ...
-
-
-class NullaryRankingAggregate(NullaryAggregate[Output]):
-    __slots__ = ()
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    @classmethod
-    def prepare(
-        cls, inputs: Sequence[Tuple[()]]
-    ) -> Aggregator["NullaryRankingAggregate[Output]", Output]:
-        return NavigationAggregator(inputs, cls)
-
-    @abc.abstractmethod
-    def execute(self, begin: int, end: int) -> Optional[Output]:
-        ...
-
-
-class UnaryRankingAggregate(UnaryAggregate[Input1, Output]):
-    __slots__ = ()
-
-    def __init__(self, inputs1: Sequence[Optional[Input1]]) -> None:
-        self.inputs1 = inputs1
-
-    @classmethod
-    def prepare(
-        cls, inputs: Sequence[Tuple[Optional[Input1]]]
-    ) -> Aggregator["UnaryRankingAggregate[Input1, Output]", Output]:
-        return NavigationAggregator(inputs, cls)
-
-    @abc.abstractmethod
-    def execute(self, begin: int, end: int) -> Optional[Output]:
-        ...
-
-
-class RowNumber(NullaryRankingAggregate[int]):
-    __slots__ = ("row_number",)
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.row_number = 0
-
-    def execute(self, begin: int, end: int) -> Optional[int]:
-        row_number = self.row_number
-        self.row_number += 1
-        return row_number
 
 
 class LeadLag(TernaryNavigationAggregate[Input1, int, Input1, Input1]):
@@ -206,9 +164,6 @@ class Lead(LeadLag[Input1]):
 class Lag(LeadLag[Input1]):
     __slots__ = ()
     offset_operation = operator.sub
-
-
-T = TypeVar("T")
 
 
 class FirstLast(UnaryNavigationAggregate[Input1, Input1]):
@@ -299,44 +254,3 @@ class Nth(BinaryNavigationAggregate[Input1, int, Input1]):
             self.cache[begin, end] = result
         self.index += 1
         return result
-
-
-SimpleAggregate = TypeVar(
-    "SimpleAggregate",
-    UnaryNavigationAggregate,
-    BinaryNavigationAggregate,
-    TernaryNavigationAggregate,
-    NullaryRankingAggregate,
-    UnaryRankingAggregate,
-)
-
-
-class NavigationAggregator(Aggregator[SimpleAggregate, Result]):
-    """Custom aggregator for simple window functions.
-
-    "Navigation" is slightly too specific here, this should almost certainly be
-    renamed.
-
-    This aggregator is useful for a subset of window functions whose underlying
-    binary combine operator is not associative or easy to express without
-    special knowledge of the underlying aggregator representation.
-
-    See Also
-    --------
-    stupidb.segmenttree.associative.AssociativeAggregate
-
-    """
-
-    __slots__ = ("aggregate",)
-
-    def __init__(
-        self,
-        inputs: Sequence[Tuple[T, ...]],
-        aggregate_type: Type[SimpleAggregate],
-    ) -> None:
-        self.aggregate: SimpleAggregate = aggregate_type(  # type: ignore
-            *zip(*inputs)
-        )
-
-    def query(self, begin: int, end: int) -> Optional[Result]:
-        return self.aggregate.execute(begin, end)

@@ -13,7 +13,6 @@ guarantees here except that there will be bugs.
 
 import abc
 import collections
-import functools
 import itertools
 import operator
 import typing
@@ -38,10 +37,14 @@ from stupidb.aggregation import (
     AggregateSpecification,
     WindowAggregateSpecification,
 )
-from stupidb.associative import AssociativeAggregate
+from stupidb.associative import (
+    AbstractAssociativeAggregate,
+    AssociativeAggregate,
+)
 from stupidb.row import AbstractRow, JoinedRow, Row
 from stupidb.typehints import (
     OrderBy,
+    Output,
     PartitionBy,
     PartitionKey,
     Predicate,
@@ -168,10 +171,14 @@ class Aggregation(Generic[AssociativeAggregate], Relation):
     def __init__(
         self,
         child: Relation,
-        aggregations: Mapping[str, AggregateSpecification],
+        aggregations: Mapping[
+            str, AggregateSpecification[AssociativeAggregate]
+        ],
     ) -> None:
         super().__init__(child)
-        self.aggregations = aggregations
+        self.aggregations: Mapping[
+            str, AggregateSpecification[AssociativeAggregate]
+        ] = aggregations
 
     def __iter__(self) -> Iterator[AbstractRow]:
         aggregations = self.aggregations
@@ -188,7 +195,9 @@ class Aggregation(Generic[AssociativeAggregate], Relation):
         child = self.child
         for row in child:
             key = child.partition_key(row)
-            aggs: Mapping[str, AssociativeAggregate] = grouped_aggs[key]
+            aggs: Mapping[str, AssociativeAggregate] = grouped_aggs[
+                key
+            ]
             for name, agg in aggs.items():
                 inputs = [getter(row) for getter in aggregations[name].getters]
                 agg.step(*inputs)

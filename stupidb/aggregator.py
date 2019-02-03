@@ -1,8 +1,9 @@
 import abc
-from typing import Generic, Optional, TypeVar
+from typing import Generic, Optional, Sequence, TypeVar
 
 from stupidb.typehints import Result
 
+T = TypeVar("T")
 AggregateClass = TypeVar("AggregateClass", covariant=True)
 
 
@@ -20,6 +21,10 @@ class Aggregator(Generic[AggregateClass, Result], abc.ABC):
     stupidb.navigation.NavigationAggregator
 
     """
+
+    @abc.abstractmethod
+    def __init__(self, arguments: Sequence[T], cls: AggregateClass) -> None:
+        ...
 
     @abc.abstractmethod
     def query(self, begin: int, end: int) -> Optional[Result]:

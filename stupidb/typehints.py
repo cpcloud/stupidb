@@ -1,7 +1,7 @@
 """Various type definitions used throughout stupidb."""
 
 from numbers import Real
-from typing import Callable, Hashable, Optional, Tuple, TypeVar
+from typing import Any, Callable, Hashable, Optional, Tuple, TypeVar
 
 from stupidb.protocols import AdditiveWithInverse
 from stupidb.row import AbstractRow
@@ -29,3 +29,4 @@ R1 = TypeVar("R1", bound=Real)
 R2 = TypeVar("R2", bound=Real)
 Result = TypeVar("Result")
 RealGetter = Callable[[AbstractRow], Optional[R]]
+Getter = Callable[[AbstractRow], Any]

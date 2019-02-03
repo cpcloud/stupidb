@@ -36,8 +36,9 @@ from stupidb.associative import (
     Sum,
     Total,
 )
-from stupidb.navigation import First, Lag, Last, Lead, Nth, RowNumber
+from stupidb.navigation import First, Lag, Last, Lead, Nth
 from stupidb.protocols import Comparable
+from stupidb.ranking import Rank, RowNumber
 from stupidb.row import AbstractRow
 from stupidb.stupidb import (
     Aggregation,
@@ -60,7 +61,7 @@ from stupidb.stupidb import (
     Union,
     UnionAll,
 )
-from stupidb.typehints import OrderBy, RealGetter
+from stupidb.typehints import R1, R2, OrderBy, R, RealGetter
 
 
 class _shiftable(curry):
@@ -371,7 +372,7 @@ def union_all(right: Relation, left: Relation) -> UnionAll:
 
 
 @_shiftable
-def intersect(right: Relation, left: Relation) -> IntersectAll:
+def intersect(right: Relation, left: Relation) -> Intersect:
     """Compute the intersection of `left` and `right`, ignoring duplicate rows.
 
     Parameters
@@ -386,7 +387,7 @@ def intersect(right: Relation, left: Relation) -> IntersectAll:
     intersect_all
 
     """
-    return IntersectAll(left, right)
+    return Intersect(left, right)
 
 
 @_shiftable
@@ -509,29 +510,60 @@ def row_number() -> AggregateSpecification:
     return AggregateSpecification(RowNumber, ())
 
 
+def rank() -> AggregateSpecification:
+    """Rank the rows of a relation based on the ordering key given in over."""
+    return AggregateSpecification(Rank, ())
+
+
 def lead(
     x: Callable[[AbstractRow], Optional[V]],
-    n: Callable[[AbstractRow], int],
-    default: Optional[Callable[[AbstractRow], Optional[V]]] = None,
+    n: Callable[[AbstractRow], Optional[int]] = (lambda row: 1),
+    default: Callable[[AbstractRow], Optional[V]] = (lambda row: None),
 ) -> AggregateSpecification:
-    """Lead a column `x` by `n` rows, using `default` for NULL values."""
-    return AggregateSpecification(
-        Lead, (x, n, default if default is not None else (lambda row: None))
-    )
+    """Lead a column `x` by `n` rows, using `default` for NULL values.
+
+    Parameters
+    ----------
+    x
+        A column selector.
+    n
+        A callable computing the number of rows to lead. Defaults to a lead of
+        **1** row. The callable takes the current row as input and thus the
+        lead can be computed relative to the current row.
+    default
+        A callable computing the default value for the lead if the row would
+        produce a NULL value when led. The callable takes the current row as
+        input and thus the default can be computed relative to the current row.
+
+    """
+    return AggregateSpecification(Lead, (x, n, default))
 
 
 def lag(
     x: Callable[[AbstractRow], Optional[V]],
-    n: Callable[[AbstractRow], int],
-    default: Optional[Callable[[AbstractRow], Optional[V]]] = None,
+    n: Callable[[AbstractRow], Optional[int]] = (lambda row: 1),
+    default: Callable[[AbstractRow], Optional[V]] = (lambda row: None),
 ) -> AggregateSpecification:
-    """Lag a column `x` by `n` rows, using `default` for NULL values."""
-    return AggregateSpecification(
-        Lag, (x, n, default if default is not None else (lambda row: None))
-    )
+    """Lag a column `x` by `n` rows, using `default` for NULL values.
+
+    Parameters
+    ----------
+    x
+        A column selector.
+    n
+        A callable computing the number of rows to lag. Defaults to a lag of
+        **1** row. The callable takes the current row as input and thus the lag
+        can be computed relative to the current row.
+    default
+        A callable computing the default value for the lag if the row would
+        produce a NULL value when lagged. The callable takes the current row as
+        input and thus the default can be computed relative to the current row.
+
+    """
+    return AggregateSpecification(Lag, (x, n, default))
 
 
-def mean(x: RealGetter) -> AggregateSpecification:
+def mean(x: RealGetter[R]) -> AggregateSpecification:
     """Average of a column.
 
     Parameters
@@ -571,7 +603,7 @@ def max(
     return AggregateSpecification(Max, (x,))
 
 
-def cov_samp(x: RealGetter, y: RealGetter) -> AggregateSpecification:
+def cov_samp(x: RealGetter[R1], y: RealGetter[R2]) -> AggregateSpecification:
     """Sample covariance of two columns.
 
     Parameters
@@ -585,7 +617,7 @@ def cov_samp(x: RealGetter, y: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(SampleCovariance, (x, y))
 
 
-def var_samp(x: RealGetter) -> AggregateSpecification:
+def var_samp(x: RealGetter[R]) -> AggregateSpecification:
     """Sample variance of a column.
 
     Parameters
@@ -597,7 +629,7 @@ def var_samp(x: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(SampleVariance, (x,))
 
 
-def stdev_samp(x: RealGetter) -> AggregateSpecification:
+def stdev_samp(x: RealGetter[R]) -> AggregateSpecification:
     """Sample standard deviation of a column.
 
     Parameters
@@ -609,7 +641,7 @@ def stdev_samp(x: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(SampleStandardDeviation, (x,))
 
 
-def cov_pop(x: RealGetter, y: RealGetter) -> AggregateSpecification:
+def cov_pop(x: RealGetter[R1], y: RealGetter[R2]) -> AggregateSpecification:
     """Population covariance of two columns.
 
     Parameters
@@ -623,7 +655,7 @@ def cov_pop(x: RealGetter, y: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(PopulationCovariance, (x, y))
 
 
-def var_pop(x: RealGetter) -> AggregateSpecification:
+def var_pop(x: RealGetter[R]) -> AggregateSpecification:
     """Population variance of a column.
 
     Parameters
@@ -635,7 +667,7 @@ def var_pop(x: RealGetter) -> AggregateSpecification:
     return AggregateSpecification(PopulationVariance, (x,))
 
 
-def stdev_pop(x: RealGetter) -> AggregateSpecification:
+def stdev_pop(x: RealGetter[R]) -> AggregateSpecification:
     """Population standard deviation of a column.
 
     Parameters
