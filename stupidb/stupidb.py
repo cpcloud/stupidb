@@ -38,6 +38,7 @@ from stupidb.aggregation import (
     AggregateSpecification,
     WindowAggregateSpecification,
 )
+from stupidb.associative import AssociativeAggregate
 from stupidb.row import AbstractRow, JoinedRow, Row
 from stupidb.typehints import (
     OrderBy,
@@ -161,12 +162,14 @@ class Mutate(Projection):
             yield Row.from_mapping(row, _id=i)
 
 
-Aggregations = Mapping[str, AggregateSpecification]
-AggregateMapping = Mapping[str, ConcreteAggregate]
+class Aggregation(Generic[AssociativeAggregate], Relation):
+    __slots__ = ("aggregations",)
 
-
-class Aggregation(Relation):
-    def __init__(self, child: Relation, aggregations: Aggregations) -> None:
+    def __init__(
+        self,
+        child: Relation,
+        aggregations: Mapping[str, AggregateSpecification],
+    ) -> None:
         super().__init__(child)
         self.aggregations = aggregations
 
@@ -175,7 +178,7 @@ class Aggregation(Relation):
 
         # initialize aggregates
         grouped_aggs: Mapping[
-            PartitionKey, AggregateMapping
+            PartitionKey, Mapping[str, AssociativeAggregate]
         ] = collections.defaultdict(
             lambda: {
                 name: aggspec.aggregate_type()
@@ -185,7 +188,7 @@ class Aggregation(Relation):
         child = self.child
         for row in child:
             key = child.partition_key(row)
-            aggs: AggregateMapping = grouped_aggs[key]
+            aggs: Mapping[str, AssociativeAggregate] = grouped_aggs[key]
             for name, agg in aggs.items():
                 inputs = [getter(row) for getter in aggregations[name].getters]
                 agg.step(*inputs)
