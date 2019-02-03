@@ -32,7 +32,7 @@ class UnaryAssociativeAggregate(UnaryAggregate[Input1, Output]):
     @classmethod
     def prepare(
         cls, inputs: Sequence[Tuple[Optional[Input1]]]
-    ) -> Aggregator["UnaryAssociativeAggregate", Output]:
+    ) -> Aggregator["UnaryAssociativeAggregate[Input1, Output]", Output]:
         from stupidb.segmenttree import SegmentTree
 
         return SegmentTree(inputs, cls)
@@ -59,7 +59,9 @@ class BinaryAssociativeAggregate(BinaryAggregate[Input1, Input2, Output]):
     @classmethod
     def prepare(
         cls, inputs: Sequence[Tuple[Optional[Input1], Optional[Input2]]]
-    ) -> Aggregator["BinaryAssociativeAggregate", Output]:
+    ) -> Aggregator[
+        "BinaryAssociativeAggregate[Input1, Input2, Output]", Output
+    ]:
         from stupidb.segmenttree import SegmentTree
 
         return SegmentTree(inputs, cls)
@@ -69,6 +71,7 @@ AssociativeAggregate = TypeVar(
     "AssociativeAggregate",
     UnaryAssociativeAggregate,
     BinaryAssociativeAggregate,
+    covariant=True,
 )
 
 

@@ -1,4 +1,4 @@
-from typing import Sequence, TypeVar
+from typing import Any, Sequence, TypeVar
 
 T = TypeVar("T", covariant=True)
 
@@ -13,7 +13,8 @@ class Reversed(Sequence[T]):
     def __len__(self) -> int:
         return len(self.values)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: Any) -> Any:
+        # Why must this be Any -> Any?
         nvalues = len(self)
         if -nvalues <= index < nvalues:
             offset = nvalues * (index >= 0) - index - 1

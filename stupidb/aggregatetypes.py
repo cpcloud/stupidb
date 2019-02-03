@@ -16,7 +16,7 @@ class NullaryAggregate(Generic[Output], abc.ABC):
     @abc.abstractmethod
     def prepare(
         cls, inputs: Sequence[Tuple[()]]
-    ) -> Aggregator["NullaryAggregate", Output]:
+    ) -> Aggregator["NullaryAggregate[Output]", Output]:
         """Prepare an aggregation of this type for computation."""
 
 
@@ -32,7 +32,7 @@ class UnaryAggregate(Generic[Input1, Output], abc.ABC):
     @abc.abstractmethod
     def prepare(
         cls, inputs: Sequence[Tuple[Optional[Input1]]]
-    ) -> Aggregator["UnaryAggregate", Output]:
+    ) -> Aggregator["UnaryAggregate[Input1, Output]", Output]:
         """Prepare aggregation of this type for computation."""
 
 
@@ -48,7 +48,7 @@ class BinaryAggregate(Generic[Input1, Input2, Output], abc.ABC):
     @abc.abstractmethod
     def prepare(
         cls, inputs: Sequence[Tuple[Optional[Input1], Optional[Input2]]]
-    ) -> Aggregator["BinaryAggregate", Output]:
+    ) -> Aggregator["BinaryAggregate[Input1, Input2, Output]", Output]:
         """Prepare aggregation of this type for computation."""
 
 
@@ -67,7 +67,9 @@ class TernaryAggregate(Generic[Input1, Input2, Input3, Output], abc.ABC):
         inputs: Sequence[
             Tuple[Optional[Input1], Optional[Input2], Optional[Input3]]
         ],
-    ) -> Aggregator["TernaryAggregate", Output]:
+    ) -> Aggregator[
+        "TernaryAggregate[Input1, Input2, Input3, Output]", Output
+    ]:
         """Prepare aggregation of this type for computation."""
 
 

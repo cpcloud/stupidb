@@ -37,7 +37,7 @@ class UnaryNavigationAggregate(UnaryAggregate[Input1, Output]):
     @classmethod
     def prepare(
         cls, inputs: Sequence[Tuple[Optional[Input1]]]
-    ) -> Aggregator["UnaryNavigationAggregate", Output]:
+    ) -> Aggregator["UnaryNavigationAggregate[Input1, Output]", Output]:
         return NavigationAggregator(inputs, cls)
 
     @abc.abstractmethod
@@ -61,7 +61,9 @@ class BinaryNavigationAggregate(BinaryAggregate[Input1, Input2, Output]):
     @classmethod
     def prepare(
         cls, inputs: Sequence[Tuple[Optional[Input1], Optional[Input2]]]
-    ) -> Aggregator["BinaryNavigationAggregate", Output]:
+    ) -> Aggregator[
+        "BinaryNavigationAggregate[Input1, Input2, Output]", Output
+    ]:
         return NavigationAggregator(inputs, cls)
 
     @abc.abstractmethod
@@ -92,7 +94,9 @@ class TernaryNavigationAggregate(
         inputs: Sequence[
             Tuple[Optional[Input1], Optional[Input2], Optional[Input3]]
         ],
-    ) -> Aggregator["TernaryNavigationAggregate", Output]:
+    ) -> Aggregator[
+        "TernaryNavigationAggregate[Input1, Input2, Input3, Output]", Output
+    ]:
         return NavigationAggregator(inputs, cls)
 
     @abc.abstractmethod
@@ -109,7 +113,7 @@ class NullaryRankingAggregate(NullaryAggregate[Output]):
     @classmethod
     def prepare(
         cls, inputs: Sequence[Tuple[()]]
-    ) -> Aggregator["NullaryRankingAggregate", Output]:
+    ) -> Aggregator["NullaryRankingAggregate[Output]", Output]:
         return NavigationAggregator(inputs, cls)
 
     @abc.abstractmethod
@@ -126,7 +130,7 @@ class UnaryRankingAggregate(UnaryAggregate[Input1, Output]):
     @classmethod
     def prepare(
         cls, inputs: Sequence[Tuple[Optional[Input1]]]
-    ) -> Aggregator["UnaryRankingAggregate", Output]:
+    ) -> Aggregator["UnaryRankingAggregate[Input1, Output]", Output]:
         return NavigationAggregator(inputs, cls)
 
     @abc.abstractmethod

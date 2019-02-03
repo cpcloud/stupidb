@@ -86,7 +86,7 @@ class JoinedRow(AbstractRow):
         return self._data
 
     @classmethod
-    def from_mapping(cls, *args, **kwargs) -> NoReturn:
+    def from_mapping(cls, *args: Any, **kwargs: Any) -> NoReturn:
         raise TypeError(f"from_mapping not supported for {cls.__name__!r}")
 
     def __getitem__(self, key: str) -> Any:

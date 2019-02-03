@@ -20,13 +20,16 @@ import typing
 from operator import methodcaller
 from typing import (
     Any,
+    Callable,
     FrozenSet,
+    Generic,
     Iterable,
     Iterator,
     Mapping,
     NoReturn,
     Set,
     Tuple,
+    TypeVar,
 )
 from typing import Union as Union_
 
@@ -252,7 +255,7 @@ class Join(Relation):
         return filter(self.predicate, self.child)
 
     @classmethod
-    def from_iterable(cls, *args, **kwargs) -> NoReturn:
+    def from_iterable(cls, *args: Any, **kwargs: Any) -> NoReturn:
         raise TypeError(f"from_iterable not supported for {cls.__name__} type")
 
 
@@ -265,10 +268,18 @@ class InnerJoin(Join):
     pass
 
 
+MatchProvider = Callable[[AbstractRow], AbstractRow]
+
+
 class AsymmetricJoin(Join):
     @property
     @abc.abstractmethod
-    def match_provider(self):
+    def match_provider(self) -> MatchProvider:
+        ...
+
+    @property
+    @abc.abstractmethod
+    def matching_relation(self) -> Iterator[AbstractRow]:
         ...
 
     @abc.abstractmethod
@@ -286,7 +297,7 @@ class AsymmetricJoin(Join):
             keys = self.mismatch_keys(row)
 
         non_matching_rows = (
-            row for row in self.match_provider(self) if row not in matches
+            row for row in self.matching_relation if row not in matches
         )
         for i, row in enumerate(non_matching_rows, start=k):
             yield JoinedRow(row, dict.fromkeys(keys), _id=i)
@@ -294,8 +305,12 @@ class AsymmetricJoin(Join):
 
 class LeftJoin(AsymmetricJoin):
     @property
-    def match_provider(self):
+    def match_provider(self) -> MatchProvider:
         return operator.attrgetter("left")
+
+    @property
+    def matching_relation(self) -> Iterator[AbstractRow]:
+        return self.left
 
     def mismatch_keys(self, row: AbstractRow) -> Set[str]:
         return row.right.keys()
@@ -303,8 +318,12 @@ class LeftJoin(AsymmetricJoin):
 
 class RightJoin(AsymmetricJoin):
     @property
-    def match_provider(self):
+    def match_provider(self) -> MatchProvider:
         return operator.attrgetter("right")
+
+    @property
+    def matching_relation(self) -> Iterator[AbstractRow]:
+        return self.right
 
     def mismatch_keys(self, row: AbstractRow) -> Set[str]:
         return row.left.keys()

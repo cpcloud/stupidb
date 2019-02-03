@@ -47,11 +47,12 @@ ConcreteAggregate = TypeVar(
     UnaryAggregate,
     BinaryAggregate,
     TernaryAggregate,
+    covariant=True,
 )
 
 StartStop = typing.NamedTuple("StartStop", [("start", int), ("stop", int)])
 Ranges = Tuple[StartStop, StartStop, StartStop]
-AggregationResultPair = Tuple[int, T]
+AggregationResultPair = Tuple[int, Optional[T]]
 
 
 class FrameClause(abc.ABC):
@@ -372,6 +373,17 @@ Getter = Callable[[AbstractRow], Any]
 
 
 class AggregateSpecification(Generic[ConcreteAggregate]):
+    """Specification for computing an aggregation.
+
+    Attributes
+    ----------
+    aggregate_type
+        The aggregate class to use for aggregation.
+    getters
+        A tuple of callables used to produce the arguments for the aggregation.
+
+    """
+
     __slots__ = "aggregate_type", "getters"
 
     def __init__(
@@ -462,7 +474,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             partitions[partition_key].sort(key=key)
 
         # (row_id, value) pairs containing the aggregation results
-        results: List[AggregationResultPair] = []
+        results: List[AggregationResultPair[Optional[T]]] = []
 
         # Aggregate over each partition
         aggregate_type = self.aggregate_type
