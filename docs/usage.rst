@@ -113,7 +113,8 @@ For two relations :math:`L` and :math:`R`, the cross join, denoted
 
    L\times{R} = \left\{l \cup r \mid l \in L\mbox{ and }r \in R\right\}
 
-It's worth noting that all joins can be defined in terms of a cross join.
+It's worth noting that all joins can be defined as variations and filters on a
+cross join.
 
 In stupidb this is:
 
