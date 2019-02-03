@@ -18,6 +18,7 @@
 # relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
 #
+import datetime
 import os
 import sys
 
@@ -57,8 +58,8 @@ master_doc = "index"
 
 # General information about the project.
 project = "stupidb"
-copyright = "2018, Charles Phillip Cloud"
-author = "Charles Phillip Cloud"
+copyright = "{:d}, Phillip Cloud".format(datetime.date.today().year)
+author = "Phillip Cloud"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -140,7 +141,7 @@ latex_documents = [
         master_doc,
         "stupidb.tex",
         "stupidb Documentation",
-        "Charles Phillip Cloud",
+        "Phillip Cloud",
         "manual",
     )
 ]
