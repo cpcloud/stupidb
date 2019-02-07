@@ -1,4 +1,5 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help black isort checkformat lint
+.PHONY: help clean clean-build clean-pyc clean-test format-imports format \
+    check lint test coverage docs servedocs release dist install develop
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
