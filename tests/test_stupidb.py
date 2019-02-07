@@ -20,6 +20,7 @@ from stupidb.api import (
     cov_pop,
     cov_samp,
     cross_join,
+    dense_rank,
     exists,
     first,
     group_by,
@@ -708,13 +709,61 @@ def test_variance_window(t_rows):
     assert set(result) == expected
 
 
-def test_rank(t_rows):
-    window = Window.rows(order_by=[lambda r: r.date])
-    query = (
-        table(t_rows)
-        >> select(date=lambda r: r.date, ranked=rank() >> over(window))
-        >> order_by(lambda r: r.date)
+def test_rank():
+    rows = [
+        dict(name="apple"),
+        dict(name="apple"),
+        dict(name="grapes"),
+        dict(name="grapes"),
+        dict(name="orange"),
+        dict(name="watermelon"),
+    ]
+    window = Window.rows(order_by=[lambda r: r.name])
+    query = table(rows) >> select(
+        name=lambda r: r.name, ranked=rank() >> over(window)
     )
     result = [row.ranked for row in query]
-    expected = [0, 1, 2, 3, 3, 4, 5]
+    expected = [0, 0, 2, 2, 4, 5]
+    assert result == expected
+
+
+@pytest.mark.xfail(reason="NULLS FIRST/LAST not implemented", raises=TypeError)
+def test_rank_with_nulls():
+    rows = [dict(name="a"), dict(name=None), dict(name=None), dict(name="b")]
+    window = Window.rows(order_by=[lambda r: r.name])
+    query = table(rows) >> select(
+        name=lambda r: r.name, ranked=rank() >> over(window)
+    )
+    result = [row.ranked for row in query]
+    expected = [0, 0, 2, 3]
+    assert result == expected
+
+
+def test_dense_rank():
+    rows = [
+        dict(name="apple"),
+        dict(name="apple"),
+        dict(name="grapes"),
+        dict(name="grapes"),
+        dict(name="orange"),
+        dict(name="watermelon"),
+    ]
+    window = Window.rows(order_by=[lambda r: r.name])
+    query = table(rows) >> select(
+        name=lambda r: r.name, ranked=dense_rank() >> over(window)
+    )
+    result = [row.ranked for row in query]
+    expected = [0, 0, 1, 1, 2, 3]
+    assert result == expected
+
+
+@pytest.mark.xfail(reason="NULLS FIRST/LAST not implemented", raises=TypeError)
+def test_dense_rank_with_nulls():
+    rows = [dict(name="a"), dict(name=None), dict(name=None), dict(name="b")]
+    window = Window.rows(order_by=[lambda r: r.name])
+    query = table(rows) >> select(
+        name=lambda r: r.name, ranked=dense_rank() >> over(window)
+    )
+    result = [row.ranked for row in query]
+    expected = [0, 1, 1, 2]
     assert result == expected

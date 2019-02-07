@@ -38,7 +38,7 @@ from stupidb.associative import (
 )
 from stupidb.navigation import First, Lag, Last, Lead, Nth
 from stupidb.protocols import Comparable
-from stupidb.ranking import Rank, RowNumber
+from stupidb.ranking import DenseRank, Rank, RowNumber
 from stupidb.row import AbstractRow
 from stupidb.stupidb import (
     Aggregation,
@@ -513,6 +513,11 @@ def row_number() -> AggregateSpecification:
 def rank() -> AggregateSpecification:
     """Rank the rows of a relation based on the ordering key given in over."""
     return AggregateSpecification(Rank, ())
+
+
+def dense_rank() -> AggregateSpecification:
+    """Rank the rows of a relation based on the ordering key given in over."""
+    return AggregateSpecification(DenseRank, ())
 
 
 def lead(

@@ -1,15 +1,22 @@
 """Navigation and simple window function interface and implementation."""
 
 import abc
-from typing import ClassVar, Optional, Sequence, Set, Tuple, Type
+from typing import (
+    Any,
+    ClassVar,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
 from stupidb.protocols import Comparable
 from stupidb.row import AbstractRow
 from stupidb.typehints import Getter, Output, Result
-
-OrderByValues = Sequence[Tuple[Comparable, ...]]
 
 
 class RankingAggregator(Aggregator["RankingAggregate", Result]):
@@ -22,6 +29,7 @@ class RankingAggregator(Aggregator["RankingAggregate", Result]):
     See Also
     --------
     stupidb.navigation.NavigationAggregator
+    stupidb.associative.SegmentTree
 
     """
 
@@ -29,7 +37,7 @@ class RankingAggregator(Aggregator["RankingAggregate", Result]):
 
     def __init__(
         self,
-        order_by_values: Sequence[Tuple[Comparable, ...]],
+        order_by_values: Sequence[Tuple[Optional[Comparable], ...]],
         aggregate_type: Type["RankingAggregate"],
     ) -> None:
         self.aggregate: "RankingAggregate" = aggregate_type(order_by_values)
@@ -39,13 +47,14 @@ class RankingAggregator(Aggregator["RankingAggregate", Result]):
 
 
 class RankingAggregate(Aggregate[Output]):
-    __slots__ = "order_by_values", "seen"
+    __slots__ = ("order_by_values",)
     aggregator_class: ClassVar[Type[RankingAggregator]] = RankingAggregator
 
-    def __init__(self, order_by_values: OrderByValues) -> None:
+    def __init__(
+        self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
+    ) -> None:
         super().__init__()
         self.order_by_values = order_by_values
-        self.seen: Set[Comparable] = set()
 
     @abc.abstractmethod
     def execute(self, begin: int, end: int) -> Optional[Output]:
@@ -68,35 +77,102 @@ class RankingAggregate(Aggregate[Output]):
 class RowNumber(RankingAggregate[int]):
     __slots__ = ("row_number",)
 
-    def __init__(self, order_by_values: OrderByValues) -> None:
+    def __init__(
+        self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
+    ) -> None:
         super().__init__(order_by_values)
         self.row_number = 0
 
-    def execute(self, begin: int, end: int) -> Optional[int]:
+    def execute(self, begin: int, end: int) -> int:
         row_number = self.row_number
         self.row_number += 1
         return row_number
 
 
-class Rank(RowNumber):
-    __slots__ = ("rank",)
+class Sentinel:
+    """A class that is not equal to anything except instances of itself.
 
-    def __init__(self, order_by_values: OrderByValues) -> None:
-        super().__init__(order_by_values)
-        self.rank = -1
+    This class is used as the starting value for :class:`Rank` and
+    :class:`DenseRank` because their algorithms compare the previous ``ORDER
+    BY`` value in the sequence to determine whether to increase the rank.
 
-    def execute(self, begin: int, end: int) -> Optional[int]:
-        row_number = super().execute(begin, end)
-        assert row_number is not None
-        current_order_by_value = self.order_by_values[row_number]
-        self.rank += current_order_by_value not in self.seen
-        self.seen.add(current_order_by_value)
-        assert self.rank >= 0
-        return self.rank
+    """
 
-
-class DenseRank(RankingAggregate[int]):
     __slots__ = ()
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, type(self))
+
+
+T = TypeVar("T")
+Either = Union[Sentinel, T]
+
+
+class AbstractRank(RowNumber):
+    __slots__ = ("previous_value",)
+
+    def __init__(
+        self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
+    ) -> None:
+        super().__init__(order_by_values)
+        # Use a sentinel here that compares false to
+        self.previous_value: Optional[Either] = Sentinel()
+
+    @abc.abstractmethod
+    def rank(
+        self, current_order_by_value: Comparable, current_row_number: int
+    ) -> int:
+        ...
+
+    def execute(self, begin: int, end: int) -> int:
+        current_row_number = super().execute(begin, end)
+        current_order_by_value = self.order_by_values[current_row_number]
+        rank = self.rank(current_order_by_value, current_row_number)
+        assert rank >= 0, f"rank == {rank:d}"
+        self.previous_value = current_order_by_value
+        assert not isinstance(
+            self.previous_value, Sentinel
+        ), f"{current_order_by_value}"
+        return rank
+
+
+class Rank(AbstractRank):
+    __slots__ = ("previous_rank",)
+
+    def __init__(
+        self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
+    ) -> None:
+        super().__init__(order_by_values)
+        self.previous_rank = -1
+
+    def rank(
+        self, current_order_by_value: Comparable, current_row_number: int
+    ) -> int:
+        if current_order_by_value != self.previous_value:
+            rank = current_row_number
+        else:
+            rank = self.previous_rank
+        self.previous_rank = rank
+        return rank
+
+
+class DenseRank(AbstractRank):
+    __slots__ = ("current_rank",)
+
+    def __init__(
+        self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
+    ) -> None:
+        super().__init__(order_by_values)
+        self.current_rank = -1
+
+    def rank(
+        self, current_order_by_value: Comparable, current_row_number: int
+    ) -> int:
+        self.current_rank += current_order_by_value != self.previous_value
+        return self.current_rank
 
 
 class PercentRank(RankingAggregate[float]):
