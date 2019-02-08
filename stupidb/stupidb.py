@@ -379,7 +379,7 @@ class Union(SetOperation):
     def __iter__(self) -> Iterator[AbstractRow]:
         return toolz.unique(
             itertools.chain(self.left, self.right),
-            key=toolz.compose(frozenset, methodcaller("items")),
+            key=lambda row: frozenset(row.items()),
         )
 
 
@@ -396,10 +396,12 @@ class IntersectAll(SetOperation):
 
     def __iter__(self) -> Iterator[AbstractRow]:
         right_set = self.itemize(self.right)
-        filter_function = toolz.compose(
-            right_set.__contains__, methodcaller("items")
+        filtered = (
+            row_items
+            for row_items in map(methodcaller("items"), self.left)
+            if row_items in right_set
         )
-        for id, row in enumerate(filter(filter_function, self.left)):
+        for id, row in enumerate(filtered):
             yield row.renew_id(id)
 
 

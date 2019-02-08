@@ -80,8 +80,11 @@ def right(rows):
     ]
 
 
+def tupleize(row):
+    return frozenset(row.items())
+
+
 def assert_rowset_equal(left, right):
-    tupleize = toolz.compose(frozenset, operator.methodcaller("items"))
     assert set(map(tupleize, left)) == set(map(tupleize, right))
 
 
@@ -560,9 +563,10 @@ U = TypeVar("U")
 
 def cumagg(seq: Iterable[T], combine: Callable[[T, U], U]) -> Iterator[U]:
     """Cumulative aggregation."""
-    result = toolz.first(seq)
+    it = iter(seq)
+    result = next(it)
     yield result
-    for value in itertools.islice(seq, 1, None):
+    for value in it:
         result = combine(value, result)
         yield result
 

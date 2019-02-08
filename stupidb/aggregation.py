@@ -21,8 +21,6 @@ from typing import (
     TypeVar,
 )
 
-import toolz
-
 from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
 from stupidb.associative import (
@@ -379,7 +377,7 @@ ConcreteAggregate = TypeVar(
 
 
 class AggregateSpecification(Generic[ConcreteAggregate]):
-    """Specification for computing an aggregation.
+    """Specification for computing a (non-windowed) aggregation.
 
     Attributes
     ----------
@@ -387,6 +385,10 @@ class AggregateSpecification(Generic[ConcreteAggregate]):
         The aggregate class to use for aggregation.
     getters
         A tuple of callables used to produce the arguments for the aggregation.
+
+    See Also
+    --------
+    WindowAggregateSpecification
 
     """
 
@@ -410,6 +412,18 @@ def compute_partition_key(
 def make_key_func(
     order_by_columns: Sequence[str],
 ) -> Callable[[Tuple[int, AbstractRow]], OrderingKey]:
+    """Make a function usable with the key argument to sorting functions.
+
+    This return value of this function can be passed to
+    :func:`sorted`/:meth:`list.sort`.
+
+    Parameters
+    ----------
+    order_by_columns
+        A sequence of :class:`str` instances referring to the keys of an
+        :class:`~stupidb.row.AbstractRow`.
+
+    """
     def key(row_with_id: Tuple[int, AbstractRow]) -> OrderingKey:
         _, row = row_with_id
         return tuple(row[column] for column in order_by_columns)
@@ -418,6 +432,27 @@ def make_key_func(
 
 
 class WindowAggregateSpecification(Generic[ConcreteAggregate]):
+    """A specification for a window aggregate.
+
+    Attributes
+    ----------
+    aggregate_type
+        The class of :data:`~stupidb.aggregation.ConcreteAggregate` to use for
+        aggregation.
+    getters
+        A tuple of functions that produce single column values given an
+        instance of :class:`~stupidb.row.AbstractRow`.
+    frame_clause
+        A thin struct encapsulating the details of the window such as ``ORDER
+        BY`` (:attr:`stupidb.aggregation.FrameClause.order_by`), ``PARTITION
+        BY`` (:attr:`stupidb.aggregation.FrameClause.partition_by`) and
+        preceding and following.
+
+    See Also
+    --------
+    stupidb.aggregation.FrameClause
+
+    """
     __slots__ = "aggregate_type", "getters", "frame_clause"
 
     def __init__(
@@ -430,8 +465,15 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         self.getters = getters
         self.frame_clause = frame_clause
 
-    def compute(self, rows: Iterable[AbstractRow]) -> Iterator[T]:
-        """Aggregate `rows` over a window."""
+    def compute(self, rows: Iterable[AbstractRow]) -> Iterator[Optional[T]]:
+        """Aggregate `rows` over a window.
+
+        Parameters
+        ----------
+        rows
+            An iterable of rows
+
+        """
         frame_clause = self.frame_clause
         partition_by = frame_clause.partition_by
         order_by = frame_clause.order_by
@@ -490,13 +532,15 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             #
             # For navigation functions like lead, lag, first, last and nth, we
             # construct a simple structure that computes the current value
-            # of the navigation function given the inputs.
+            # of the navigation function given the inputs. We use the same
+            # approach for ranking functions such as row_number, rank, and
+            # dense_rank.
             #
-            # For associative aggregations we construct a segment tree using
-            # `arguments` as the leaves, with `aggregate` instances as the
-            # interior nodes. Each node (both leaves and non-leaves) is a state
-            # of the aggregation. The leaves are the initial states, the root
-            # is the final state.
+            # For associative aggregations we construct a segment tree
+            # using `arguments` as the leaves, with `aggregate` instances as
+            # the interior nodes. Each node (both leaves and non-leaves) is a
+            # state of the aggregation. The leaves are the initial states, the
+            # root is the final state.
             aggregator: Aggregator[Aggregate, T] = aggregate_type.prepare(
                 possible_peers, getters, order_by_columns
             )
@@ -516,4 +560,6 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         # Sort the results in order of the child relation, because we processed
         # them in partition order, which might not be the same. Pull out the
         # second element of each AggregationResultPair in results.
-        return map(toolz.second, sorted(results, key=operator.itemgetter(0)))
+        return (
+            value for _, value in sorted(results, key=operator.itemgetter(0))
+        )

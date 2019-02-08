@@ -14,8 +14,6 @@ from typing import (
     TypeVar,
 )
 
-import toolz
-
 from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
 from stupidb.reversed import Reversed
@@ -187,11 +185,10 @@ class FirstLast(UnaryNavigationAggregate[Input1, Input1]):
         try:
             return self.cache[begin, end]
         except KeyError:
+            inputs = (self.inputs1[i] for i in range(begin, end))
             try:
-                value = toolz.first(
-                    filter(
-                        None, map(self.inputs1.__getitem__, range(begin, end))
-                    )
+                value: Optional[Input1] = next(
+                    arg for arg in inputs if arg is not None
                 )
             except StopIteration:
                 value = None
