@@ -424,6 +424,7 @@ def make_key_func(
         :class:`~stupidb.row.AbstractRow`.
 
     """
+
     def key(row_with_id: Tuple[int, AbstractRow]) -> OrderingKey:
         _, row = row_with_id
         return tuple(row[column] for column in order_by_columns)
@@ -453,6 +454,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
     stupidb.aggregation.FrameClause
 
     """
+
     __slots__ = "aggregate_type", "getters", "frame_clause"
 
     def __init__(
