@@ -119,7 +119,6 @@ class AbstractRank(RowNumber):
         self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
     ) -> None:
         super().__init__(order_by_values)
-        # Use a sentinel here that compares false to
         self.previous_value: Optional[Either] = Sentinel()
 
     @abc.abstractmethod
