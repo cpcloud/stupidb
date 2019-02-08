@@ -92,9 +92,10 @@ class RowNumber(RankingAggregate[int]):
 class Sentinel:
     """A class that is not equal to anything except instances of itself.
 
-    This class is used as the starting value for :class:`Rank` and
-    :class:`DenseRank` because their algorithms compare the previous ``ORDER
-    BY`` value in the sequence to determine whether to increase the rank.
+    This class is used as the starting value for :class:`stupidb.ranking.Rank`
+    and :class:`stupidb.ranking.DenseRank` because their algorithms compare the
+    previous ``ORDER BY`` value in the sequence to determine whether to
+    increase the rank.
 
     """
 
