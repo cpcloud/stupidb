@@ -7,6 +7,8 @@ C = TypeVar("C", bound="Comparable")
 
 
 class Comparable(Protocol):
+    """A protocol for comparable objects."""
+
     @abc.abstractmethod
     def __eq__(self, other: Any) -> bool:
         """Return whether `self` equals `other`."""
@@ -32,6 +34,8 @@ A = TypeVar("A", bound="AdditiveWithInverse")
 
 
 class AdditiveWithInverse(Comparable):
+    """A protocol for objects that are additive with an inverse."""
+
     @abc.abstractmethod
     def __add__(self: A, other: A) -> A:
         """Add `other` to `self`."""
