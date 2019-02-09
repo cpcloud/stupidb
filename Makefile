@@ -62,7 +62,7 @@ coverage: ## check code coverage quickly with the default Python
 	coverage run --source stupidb -m pytest
 	coverage report -m
 	coverage html
-	$(BROWSER) htmlcov/index.html
+	@echo $$(readlink -f htmlcov/index.html)
 
 SPHINX_APIDOC_OPTIONS := members,show-inheritance
 

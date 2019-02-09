@@ -17,7 +17,6 @@ import functools
 import itertools
 import operator
 import typing
-from operator import methodcaller
 from typing import (
     Any,
     Callable,

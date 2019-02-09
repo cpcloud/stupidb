@@ -14,7 +14,6 @@ import pytest
 import toolz
 
 from stupidb.aggregation import Window
-from stupidb.associative import next_power_of_2, Sum, SegmentTree
 from stupidb.api import (
     aggregate,
     count,
@@ -48,12 +47,13 @@ from stupidb.api import (
     sift,
     stdev_samp,
     sum,
-    total,
     table,
+    total,
     union,
     union_all,
     var_samp,
 )
+from stupidb.associative import SegmentTree, Sum, next_power_of_2
 from stupidb.row import JoinedRow, Row
 
 
@@ -683,7 +683,7 @@ def test_total_vs_sum():
         sum=sum(lambda r: r.value), total=total(lambda r: r.value)
     )
     result_row, = list(query)
-    assert result_row.sum == None
+    assert result_row.sum is None
     assert result_row.total == 0
 
 

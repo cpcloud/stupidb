@@ -19,8 +19,8 @@ from toolz import curry
 
 from stupidb.aggregation import (
     AggregateSpecification,
-    Nulls,
     FrameClause,
+    Nulls,
     WindowAggregateSpecification,
 )
 from stupidb.associative import (
