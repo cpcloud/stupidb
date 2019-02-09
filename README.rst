@@ -17,7 +17,7 @@ you'll ever come across.
 
 StupiDB was built to understand how a relational database might be implemented.
 
-Systems like PostgreSQL are extremely complex. It was hard for to me to imagine
+RDBMSs like PostgreSQL are extremely complex. It was hard for to me to imagine
 what implementing the core of a relational database like PostgreSQL would look
 like just by tinkering with and reading the source code, so I decided to write
 my own.
@@ -28,12 +28,13 @@ my own.
 Features
 --------
 * Stupid joins
-* Stupid window functions
+* Idiotic window functions
 * Woefully naive set operations
 * Sophomoric group bys
-* Idiotic user defined aggregates, including custom dumb window aggregates
-* Scales down, not up
-* Probably doesn't work with your microservice
+* Dumb custom aggregates
+* Scales down, to keep expectations low
+* Wildly cloud unready
+* Worst-in-class performance
 
 Non-Features
 ------------
@@ -42,8 +43,8 @@ Non-Features
 
 Credits
 -------
-
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+This package was created with Cookiecutter_ and the
+`audreyr/cookiecutter-pypackage`_ project template.
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
