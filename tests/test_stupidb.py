@@ -731,12 +731,13 @@ def test_rank():
     assert result == expected
 
 
-@pytest.mark.xfail(reason="NULLS FIRST/LAST not implemented", raises=TypeError)
 def test_rank_with_nulls():
     rows = [dict(name="a"), dict(name=None), dict(name=None), dict(name="b")]
     window = Window.rows(order_by=[lambda r: r.name])
-    query = table(rows) >> select(
-        name=lambda r: r.name, ranked=rank() >> over(window)
+    query = (
+        table(rows)
+        >> select(name=lambda r: r.name, ranked=rank() >> over(window))
+        >> order_by(lambda r: r.ranked)
     )
     result = [row.ranked for row in query]
     expected = [0, 0, 2, 3]
@@ -761,13 +762,14 @@ def test_dense_rank():
     assert result == expected
 
 
-@pytest.mark.xfail(reason="NULLS FIRST/LAST not implemented", raises=TypeError)
 def test_dense_rank_with_nulls():
     rows = [dict(name="a"), dict(name=None), dict(name=None), dict(name="b")]
     window = Window.rows(order_by=[lambda r: r.name])
-    query = table(rows) >> select(
-        name=lambda r: r.name, ranked=dense_rank() >> over(window)
+    query = (
+        table(rows)
+        >> select(name=lambda r: r.name, ranked=dense_rank() >> over(window))
+        >> order_by(lambda r: r.ranked)
     )
     result = [row.ranked for row in query]
-    expected = [0, 1, 1, 2]
+    expected = [0, 0, 1, 2]
     assert result == expected

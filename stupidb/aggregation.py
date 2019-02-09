@@ -2,6 +2,8 @@
 
 import abc
 import bisect
+import enum
+import functools
 import operator
 import typing
 from typing import (
@@ -44,7 +46,12 @@ from stupidb.typehints import (
 
 StartStop = typing.NamedTuple("StartStop", [("start", int), ("stop", int)])
 Ranges = Tuple[StartStop, StartStop, StartStop]
-AggregationResultPair = Tuple[int, Optional[T]]
+
+
+@enum.unique
+class Nulls(enum.Enum):
+    FIRST = -1
+    LAST = 1
 
 
 class FrameClause(abc.ABC):
@@ -58,11 +65,13 @@ class FrameClause(abc.ABC):
         partition_by: Sequence[PartitionBy],
         preceding: Optional[Preceding],
         following: Optional[Following],
+        nulls: Nulls,
     ) -> None:
         self.order_by = order_by
         self.partition_by = partition_by
         self.preceding = preceding
         self.following = following
+        self.nulls = nulls
 
     @abc.abstractmethod
     def find_partition_begin(
@@ -336,6 +345,7 @@ class Window:
         partition_by: Sequence[PartitionBy] = (),
         preceding: Optional[Preceding] = None,
         following: Optional[Following] = None,
+        nulls: Nulls = Nulls.FIRST,
     ) -> FrameClause:
         """Construct a ``ROWS`` mode frame clause.
 
@@ -347,7 +357,7 @@ class Window:
         Window.range
 
         """
-        return RowsMode(order_by, partition_by, preceding, following)
+        return RowsMode(order_by, partition_by, preceding, following, nulls)
 
     @staticmethod
     def range(
@@ -355,6 +365,7 @@ class Window:
         partition_by: Sequence[PartitionBy] = (),
         preceding: Optional[Preceding] = None,
         following: Optional[Following] = None,
+        nulls: Nulls = Nulls.FIRST,
     ) -> FrameClause:
         """Construct a ``RANGE`` mode frame clause.
 
@@ -366,7 +377,7 @@ class Window:
         Window.rows
 
         """
-        return RangeMode(order_by, partition_by, preceding, following)
+        return RangeMode(order_by, partition_by, preceding, following, nulls)
 
 
 Getter = Callable[[AbstractRow], Any]
@@ -426,8 +437,34 @@ def compute_partition_key(
     return tuple(partition_func(row) for partition_func in partition_by)
 
 
+def row_key_compare(
+    order_by: Sequence[OrderBy],
+    null_ordering: Nulls,
+    left_row: AbstractRow,
+    right_row: AbstractRow,
+) -> int:
+    left_keys = [order_func(left_row) for order_func in order_by]
+    right_keys = [order_func(right_row) for order_func in order_by]
+
+    for left_key, right_key in zip(left_keys, right_keys):
+        if left_key is None and right_key is not None:
+            return null_ordering.value
+        if left_key is not None and right_key is None:
+            return -null_ordering.value
+        if left_key is None and right_key is None:
+            return 0
+
+        assert left_key is not None, "left_key is None"
+        assert right_key is not None, "right_key is None"
+        if left_key < right_key:
+            return -1
+        if left_key > right_key:
+            return 1
+    return 0
+
+
 def make_key_func(
-    order_by_columns: Sequence[str],
+    order_by: Sequence[OrderBy], nulls: Nulls
 ) -> Callable[[Tuple[int, AbstractRow]], OrderingKey]:
     """Make a function usable with the key argument to sorting functions.
 
@@ -442,11 +479,14 @@ def make_key_func(
 
     """
 
-    def key(row_with_id: Tuple[int, AbstractRow]) -> OrderingKey:
-        _, row = row_with_id
-        return tuple(row[column] for column in order_by_columns)
+    def cmp(
+        lefts: Tuple[int, AbstractRow], rights: Tuple[int, AbstractRow]
+    ) -> int:
+        _, left_row = lefts
+        _, right_row = rights
+        return row_key_compare(order_by, nulls, left_row, right_row)
 
-    return key
+    return functools.cmp_to_key(cmp)
 
 
 class WindowAggregateSpecification(Generic[ConcreteAggregate]):
@@ -536,7 +576,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             )
 
         # sort
-        key = make_key_func(order_by_columns)
+        key = make_key_func(order_by, frame_clause.nulls)
         for partition_key in partitions.keys():
             partitions[partition_key].sort(key=key)
 

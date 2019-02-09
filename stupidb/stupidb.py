@@ -13,6 +13,7 @@ guarantees here except that there will be bugs.
 
 import abc
 import collections
+import functools
 import itertools
 import operator
 import typing
@@ -35,7 +36,9 @@ import toolz as toolz
 
 from stupidb.aggregation import (
     AggregateSpecification,
+    Nulls,
     WindowAggregateSpecification,
+    row_key_compare,
 )
 from stupidb.associative import AssociativeAggregate
 from stupidb.row import AbstractRow, JoinedRow, Row
@@ -232,19 +235,23 @@ class GroupBy(Relation):
 
 
 class SortBy(Relation):
-    __slots__ = ("order_by",)
+    __slots__ = "order_by", "nulls"
 
-    def __init__(self, child: Relation, order_by: Tuple[OrderBy, ...]) -> None:
+    def __init__(
+        self, child: Relation, order_by: Tuple[OrderBy, ...], nulls: Nulls
+    ) -> None:
         super().__init__(child)
         self.order_by = order_by
+        self.nulls = nulls
 
     def __iter__(self) -> Iterator[AbstractRow]:
-        order_by = self.order_by
         return iter(
             sorted(
                 self.child,
-                key=lambda row: tuple(
-                    order_func(row) for order_func in order_by
+                key=functools.cmp_to_key(
+                    functools.partial(
+                        row_key_compare, self.order_by, self.nulls
+                    )
                 ),
             )
         )

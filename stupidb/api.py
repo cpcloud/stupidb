@@ -19,6 +19,7 @@ from toolz import curry
 
 from stupidb.aggregation import (
     AggregateSpecification,
+    Nulls,
     FrameClause,
     WindowAggregateSpecification,
 )
@@ -165,20 +166,24 @@ def right_join(
 
 
 @_shiftable
-def _order_by(order_by: Tuple[OrderBy, ...], child: Relation) -> SortBy:
-    return SortBy(child, order_by)
+def _order_by(
+    order_by: Tuple[OrderBy, ...], nulls: Nulls, child: Relation
+) -> SortBy:
+    return SortBy(child, order_by, nulls)
 
 
-def order_by(*order_by: OrderBy) -> SortBy:
+def order_by(*order_by: OrderBy, nulls: Nulls = Nulls.FIRST) -> SortBy:
     """Order the rows of the child operator according to `order_by`.
 
     Parameters
     ----------
     order_by
         A sequence of ``OrderBy`` instances
+    nulls
+        An :class:`enum.Enum` indicating how to treat nulls when sorting.
 
     """
-    return _order_by(order_by)
+    return _order_by(order_by, nulls)
 
 
 @_shiftable
