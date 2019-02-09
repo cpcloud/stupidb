@@ -9,11 +9,11 @@ C = TypeVar("C", bound="Comparable")
 class Comparable(Protocol):
     @abc.abstractmethod
     def __eq__(self, other: Any) -> bool:
-        ...
+        """Return whether `self` equals `other`."""
 
     @abc.abstractmethod
     def __lt__(self: C, other: C) -> bool:
-        ...
+        """Return whether `self` is less than `other`."""
 
     def __gt__(self: C, other: C) -> bool:
         return (not self < other) and self != other
@@ -31,24 +31,24 @@ A = TypeVar("A", bound="AdditiveWithInverse")
 class AdditiveWithInverse(Comparable):
     @abc.abstractmethod
     def __add__(self: A, other: A) -> A:
-        ...
+        """Add `other` to `self`."""
 
     @abc.abstractmethod
     def __radd__(self: A, other: A) -> A:
-        ...
+        """Add `self` to `other`."""
 
     @abc.abstractmethod
     def __sub__(self: A, other: A) -> A:
-        ...
+        """Subtract `other` from `self`."""
 
     @abc.abstractmethod
     def __rsub__(self: A, other: A) -> A:
-        ...
+        """Subtract `self` from `other`."""
 
     @abc.abstractmethod
     def __neg__(self: A) -> A:
-        ...
+        """Negate `self`."""
 
     @abc.abstractmethod
     def __pos__(self: A) -> A:
-        ...
+        """Return positive `self`."""

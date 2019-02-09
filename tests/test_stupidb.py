@@ -14,6 +14,7 @@ import pytest
 import toolz
 
 from stupidb.aggregation import Window
+from stupidb.associative import next_power_of_2, Sum, SegmentTree
 from stupidb.api import (
     aggregate,
     count,
@@ -21,10 +22,14 @@ from stupidb.api import (
     cov_samp,
     cross_join,
     dense_rank,
+    difference,
+    difference_all,
     exists,
     first,
     group_by,
     inner_join,
+    intersect,
+    intersect_all,
     lag,
     last,
     lead,
@@ -43,10 +48,13 @@ from stupidb.api import (
     sift,
     stdev_samp,
     sum,
+    total,
     table,
+    union,
+    union_all,
     var_samp,
 )
-from stupidb.row import Row
+from stupidb.row import JoinedRow, Row
 
 
 @pytest.fixture
@@ -86,6 +94,90 @@ def tupleize(row):
 
 def assert_rowset_equal(left, right):
     assert set(map(tupleize, left)) == set(map(tupleize, right))
+
+
+def test_row_invalid_attribute():
+    row = Row({"a": 1}, _id=0)
+    with pytest.raises(AttributeError):
+        row.b
+
+
+def test_row_equality():
+    row1 = Row({"a": 1}, _id=0)
+    row2 = Row({"a": 1}, _id=1)
+    assert row1 == row2
+
+
+def test_row_inequality():
+    row1 = Row({"a": 0}, _id=0)
+    row2 = Row({"a": 1}, _id=1)
+    assert row1 != row2
+
+
+def test_row_repr():
+    row = Row({"a": 1}, _id=0)
+    assert repr(row) == "Row({'a': 1})"
+
+
+def test_joined_row_hash():
+    row = JoinedRow({"a": 1}, {"b": 2}, _id=0)
+    assert hash(row)
+
+
+def test_joined_row_data():
+    row = JoinedRow({"a": 1}, {"b": 2}, _id=0)
+    assert row.data == {"a": 1, "b": 2}
+
+
+def test_joined_row_from_mapping():
+    row = JoinedRow({"a": 1}, {"b": 2}, _id=0)
+    with pytest.raises(TypeError):
+        row.from_mapping({"c": 1})
+
+
+def test_joined_row_getitem():
+    row = JoinedRow({"a": 1}, {"b": 2}, _id=0)
+    assert row.a == 1
+    assert row.b == 2
+
+
+def test_joined_row_overlapping():
+    row = JoinedRow({"a": 1}, {"a": 2}, _id=0)
+    with pytest.raises(ValueError):
+        row.a
+    assert row.left.a == 1
+    assert row.right.a == 2
+
+
+def test_joined_row_repr():
+    row = JoinedRow({"a": 1}, {"a": 2}, _id=0)
+    assert repr(row) == "JoinedRow({'a': 1}, {'a': 2})"
+
+    row = JoinedRow({"a": 1}, {"b": 2}, _id=0)
+    assert repr(row) == "JoinedRow({'a': 1}, {'b': 2})"
+
+
+def test_next_power_of_2():
+    result = next_power_of_2(0)
+    assert result == 0
+    with pytest.raises(ValueError):
+        next_power_of_2(-1)
+    assert next_power_of_2(1) == 1
+    assert next_power_of_2(3) == 4
+    assert next_power_of_2(5) == 8
+
+
+def test_repr_segment_tree():
+    tree = SegmentTree([(1,), (2,), (3,)], aggregate_type=Sum)
+    result = repr(tree)
+    expected = """\
+|-- Sum(total=6, count=3)
+    |-- Sum(total=3, count=2)
+        |-- Sum(total=1, count=1)
+        |-- Sum(total=2, count=1)
+    |-- Sum(total=3, count=1)
+        |-- Sum(total=3, count=1)"""
+    assert result == expected
 
 
 @pytest.fixture
@@ -571,14 +663,28 @@ def cumagg(seq: Iterable[T], combine: Callable[[T, U], U]) -> Iterator[U]:
         yield result
 
 
-def test_cumsum(rows):
+def test_cumagg(rows):
+    window = Window.rows(order_by=[lambda r: r.e])
     query = table(rows) >> select(
-        my_cumsum=sum(lambda r: r.e)
-        >> over(Window.rows(order_by=[lambda r: r.e]))
+        cumsum=sum(lambda r: r.e) >> over(window),
+        cumcount=count(lambda r: r.e) >> over(window),
     )
-    result = [r.my_cumsum for r in query]
-    expected = list(cumagg(range(1, 8), operator.add))
-    assert result == expected
+    result = list(query)
+    expected = [
+        dict(cumsum=cs, cumcount=cc)
+        for cs, cc in zip(cumagg(range(1, 8), operator.add), range(1, 8))
+    ]
+    assert_rowset_equal(result, expected)
+
+
+def test_total_vs_sum():
+    rows = [dict(value=None), dict(value=None)]
+    query = table(rows) >> aggregate(
+        sum=sum(lambda r: r.value), total=total(lambda r: r.value)
+    )
+    result_row, = list(query)
+    assert result_row.sum == None
+    assert result_row.total == 0
 
 
 def test_minmax(rows):
@@ -591,7 +697,7 @@ def test_minmax(rows):
     assert_rowset_equal(result, expected)
 
 
-def test_min_max(t_rows):
+def test_min_max_window(t_rows):
     window = Window.range(partition_by=[lambda r: r.name])
     query = table(t_rows) >> select(
         min_date=min(lambda r: r.date) >> over(window),
@@ -772,4 +878,113 @@ def test_dense_rank_with_nulls():
     )
     result = [row.ranked for row in query]
     expected = [0, 0, 1, 2]
+    assert result == expected
+
+
+def test_union_distinct():
+    rows = [dict(name="a"), dict(name="b")]
+    other_rows = [dict(name="c")]
+    query = rows >> union(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = [dict(name="a"), dict(name="b"), dict(name="c")]
+    assert result == expected
+
+
+def test_union_duplicates():
+    rows = [dict(name="a"), dict(name="b")]
+    other_rows = [dict(name="a")]
+    query = rows >> union(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = [dict(name="a"), dict(name="b")]
+    assert result == expected
+
+
+def test_union_all_distinct():
+    rows = [dict(name="a"), dict(name="b")]
+    other_rows = [dict(name="c")]
+    query = rows >> union_all(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = [dict(name="a"), dict(name="b"), dict(name="c")]
+    assert result == expected
+
+
+def test_union_all_duplicates():
+    rows = [dict(name="a"), dict(name="b")]
+    other_rows = [dict(name="a")]
+    query = rows >> union_all(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = [dict(name="a"), dict(name="a"), dict(name="b")]
+    assert result == expected
+
+
+def test_intersect_distinct():
+    rows = [dict(name="a"), dict(name="b")]
+    other_rows = [dict(name="c")]
+    query = rows >> intersect(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = []
+    assert result == expected
+
+
+def test_intersect_duplicates():
+    rows = [dict(name="a"), dict(name="b")]
+    other_rows = [dict(name="a")]
+    query = rows >> intersect(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = [dict(name="a")]
+    assert result == expected
+
+
+def test_intersect_all_distinct():
+    rows = [dict(name="a"), dict(name="b")]
+    other_rows = [dict(name="c")]
+    query = rows >> intersect_all(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = []
+    assert result == expected
+
+
+def test_intersect_all_duplicates():
+    rows = [dict(name="a"), dict(name="b")]
+    other_rows = [dict(name="a")]
+    query = rows >> intersect_all(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = [dict(name="a"), dict(name="a")]
+    assert result == expected
+
+
+def test_difference_distinct():
+    rows = [dict(name="a"), dict(name="b")]
+    other_rows = [dict(name="c")]
+    query = rows >> difference(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = rows[:]
+    assert result == expected
+
+
+def test_difference_duplicates():
+    rows = [dict(name="a"), dict(name="b")]
+    other_rows = [dict(name="a")]
+    query = rows >> difference(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = [dict(name="b")]
+    assert result == expected
+    assert_rowset_equal(result, expected)
+
+
+def test_difference_all_distinct():
+    rows = [dict(name="a"), dict(name="b"), dict(name="a")]
+    other_rows = [dict(name="c"), dict(name="b")]
+    query = rows >> difference_all(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = [dict(name="a"), dict(name="a")]
+    assert result == expected
+
+
+def test_difference_all_duplicates():
+    rows = [dict(name="a"), dict(name="b"), dict(name="b")]
+    other_rows = [dict(name="a")]
+    query = rows >> difference_all(other_rows) >> order_by(lambda r: r.name)
+    result = list(query)
+    expected = [dict(name="b"), dict(name="b")]
     assert result == expected

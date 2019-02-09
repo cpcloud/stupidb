@@ -38,3 +38,7 @@ def test_negative_indexing(rev, index, expected):
 def test_invalid_negative_indexing(rev):
     with pytest.raises(IndexError):
         rev[-5]
+
+
+def test_repr(rev):
+    assert repr(rev) == "Reversed([4, 3, 2, 1])"

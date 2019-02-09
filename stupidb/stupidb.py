@@ -305,16 +305,16 @@ class AsymmetricJoin(Join):
     @property
     @abc.abstractmethod
     def match_provider(self) -> MatchProvider:
-        ...
+        """Return a :data:`MatchProvider`."""
 
     @property
     @abc.abstractmethod
     def matching_relation(self) -> Iterator[AbstractRow]:
-        ...
+        """Return the relation to use for matching."""
 
     @abc.abstractmethod
     def mismatch_keys(self, row: AbstractRow) -> Set[str]:
-        ...
+        """Return keys used for mismatched keys."""
 
     def __iter__(self) -> Iterator[AbstractRow]:
         matches: Set[AbstractRow] = set()
@@ -377,16 +377,21 @@ class SetOperation(Relation):
 
     @staticmethod
     def itemize(mappings: Iterable[AbstractRow]) -> SetOperand:
-        return frozenset(map(methodcaller("items"), mappings))
+        return frozenset(tuple(mapping.items()) for mapping in mappings)
 
 
 class Union(SetOperation):
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
-        return toolz.unique(
-            itertools.chain(self.left, self.right),
-            key=lambda row: frozenset(row.items()),
+        return (
+            Row.from_mapping(row, _id=id)
+            for id, row in enumerate(
+                toolz.unique(
+                    itertools.chain(self.left, self.right),
+                    key=lambda row: frozenset(row.items()),
+                )
+            )
         )
 
 
@@ -395,56 +400,70 @@ class UnionAll(SetOperation):
 
     def __iter__(self) -> Iterator[AbstractRow]:
         for id, row in enumerate(itertools.chain(self.left, self.right)):
-            yield row.renew_id(id)
+            yield Row.from_mapping(row, _id=id)
 
 
 class IntersectAll(SetOperation):
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
-        right_set = self.itemize(self.right)
-        filtered = (
-            row_items
-            for row_items in map(methodcaller("items"), self.left)
+        left_rows = list(self.left)
+        left_set = self.itemize(left_rows)
+        right_rows = list(self.right)
+        right_set = self.itemize(right_rows)
+        left_filtered = (
+            dict(row_items)
+            for row_items in (tuple(row.items()) for row in left_rows)
             if row_items in right_set
         )
+        right_filtered = (
+            dict(row_items)
+            for row_items in (tuple(row.items()) for row in right_rows)
+            if row_items in left_set
+        )
+        for id, row in enumerate(
+            itertools.chain(left_filtered, right_filtered)
+        ):
+            yield Row.from_mapping(row, _id=id)
+
+
+class Difference(SetOperation):
+    __slots__ = ()
+
+    def __iter__(self) -> Iterator[AbstractRow]:
+        right_set = self.itemize(self.right)
+        filtered = (
+            dict(row_items)
+            for row_items in (tuple(row.items()) for row in self.left)
+            if row_items not in right_set
+        )
+        rows = (
+            Row.from_mapping(row, _id=id) for id, row in enumerate(filtered)
+        )
+        return toolz.unique(rows)
+
+
+class DifferenceAll(SetOperation):
+    __slots__ = ()
+
+    def __iter__(self) -> Iterator[AbstractRow]:
+        right_set = self.itemize(self.right)
+        filtered = (
+            dict(row_items)
+            for row_items in (tuple(row.items()) for row in self.left)
+            if row_items not in right_set
+        )
         for id, row in enumerate(filtered):
-            yield row.renew_id(id)
+            yield Row.from_mapping(row, _id=id)
 
 
-class InefficientSetOperation(SetOperation):
+class Intersect(SetOperation):
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
         return (
             Row.from_mapping(dict(row), _id=id)
             for id, row in enumerate(
-                self.binary_operation(
-                    self.itemize(self.left), self.itemize(self.right)
-                )
+                self.itemize(self.left) & self.itemize(self.right)
             )
         )
-
-    @abc.abstractmethod
-    def binary_operation(
-        self, left: SetOperand, right: SetOperand
-    ) -> SetOperand:
-        ...
-
-
-class Intersect(InefficientSetOperation):
-    __slots__ = ()
-
-    def binary_operation(
-        self, left: SetOperand, right: SetOperand
-    ) -> SetOperand:
-        return left & right
-
-
-class Difference(InefficientSetOperation):
-    __slots__ = ()
-
-    def binary_operation(
-        self, left: SetOperand, right: SetOperand
-    ) -> SetOperand:
-        return left - right

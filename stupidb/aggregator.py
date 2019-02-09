@@ -23,7 +23,7 @@ class Aggregator(Generic[AggregateClass, Result], abc.ABC):
 
     @abc.abstractmethod
     def __init__(self, arguments: Sequence[T], cls: AggregateClass) -> None:
-        ...
+        """Initialize an aggregator from `arguments` and `cls`."""
 
     @abc.abstractmethod
     def query(self, begin: int, end: int) -> Optional[Result]:

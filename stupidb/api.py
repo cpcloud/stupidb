@@ -43,7 +43,9 @@ from stupidb.ranking import DenseRank, Rank, RowNumber
 from stupidb.row import AbstractRow
 from stupidb.stupidb import (
     Aggregation,
+    CrossJoin,
     Difference,
+    DifferenceAll,
     FullProjector,
     GroupBy,
     Intersect,
@@ -105,7 +107,7 @@ def cross_join(right: Relation, left: Relation) -> Join:
         A relation
 
     """
-    return Join(left, right, lambda row: True)
+    return CrossJoin(left, right)
 
 
 @_shiftable
@@ -431,6 +433,21 @@ def difference(right: Relation, left: Relation) -> Difference:
 
     """
     return Difference(left, right)
+
+
+@_shiftable
+def difference_all(right: Relation, left: Relation) -> Difference:
+    """Compute the set difference of `left` and `right`, preserving duplicates.
+
+    Parameters
+    ----------
+    right
+         A relation
+    left
+         A relation
+
+    """
+    return DifferenceAll(left, right)
 
 
 # Aggregate functions
