@@ -180,7 +180,11 @@ def order_by(*order_by: OrderBy, nulls: Nulls = Nulls.FIRST) -> SortBy:
     order_by
         A sequence of ``OrderBy`` instances
     nulls
-        An :class:`enum.Enum` indicating how to treat nulls when sorting.
+        One of :class:`~stupidb.aggregation.Nulls` indicating how to treat
+        nulls when sorting. :attr:`~stupidb.aggregation.Nulls.FIRST` treats
+        nulls as less than every other value, and
+        :attr:`~stupidb.aggregation.Nulls.LAST` treats them as greater than
+        every other value.
 
     """
     return _order_by(order_by, nulls)
