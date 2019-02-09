@@ -50,6 +50,8 @@ Ranges = Tuple[StartStop, StartStop, StartStop]
 
 @enum.unique
 class Nulls(enum.Enum):
+    """An enumeration indicating how to handle null values when sorting."""
+
     FIRST = -1
     LAST = 1
 
