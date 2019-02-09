@@ -272,6 +272,22 @@ class RangeMode(FrameClause):
 
     __slots__ = ()
 
+    def __init__(
+        self,
+        order_by: Sequence[OrderBy],
+        partition_by: Sequence[PartitionBy],
+        preceding: Optional[Preceding],
+        following: Optional[Following],
+        nulls: Nulls,
+    ) -> None:
+        n_order_by = len(order_by)
+        if n_order_by > 1:
+            raise ValueError(
+                "Must have exactly ONE order by to use range windows. "
+                f"Got {n_order_by:d} functions."
+            )
+        super().__init__(order_by, partition_by, preceding, following, nulls)
+
     def setup_window(
         self,
         possible_peers: Sequence[Tuple[int, AbstractRow]],
@@ -283,11 +299,7 @@ class RangeMode(FrameClause):
             return (), [()]
 
         ncolumns = len(order_by_columns)
-        if ncolumns != 1:
-            raise ValueError(
-                "Must have exactly one order by column to use range mode. "
-                f"Got {ncolumns:d}."
-            )
+        assert ncolumns == 1, f"ncolumns == {ncolumns:d}"
         order_by_column, = order_by_columns
         order_by_values = [
             (peer[order_by_column],) for _, peer in possible_peers
@@ -307,6 +319,8 @@ class RangeMode(FrameClause):
         ), "current_row_order_by_value is None"
         preceding = self.preceding
         assert preceding is not None, "preceding function is None"
+        if not current_row_order_by_values:
+            return 0
         assert len(current_row_order_by_values) == 1
         current_row_order_by_value, = current_row_order_by_values
         value_to_find = current_row_order_by_value - preceding(current_row)
@@ -327,6 +341,8 @@ class RangeMode(FrameClause):
         ), "current_row_order_by_values is None"
         following = self.following
         assert following is not None, "following function is None"
+        if not current_row_order_by_values:
+            return len(order_by_values)
         assert len(current_row_order_by_values) == 1
         current_row_order_by_value, = current_row_order_by_values
         value_to_find = current_row_order_by_value + following(current_row)

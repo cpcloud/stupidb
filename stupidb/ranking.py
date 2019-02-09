@@ -115,7 +115,7 @@ class AbstractRank(RowNumber):
     def rank(
         self, current_order_by_value: Comparable, current_row_number: int
     ) -> int:
-        ...
+        """Compute the rank of the current row."""
 
     def execute(self, begin: int, end: int) -> int:
         current_row_number = super().execute(begin, end)

@@ -43,7 +43,7 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
     @property
     @abc.abstractmethod
     def data(self) -> Mapping[str, Any]:
-        ...
+        """Return the underlying data for this row."""
 
     def __iter__(self) -> Iterator[str]:
         return iter(self.data)

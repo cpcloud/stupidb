@@ -219,32 +219,35 @@ class Nth(BinaryNavigationAggregate[Input1, int, Input1]):
         self.cache: MutableMapping[Tuple[int, int], Optional[Input1]] = {}
 
     def execute(self, begin: int, end: int) -> Optional[Input1]:
+        # Assert invariants:
+        # 1. The start of the range must be less than or equal to the end,
+        #    which must be less than or equal to the number of input rows
+        # 2. The current index must be between the begin and end of the queried
+        #    range.
+        assert 0 <= begin <= end <= len(self.inputs1)
+        assert begin <= self.index <= end
         try:
             return self.cache[begin, end]
         except KeyError:
-            current_index = self.index
-
             # the current position in the frame
-            frame_position = begin + current_index
+            frame_position = begin + self.index
 
-            if frame_position >= end:
-                # if the current position is past the end of the window, return
+            assert (
+                frame_position <= end
+            ), f"frame_position == {frame_position} :: end == {end}"
+
+            # compute the offset relative to the current row
+            offsets = self.inputs2
+            target_index = offsets[frame_position]
+            ninputs = end - begin
+
+            data = self.inputs1
+            if target_index is not None and -ninputs <= target_index < ninputs:
+                result = data[target_index]
+            else:
+                # if the user asked for a row outside the frame, return
                 # None
                 result = None
-            else:
-                # compute the offset relative to the current row
-                target_index = self.inputs2[frame_position]
-                ninputs = end - begin
-
-                if (
-                    target_index is not None
-                    and -ninputs <= target_index < ninputs
-                ):
-                    result = self.inputs1[target_index]
-                else:
-                    # if the user asked for a row outside the frame, return
-                    # None
-                    result = None
             self.cache[begin, end] = result
         self.index += 1
         return result

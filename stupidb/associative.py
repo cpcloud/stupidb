@@ -294,7 +294,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
                     aggregate.update(item)
             begin = parent_begin
             end = parent_end
-        return None
+        return None  # pragma: no cover
 
 
 class AbstractAssociativeAggregate(Aggregate[Output]):
@@ -368,7 +368,7 @@ class Sum(UnaryAssociativeAggregate[R1, R2]):
         self.total = typing.cast(R2, 0)
 
     def __repr__(self) -> str:
-        total = self.total
+        total = self.finalize()
         count = self.count
         name = type(self).__name__
         return f"{name}(total={total!r}, count={count!r})"
@@ -402,7 +402,7 @@ class Mean(Sum[R1, R2]):
 
     def __repr__(self) -> str:
         name = type(self).__name__
-        total = self.total
+        total = super().finalize()
         count = self.count
         mean = self.finalize()
         return f"{name}(total={total!r}, count={count!r}, mean={mean!r})"

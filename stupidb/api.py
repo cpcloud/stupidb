@@ -17,6 +17,7 @@ from typing import Any, Callable, Iterable, Mapping, Optional
 
 from toolz import curry
 
+from stupidb.aggregation import Window  # noqa: F401
 from stupidb.aggregation import (
     AggregateSpecification,
     FrameClause,
@@ -76,7 +77,7 @@ class _shiftable(curry):
 
     @property
     def __signature__(self) -> inspect.Signature:
-        return inspect.signature(self.func)
+        return inspect.signature(self.func)  # pragma: no cover
 
     def __rrshift__(self, other: Relation) -> "_shiftable":
         return self(other)
