@@ -16,12 +16,15 @@ class Comparable(Protocol):
         """Return whether `self` is less than `other`."""
 
     def __gt__(self: C, other: C) -> bool:
+        """Return whether `self` is greater than `other`."""
         return (not self < other) and self != other
 
     def __le__(self: C, other: C) -> bool:
+        """Return whether `self` is less than or equal to `other`."""
         return self < other or self == other
 
     def __ge__(self: C, other: C) -> bool:
+        """Return whether `self` is greater than or equal to `other`."""
         return not self < other
 
 
