@@ -52,6 +52,7 @@ from stupidb.stupidb import (
     Intersect,
     IntersectAll,
     Join,
+    JoinPredicate,
     LeftJoin,
     Mutate,
     PartitionBy,
@@ -112,7 +113,9 @@ def cross_join(right: Relation, left: Relation) -> Join:
 
 
 @_shiftable
-def inner_join(right: Relation, predicate: Predicate, left: Relation) -> Join:
+def inner_join(
+    right: Relation, predicate: JoinPredicate, left: Relation
+) -> Join:
     """Join `left` and `right` relations using `predicate`.
 
     Drop rows if `predicate` returns ``False``.
@@ -130,7 +133,7 @@ def inner_join(right: Relation, predicate: Predicate, left: Relation) -> Join:
 
 @_shiftable
 def left_join(
-    right: Relation, predicate: Predicate, left: Relation
+    right: Relation, predicate: JoinPredicate, left: Relation
 ) -> LeftJoin:
     """Join `left` and `right` relations using `predicate`.
 
@@ -150,7 +153,7 @@ def left_join(
 
 @_shiftable
 def right_join(
-    right: Relation, predicate: Predicate, left: Relation
+    right: Relation, predicate: JoinPredicate, left: Relation
 ) -> RightJoin:
     """Join `left` and `right` relations using `predicate`.
 
@@ -437,7 +440,7 @@ def difference(right: Relation, left: Relation) -> Difference:
 
 
 @_shiftable
-def difference_all(right: Relation, left: Relation) -> Difference:
+def difference_all(right: Relation, left: Relation) -> DifferenceAll:
     """Compute the set difference of `left` and `right`, preserving duplicates.
 
     Parameters

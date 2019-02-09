@@ -60,7 +60,7 @@ def test_joined_row_overlapping():
 
 def test_joined_row_repr():
     row = JoinedRow({"a": 1}, {"a": 2}, _id=0)
-    assert repr(row) == "JoinedRow({'a': 1}, {'a': 2})"
+    assert repr(row) == "JoinedRow(left={'a': 1}, right={'a': 2})"
 
     row = JoinedRow({"a": 1}, {"b": 2}, _id=0)
-    assert repr(row) == "JoinedRow({'a': 1}, {'b': 2})"
+    assert repr(row) == "JoinedRow(left={'a': 1}, right={'b': 2})"

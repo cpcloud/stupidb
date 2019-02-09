@@ -43,6 +43,7 @@ from stupidb.aggregation import (
 from stupidb.associative import AssociativeAggregate
 from stupidb.row import AbstractRow, JoinedRow, Row
 from stupidb.typehints import (
+    JoinPredicate,
     OrderBy,
     PartitionBy,
     PartitionKey,
@@ -75,6 +76,7 @@ class Relation(Partitionable):
         self.child = child
 
     def __iter__(self) -> Iterator[AbstractRow]:
+        """Iterate over the rows of a :class:`~stupidb.stupidb.Relation`."""
         for id, row in enumerate(filter(None, self.child)):
             yield row.renew_id(id)
 
@@ -287,6 +289,7 @@ class SortBy(Relation):
         Whether to place the nulls of a column first or last.
 
     """
+
     __slots__ = "order_by", "nulls"
 
     def __init__(
@@ -313,7 +316,7 @@ class Join(Relation):
     __slots__ = "left", "right", "predicate"
 
     def __init__(
-        self, left: Relation, right: Relation, predicate: Predicate
+        self, left: Relation, right: Relation, predicate: JoinPredicate
     ) -> None:
         self.left, left_ = itertools.tee(left)
         self.right, right_ = itertools.tee(right)
@@ -330,7 +333,9 @@ class Join(Relation):
         )
 
     def __iter__(self) -> Iterator[AbstractRow]:
-        return filter(self.predicate, self.child)
+        return (
+            row for row in self.child if self.predicate(row.left, row.right)
+        )
 
     @classmethod
     def from_iterable(cls, *args: Any, **kwargs: Any) -> NoReturn:
@@ -341,7 +346,7 @@ class CrossJoin(Join):
     __slots__ = ()
 
     def __init__(self, left: Relation, right: Relation) -> None:
-        super().__init__(left, right, lambda row: True)
+        super().__init__(left, right, lambda left, right: True)
 
 
 class InnerJoin(Join):
@@ -371,7 +376,10 @@ class AsymmetricJoin(Join):
     def __iter__(self) -> Iterator[AbstractRow]:
         matches: Set[AbstractRow] = set()
         k = 0
-        for row in filter(self.predicate, self.child):
+        filtered = (
+            row for row in self.child if self.predicate(row.left, row.right)
+        )
+        for row in filtered:
             matches.add(self.match_provider(row))
             yield row.renew_id(k)
             k += 1

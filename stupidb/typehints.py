@@ -14,6 +14,7 @@ OrderBy = Callable[[AbstractRow], AdditiveWithInverse]
 Preceding = Callable[[AbstractRow], AdditiveWithInverse]
 Following = Callable[[AbstractRow], AdditiveWithInverse]
 
+JoinPredicate = Callable[[AbstractRow, AbstractRow], Optional[bool]]
 Predicate = Callable[[AbstractRow], Optional[bool]]
 
 Projector = Callable[[AbstractRow], AbstractRow]

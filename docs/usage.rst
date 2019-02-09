@@ -12,9 +12,27 @@ Constructing a Relation
 You can construct a relation (a table) by calling the table function with a
 list of mappings
 
-.. code-block:: python
+.. testsetup:: *
+
+   from stupidb import *
+   from pprint import pprint
+   from datetime import date, timedelta
+   today = date.today()
+   days = timedelta(days=1)
+   rows = [
+       {"name": "Alice", "balance": 400, "date": today},
+       {"name": "Alice", "balance": 300, "date": today + 1 * days},
+       {"name": "Alice", "balance": 100, "date": today + 2 * days},
+       {"name": "Bob", "balance": -150, "date": today - 4 * days},
+       {"name": "Bob", "balance": 200, "date": today - 3 * days},
+   ]
+   L = table(rows)
+   R = table(rows[2:])
+
+.. doctest::
 
    >>> from stupidb import *
+   >>> from pprint import pprint
    >>> from datetime import date, timedelta
    >>> today = date.today()
    >>> days = timedelta(days=1)
@@ -22,45 +40,70 @@ list of mappings
    ...     {"name": "Alice", "balance": 400, "date": today},
    ...     {"name": "Alice", "balance": 300, "date": today + 1 * days},
    ...     {"name": "Alice", "balance": 100, "date": today + 2 * days},
-   ...     {"name": "Bob", "balance": -150, "date": today - 4 * days)},
+   ...     {"name": "Bob", "balance": -150, "date": today - 4 * days},
    ...     {"name": "Bob", "balance": 200, "date": today - 3 * days},
    ... ]
    >>> t = table(rows)
+   >>> pprint(list(t))
+   [Row({'name': 'Alice', 'balance': 400, 'date': datetime.date(2019, 2, 9)}),
+    Row({'name': 'Alice', 'balance': 300, 'date': datetime.date(2019, 2, 10)}),
+    Row({'name': 'Alice', 'balance': 100, 'date': datetime.date(2019, 2, 11)}),
+    Row({'name': 'Bob', 'balance': -150, 'date': datetime.date(2019, 2, 5)}),
+    Row({'name': 'Bob', 'balance': 200, 'date': datetime.date(2019, 2, 6)})]
+
+Since every :class:`~stupidb.stupidb.Relation` in StupiDB implements the
+:ref:`iterator` (see :meth:`stupidb.stupidb.Relation.__iter__`), you can
+materialize the rows of a relation by calling :class:`list` on the relation.
 
 .. note::
 
-   The examples that follow assume you've executed the above code in a Python
-   interpreter.
+   The :class:`~stupidb.row.Row` objects that make up the elements of ``list``
+   above are a very thing layer on top of :class:`dict`, allowing two things:
 
-Since every relation in StupiDB implements the iterator protocol, you can
-materialize the rows of a relation by calling ``list`` on the relation.
+     - Column access by attribute
+     - User friendly handling of ambiguous column naming in
+       :class:`~stupidb.stupidb.Join` relations.
 
 One design goal of StupiDB is that it allows you to use any mapping you want to
 to represent a row, as long as it conforms to the ``typing.Mapping[str, T]``
-interface (where ``T`` is a type variable).
+interface (where ``T`` is an instance of :class:`typing.TypeVar`).
 
 Operations on Relations
 -----------------------
-StupiDB provides standard relational operations such as:
+StupiDB provides standard operations over relations:
 
-#. Projection (column selection, SELECT)
-#. Selection (row filtering, WHERE)
-#. Simple aggregation
-#. Window functions (including standard aggregate functions, lead, lag, etc.)
-#. Group by (aggregate by a key, GROUP BY)
-#. Order by (sorting a relation by one or more columns, ORDER BY)
-#. Join (match rows in one table to another, INNER JOIN, LEFT JOIN, etc.)
-#. Set operations (UNION, INTERSECT, EXCEPT)
+#. Projection (column selection, SELECT, :func:`~stupidb.api.select`).
+#. Selection (row filtering, WHERE, :func:`~stupidb.api.sift`).
+#. Simple aggregation, using :func:`~stupidb.api.aggregate`.
+#. Window functions (including standard aggregate functions, and
+   :func:`~stupidb.api.lead`, :func:`~stupidb.api.lag`, etc.).
+#. Group by (aggregate by a key, GROUP BY, :func:`~stupidb.api.group_by`)
+#. Order by (sorting a relation by one or more columns, ORDER BY,
+   :func:`~stupidb.api.order_by`)
+#. Join (match rows in one table to another, INNER JOIN, LEFT JOIN, etc., e.g.,
+   :func:`~stupidb.api.left_join`)
+#. Set operations (UNION [ALL], INTERSECT [ALL], EXCEPT [ALL], using
+   :func:`~stupidb.api.union`, :func:`~stupidb.api.union_all`,
+   :func:`~stupidb.api.intersect`, :func:`~stupidb.api.intersect_all`,
+   :func:`~stupidb.api.difference`, :func:`~stupidb.api.difference_all`)
 
 We'll briefly describe each of these in turn and and show how to use them in
 the stupidest way.
 
 Projection (``SELECT``)
 -----------------------
-.. code-block:: python
+.. doctest::
 
-   >>> name_and_bal = t >> select(n=lambda r:.name, b=lambda r: r.balance)
+   >>> name_and_bal = (
+   ...     table(rows) >> select(n=lambda r: r.name, b=lambda r: r.balance)
+   ... )
    >>> bal_times_2 = name_and_bal >> mutate(bal2=lambda r: r.b * 2)
+   >>> pprint(list(bal_times_2))
+   [Row({'n': 'Alice', 'b': 400, 'bal2': 800}),
+    Row({'n': 'Alice', 'b': 300, 'bal2': 600}),
+    Row({'n': 'Alice', 'b': 100, 'bal2': 200}),
+    Row({'n': 'Bob', 'b': -150, 'bal2': -300}),
+    Row({'n': 'Bob', 'b': 200, 'bal2': 400})]
 
 The :func:`~stupidb.api.mutate` function preserves the child table in the
 result, while :func:`~stupidb.api.select` does not.
@@ -69,37 +112,53 @@ Selection (``WHERE``)
 ---------------------
 Filtering rows is done with the :func:`~stupidb.api.sift` function.
 
-.. code-block:: python
+.. doctest::
 
-   >>> alices = t >> sift(lambda r: r.name == "Alice")
+   >>> alice = table(rows) >> sift(lambda r: r.name == "Alice")
+   >>> pprint(list(alice))
+   [Row({'name': 'Alice', 'balance': 400, 'date': datetime.date(2019, 2, 9)}),
+    Row({'name': 'Alice', 'balance': 300, 'date': datetime.date(2019, 2, 10)}),
+    Row({'name': 'Alice', 'balance': 100, 'date': datetime.date(2019, 2, 11)})]
 
 Simple Aggregation
 ------------------
-.. code-block:: python
+.. doctest::
 
-   >>> agg = t >> aggregate(
+   >>> agg = table(rows) >> aggregate(
    ...     my_sum=sum(lambda r: r.balance),
    ...     my_avg=mean(lambda r: r.balance)
    ... )
+   >>> pprint(list(agg))
+   [Row({'my_sum': 850, 'my_avg': 170.0})]
 
 ``GROUP BY``
 ------------
-.. code-block:: python
+.. doctest::
 
    >>> gb = (
-   ...     t >> group_by(lambda r: r.name)
-   ...       >> aggregate(bal_over_time=sum(lambda r: r.balance))
+   ...     table(rows) >> group_by(name=lambda r: r.name)
+   ...                 >> aggregate(bal_over_time=sum(lambda r: r.balance))
    ... )
+   >>> pprint(list(gb))
+   [Row({'name': 'Alice', 'bal_over_time': 800}),
+    Row({'name': 'Bob', 'bal_over_time': 50})]
 
 ``ORDER BY``
 ------------
 To sort in ascending order of the specified columns:
 
-.. code-block:: python
+.. doctest::
 
-   >>> ob = t >> order_by(lambda r: r.name, lambda r: r.date)
+   >>> ob = table(rows) >> order_by(lambda r: r.name, lambda r: r.date)
+   >>> pprint(list(ob))
+   [Row({'name': 'Alice', 'balance': 400, 'date': datetime.date(2019, 2, 9)}),
+    Row({'name': 'Alice', 'balance': 300, 'date': datetime.date(2019, 2, 10)}),
+    Row({'name': 'Alice', 'balance': 100, 'date': datetime.date(2019, 2, 11)}),
+    Row({'name': 'Bob', 'balance': -150, 'date': datetime.date(2019, 2, 5)}),
+    Row({'name': 'Bob', 'balance': 200, 'date': datetime.date(2019, 2, 6)})]
 
-Currently there is no convenient way to sort descending.
+Currently there is no convenient way to sort descending if your order by values
+are not numeric.
 
 Joins
 -----
@@ -120,7 +179,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   >>> t >> cross_join(t)
+   >>> L >> cross_join(R)
 
 ``INNER JOIN``
 ~~~~~~~~~~~~~~
@@ -137,7 +196,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   >>> t >> inner_join(t, lambda left, right: left.name == right.name)
+   >>> L >> inner_join(R, lambda left, right: left.name == right.name)
 
 ``LEFT JOIN``
 ~~~~~~~~~~~~~
@@ -149,7 +208,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   >>> t >> left_join(t, lambda left, right: left.name == right.name)
+   >>> L >> left_join(R, lambda left, right: left.name == right.name)
 
 ``RIGHT JOIN``
 ~~~~~~~~~~~~~~
@@ -160,7 +219,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   >>> t >> right_join(t, lambda left, right: left.balance < right.balance)
+   >>> L >> right_join(R, lambda left, right: left.name == right.name)
 
 Set Operations
 --------------
@@ -179,7 +238,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   >>> t >> union(t)
+   >>> L >> union(R)
 
 ``INTERSECT``
 ~~~~~~~~~~~~~
@@ -195,7 +254,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   >>> t >> intersect(t)
+   >>> L >> intersect(R)
 
 ``DIFFERENCE``
 ~~~~~~~~~~~~~~
@@ -211,7 +270,7 @@ In stupidb this is:
 
 .. code-block:: python
 
-   >>> t >> difference(t)
+   >>> L >> difference(R)
 
 Aggregations
 ------------

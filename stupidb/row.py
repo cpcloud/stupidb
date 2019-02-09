@@ -170,5 +170,6 @@ class JoinedRow(AbstractRow):
 
     def __repr__(self) -> str:
         return (
-            f"{self.__class__.__name__}({self.left.data}, {self.right.data})"
+            f"{self.__class__.__name__}(left={self.left.data}, "
+            f"right={self.right.data})"
         )

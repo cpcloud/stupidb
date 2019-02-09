@@ -14,11 +14,33 @@ import toolz
 
 from conftest import assert_rowset_equal
 from stupidb.aggregation import Window
-from stupidb.api import (aggregate, count, cov_pop, cov_samp, cross_join,
-                         exists, group_by, inner_join, left_join, max, mean,
-                         min, mutate, order_by, over, right_join, select, sift,
-                         stdev_pop, stdev_samp, sum, table, total, var_pop,
-                         var_samp,)
+from stupidb.api import (
+    aggregate,
+    count,
+    cov_pop,
+    cov_samp,
+    cross_join,
+    exists,
+    group_by,
+    inner_join,
+    left_join,
+    max,
+    mean,
+    min,
+    mutate,
+    order_by,
+    over,
+    right_join,
+    select,
+    sift,
+    stdev_pop,
+    stdev_samp,
+    sum,
+    table,
+    total,
+    var_pop,
+    var_samp,
+)
 from stupidb.row import JoinedRow, Row
 from stupidb.stupidb import Join
 
@@ -78,7 +100,7 @@ def test_group_by(rows):
 
 
 def test_join_from_iterable_is_invalid():
-    row = JoinedRow({'a': 1}, {'b': 1}, _id=1)
+    row = JoinedRow({"a": 1}, {"b": 1}, _id=1)
     rows = [row]
     with pytest.raises(TypeError):
         Join.from_iterable(rows)
@@ -105,10 +127,10 @@ def test_inner_join(left, right):
         table(left)
         >> inner_join(
             table(right),
-            lambda r: (
-                r.left["z"] == "a"
-                and r.right["z"] == "a"
-                and r.left["a"] == r.right["a"]
+            lambda left, right: (
+                left["z"] == "a"
+                and right["z"] == "a"
+                and left["a"] == right["a"]
             ),
         )
         >> select(
@@ -132,7 +154,7 @@ def test_inner_join(left, right):
 def test_left_join(left, right):
     join = (
         table(left)
-        >> left_join(table(right), lambda r: r.left["z"] == r.right["z"])
+        >> left_join(table(right), lambda left, right: left["z"] == right["z"])
         >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
     )
     result = list(join)
@@ -159,7 +181,9 @@ def test_left_join(left, right):
 def test_right_join(left, right):
     join = (
         table(left)
-        >> right_join(table(right), lambda r: r.left["z"] == r.right["z"])
+        >> right_join(
+            table(right), lambda left, right: left["z"] == right["z"]
+        )
         >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
     )
     result = list(join)
@@ -354,7 +378,8 @@ def test_rows_window_partition(rows):
 def test_range_window_with_multiple_ordering_keys_fails(rows):
     with pytest.raises(ValueError):
         table(rows) >> mutate(
-            my_agg=sum(lambda r: r["a"]) >> over(
+            my_agg=sum(lambda r: r["a"])
+            >> over(
                 Window.range(
                     order_by=[lambda r: r["e"], lambda r: r["a"]],
                     partition_by=[lambda r: r["z"]],
