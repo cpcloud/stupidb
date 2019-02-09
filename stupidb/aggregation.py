@@ -7,7 +7,6 @@ import typing
 from typing import (
     Any,
     Callable,
-    Collection,
     Dict,
     Generic,
     Hashable,
@@ -40,9 +39,8 @@ from stupidb.typehints import (
     OrderingKey,
     PartitionBy,
     Preceding,
+    T,
 )
-
-T = TypeVar("T")
 
 StartStop = typing.NamedTuple("StartStop", [("start", int), ("stop", int)])
 Ranges = Tuple[StartStop, StartStop, StartStop]
@@ -52,10 +50,12 @@ AggregationResultPair = Tuple[int, Optional[T]]
 class FrameClause(abc.ABC):
     """Class for computing frame boundaries."""
 
+    __slots__ = "order_by", "partition_by", "preceding", "following", "nulls"
+
     def __init__(
         self,
-        order_by: Collection[OrderBy],
-        partition_by: Collection[PartitionBy],
+        order_by: Sequence[OrderBy],
+        partition_by: Sequence[PartitionBy],
         preceding: Optional[Preceding],
         following: Optional[Following],
     ) -> None:
@@ -208,6 +208,8 @@ class RowsMode(FrameClause):
 
     """
 
+    __slots__ = ()
+
     def find_partition_begin(
         self,
         current_row: AbstractRow,
@@ -256,6 +258,8 @@ class RangeMode(FrameClause):
     RowsMode
 
     """
+
+    __slots__ = ()
 
     def setup_window(
         self,
@@ -324,10 +328,12 @@ class RangeMode(FrameClause):
 class Window:
     """A namespace class providing the user-facing API for windowing modes."""
 
+    __slots__ = ()
+
     @staticmethod
     def rows(
-        order_by: Collection[OrderBy] = (),
-        partition_by: Collection[PartitionBy] = (),
+        order_by: Sequence[OrderBy] = (),
+        partition_by: Sequence[PartitionBy] = (),
         preceding: Optional[Preceding] = None,
         following: Optional[Following] = None,
     ) -> FrameClause:
@@ -345,8 +351,8 @@ class Window:
 
     @staticmethod
     def range(
-        order_by: Collection[OrderBy] = (),
-        partition_by: Collection[PartitionBy] = (),
+        order_by: Sequence[OrderBy] = (),
+        partition_by: Sequence[PartitionBy] = (),
         preceding: Optional[Preceding] = None,
         following: Optional[Following] = None,
     ) -> FrameClause:
@@ -364,7 +370,6 @@ class Window:
 
 
 Getter = Callable[[AbstractRow], Any]
-A = TypeVar("A")
 ConcreteAggregate = TypeVar(
     "ConcreteAggregate",
     UnaryAssociativeAggregate,
@@ -406,6 +411,18 @@ class AggregateSpecification(Generic[ConcreteAggregate]):
 def compute_partition_key(
     row: AbstractRow, partition_by: Iterable[PartitionBy]
 ) -> Tuple[Hashable, ...]:
+    """Compute a partition key from `row` and `partition_by`.
+
+    Parameters
+    ----------
+    row
+        An :class:`~stupidb.row.AbstractRow` instance.
+    partition_by
+        An iterable of :class:`~typing.Callable` taking a single
+        :class:`~stupidb.row.AbstractRow` argument and returning a
+        :class:`Hashable` object.
+
+    """
     return tuple(partition_func(row) for partition_func in partition_by)
 
 
@@ -468,12 +485,12 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         self.frame_clause = frame_clause
 
     def compute(self, rows: Iterable[AbstractRow]) -> Iterator[Optional[T]]:
-        """Aggregate `rows` over a window.
+        """Aggregate `rows` over a window, producing an iterator of results.
 
         Parameters
         ----------
         rows
-            An iterable of rows
+            An :class:`~typing.Iterable` of rows.
 
         """
         frame_clause = self.frame_clause
@@ -524,7 +541,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             partitions[partition_key].sort(key=key)
 
         # (row_id, value) pairs containing the aggregation results
-        results: List[AggregationResultPair[Optional[T]]] = []
+        results: List[Tuple[int, Optional[T]]] = []
 
         # Aggregate over each partition
         aggregate_type = self.aggregate_type
@@ -561,7 +578,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
 
         # Sort the results in order of the child relation, because we processed
         # them in partition order, which might not be the same. Pull out the
-        # second element of each AggregationResultPair in results.
+        # second element of each element in results.
         return (
             value for _, value in sorted(results, key=operator.itemgetter(0))
         )

@@ -1,22 +1,13 @@
 """Navigation and simple window function interface and implementation."""
 
 import abc
-from typing import (
-    Any,
-    ClassVar,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, ClassVar, Optional, Sequence, Tuple, Type, Union
 
 from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
 from stupidb.protocols import Comparable
 from stupidb.row import AbstractRow
-from stupidb.typehints import Getter, Output, Result
+from stupidb.typehints import Getter, Output, Result, T
 
 
 class RankingAggregator(Aggregator["RankingAggregate", Result]):
@@ -108,7 +99,6 @@ class Sentinel:
         return isinstance(other, type(self))
 
 
-T = TypeVar("T")
 Either = Union[Sentinel, T]
 
 

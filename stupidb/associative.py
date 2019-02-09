@@ -49,9 +49,8 @@ from typing import (
 from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
 from stupidb.protocols import Comparable
-from stupidb.typehints import R1, R2, Input1, Input2, Output, R, Result
+from stupidb.typehints import R1, R2, Input1, Input2, Output, R, Result, T
 
-T = TypeVar("T")
 AssociativeAggregate = TypeVar(
     "AssociativeAggregate",
     "UnaryAssociativeAggregate",
@@ -267,7 +266,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
 
         """
         # TODO: investigate fanout
-        fanout = self.__class__.fanout
+        fanout = self.fanout
         aggregate: AssociativeAggregate = self.aggregate_type()
         for i, level in enumerate(reversed(self.levels)):
             parent_begin = begin // fanout

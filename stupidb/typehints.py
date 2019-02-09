@@ -24,6 +24,7 @@ Input2 = TypeVar("Input2")
 Input3 = TypeVar("Input3")
 Output = TypeVar("Output")
 
+T = TypeVar("T")
 R = TypeVar("R", bound=Real)
 R1 = TypeVar("R1", bound=Real)
 R2 = TypeVar("R2", bound=Real)

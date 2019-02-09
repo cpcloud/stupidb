@@ -11,19 +11,16 @@ from typing import (
     Sequence,
     Tuple,
     Type,
-    TypeVar,
 )
 
 from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
 from stupidb.reversed import Reversed
-from stupidb.typehints import Input1, Input2, Input3, Output, Result
-
-T = TypeVar("T")
+from stupidb.typehints import Input1, Input2, Input3, Output, Result, T
 
 
 class NavigationAggregator(Aggregator["NavigationAggregate", Result]):
-    """Custom aggregator for simple window functions.
+    """Custom aggregator for navigation functions.
 
     This aggregator is useful for a subset of window functions whose underlying
     binary combine operator (if it even exists) is not associative or easy to
@@ -140,7 +137,7 @@ class LeadLag(TernaryNavigationAggregate[Input1, int, Input1, Input1]):
 
         """
         index = self.index
-        offset = self.__class__.offset(index, self.inputs2[index])
+        offset = self.offset(index, self.inputs2[index])
         default = self.inputs3[index]
 
         # if we asked for a null offset or we're out of bounds then return a

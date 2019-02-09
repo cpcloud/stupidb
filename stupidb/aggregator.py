@@ -1,9 +1,8 @@
 import abc
 from typing import Generic, Optional, Sequence, TypeVar
 
-from stupidb.typehints import Result
+from stupidb.typehints import Result, T
 
-T = TypeVar("T")
 AggregateClass = TypeVar("AggregateClass", covariant=True)
 
 

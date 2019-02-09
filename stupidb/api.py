@@ -13,7 +13,7 @@
 """
 
 import inspect
-from typing import Any, Callable, Iterable, Mapping, Optional, TypeVar
+from typing import Any, Callable, Iterable, Mapping, Optional
 
 from toolz import curry
 
@@ -61,7 +61,7 @@ from stupidb.stupidb import (
     Union,
     UnionAll,
 )
-from stupidb.typehints import R1, R2, OrderBy, R
+from stupidb.typehints import R1, R2, OrderBy, R, T
 
 
 class _shiftable(curry):
@@ -424,11 +424,8 @@ def difference(right: Relation, left: Relation) -> Difference:
     return Difference(left, right)
 
 
-V = TypeVar("V")
-
-
 # Aggregate functions
-def count(x: Callable[[AbstractRow], Optional[V]]) -> AggregateSpecification:
+def count(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
     """Count the number of non-NULL values of `x`.
 
     Parameters
@@ -464,7 +461,7 @@ def total(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     return AggregateSpecification(Total, (x,))
 
 
-def first(x: Callable[[AbstractRow], Optional[V]]) -> AggregateSpecification:
+def first(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
     """Compute the first row of `x` over a window.
 
     Parameters
@@ -476,7 +473,7 @@ def first(x: Callable[[AbstractRow], Optional[V]]) -> AggregateSpecification:
     return AggregateSpecification(First, (x,))
 
 
-def last(x: Callable[[AbstractRow], Optional[V]]) -> AggregateSpecification:
+def last(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
     """Compute the last row of `x` over a window.
 
     Parameters
@@ -489,7 +486,7 @@ def last(x: Callable[[AbstractRow], Optional[V]]) -> AggregateSpecification:
 
 
 def nth(
-    x: Callable[[AbstractRow], Optional[V]],
+    x: Callable[[AbstractRow], Optional[T]],
     i: Callable[[AbstractRow], Optional[int]],
 ) -> AggregateSpecification:
     """Compute the `i`th row of `x` over a window.
@@ -521,9 +518,9 @@ def dense_rank() -> AggregateSpecification:
 
 
 def lead(
-    x: Callable[[AbstractRow], Optional[V]],
+    x: Callable[[AbstractRow], Optional[T]],
     n: Callable[[AbstractRow], Optional[int]] = (lambda row: 1),
-    default: Callable[[AbstractRow], Optional[V]] = (lambda row: None),
+    default: Callable[[AbstractRow], Optional[T]] = (lambda row: None),
 ) -> AggregateSpecification:
     """Lead a column `x` by `n` rows, using `default` for NULL values.
 
@@ -545,9 +542,9 @@ def lead(
 
 
 def lag(
-    x: Callable[[AbstractRow], Optional[V]],
+    x: Callable[[AbstractRow], Optional[T]],
     n: Callable[[AbstractRow], Optional[int]] = (lambda row: 1),
-    default: Callable[[AbstractRow], Optional[V]] = (lambda row: None),
+    default: Callable[[AbstractRow], Optional[T]] = (lambda row: None),
 ) -> AggregateSpecification:
     """Lag a column `x` by `n` rows, using `default` for NULL values.
 
