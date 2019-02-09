@@ -3,29 +3,35 @@ r"""Segment tree and corresponding aggregate function implementations.
 The segment tree implementation is based on `Leis, 2015
 <http://www.vldb.org/pvldb/vol8/p1058-leis.pdf>`_
 
-The segment tree here uses :class:`AssociativeAggregate` instances as its
-nodes. The leaves are computed by call the :meth:`AssociativeAggregate.step`
-method when the tree construction bottoms out. On the way back up the tree each
-aggregation instance is updated based on its children by calling the
-:meth:`AssociativeAggregate.update` method. This method takes another instance
-of the same aggregation as input and updates the calling instance based on the
-value of the intermediate state of its input (the other aggregation).
+The segment tree here uses :class:`~stupidb.associative.AssociativeAggregate`
+instances as its nodes. The leaves are computed by call the
+:meth:`~stupidb.associative.AssociativeAggregate.step` method when the tree
+construction bottoms out. On the way back up the tree each aggregation instance
+is updated based on its children by calling the
+:meth:`~stupidb.associative.AssociativeAggregate.update` method. This method
+takes another instance of the same aggregation as input and updates the calling
+instance based on the value of the intermediate state of its input (the other
+aggregation).
 
-Each interior node contains an intermediate state of aggregation such that it
-is possible to compute a range query of any given aggregation in
-:math:`O\left(\log{N}\right)` time rather than :math:`O\left(N\right)`.
+Each interior node contains an intermediate value of a given aggregation such
+that it is possible to compute a range query in :math:`O\left(\log{N}\right)`
+time rather than :math:`O\left(N\right)`.
 
-The results in window aggregations having :math:`O\left(n\log{N}\right)` worst
-case behavior rather than :math:`O\left(N^{2}\right)`, which is the behavior of
-naive window aggregation implementations.
+Using segment trees in this way results in window aggregations having
+:math:`O\left(N\log{N}\right)` worst case behavior rather than
+:math:`O\left(N^{2}\right)`, which is the complexity of naive window
+aggregation implementations.
 
-A previous iteration of stupidb had :math:`O\left(N\right)` worst case behavior
-for some aggregations such as those base on ``sum``, but the segment tree
-provides a generic solution for any associative aggregate, including ``min``
-and ``max`` as well as the typical ``sum`` based aggregations.
+A `previous iteration of stupidb
+<https://github.com/cpcloud/stupidb/tree/14ef13e>`_ had :math:`O\left(N\right)`
+worst case behavior for some aggregations such as those based on ``sum``. The
+segment tree implementation provides a generic solution for any associative
+aggregate, including ``min`` and ``max`` as well as the typical ``sum`` based
+aggregations, that gives a worst case runtime complexity of
+:math:`O\left(N\log{N}\right)`.
 
-A future iteration might allow switching the aggregation algorithm based on the
-aggregate to achieve optimal behavior from all aggregates.
+A future iteration might determine the aggregation algorithm based on the
+specific aggregate to achieve optimal behavior from all aggregates.
 
 """
 

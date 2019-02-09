@@ -64,8 +64,11 @@ coverage: ## check code coverage quickly with the default Python
 	coverage html
 	$(BROWSER) htmlcov/index.html
 
+SPHINX_APIDOC_OPTIONS := members,show-inheritance
+
 docs: ## generate Sphinx HTML documentation, including API docs
-	sphinx-apidoc --separate --force -o docs/ stupidb -H "StupiDB Modules"
+	SPHINX_APIDOC_OPTIONS=${SPHINX_APIDOC_OPTIONS} \
+	    sphinx-apidoc --separate --force -o docs/ stupidb -H "StupiDB Modules"
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 

@@ -24,5 +24,4 @@ Module contents
 
 .. automodule:: stupidb
     :members:
-    :undoc-members:
     :show-inheritance:
