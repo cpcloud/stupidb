@@ -1,9 +1,13 @@
+"""Implementation of an indexable :class:`stupidb.reversed.Reversed` object."""
+
 from typing import Any, Sequence, TypeVar
 
 T = TypeVar("T", covariant=True)
 
 
 class Reversed(Sequence[T]):
+    __slots__ = ("values",)
+
     def __init__(self, values: Sequence[T] = ()) -> None:
         self.values = values
 
