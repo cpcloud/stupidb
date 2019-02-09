@@ -17,6 +17,30 @@ Each interior node contains an intermediate value of a given aggregation such
 that it is possible to compute a range query in :math:`O\left(\log{N}\right)`
 time rather than :math:`O\left(N\right)`.
 
+Here's an example of a segment tree for the :class:`~stupidb.associative.Sum`
+aggregation, constructed with leaves::
+
+   >>> [1, 2, 3, 4]
+
+.. graphviz::
+   :align: center
+
+   digraph segtree {
+       0 [label=10];
+       1 [label=3];
+       2 [label=7];
+       3 [label=1];
+       4 [label=2];
+       5 [label=3];
+       6 [label=4];
+       0 -> 1 [dir=back];
+       0 -> 2 [dir=back];
+       1 -> 3 [dir=back];
+       1 -> 4 [dir=back];
+       2 -> 5 [dir=back];
+       2 -> 6 [dir=back];
+   }
+
 Using segment trees in this way results in window aggregations having
 :math:`O\left(N\log{N}\right)` worst case behavior rather than
 :math:`O\left(N^{2}\right)`, which is the complexity of naive window
@@ -179,7 +203,7 @@ def make_segment_tree(
 
 
 def reprtree(nodes: Sequence[T], node_index: int = 0, level: int = 0) -> str:
-    """Return a string representation of `tree`.
+    """Return a string representation of `nodes`.
 
     Parameters
     ----------
