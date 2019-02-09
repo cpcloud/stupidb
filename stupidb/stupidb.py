@@ -6,8 +6,9 @@ This is project designed to illustate the concepts that underly a typical
 relational database implementation, starting at naive execution of table-stakes
 features up to rule-based query optimization.
 
-Please do not use this for any other reason than learning. There are no
-guarantees here except that there will be bugs.
+.. warning::
+   Please do not use this for any other reason than learning. There are no
+   guarantees here except that there will be bugs.
 
 """
 
@@ -51,6 +52,8 @@ from stupidb.typehints import (
 
 
 class Partitionable(abc.ABC):
+    """An abstraction for a set of rows that can be partitioned by a key."""
+
     __slots__ = ("rows",)
 
     def __init__(self, rows: Iterable[AbstractRow]) -> None:
@@ -90,6 +93,15 @@ FullProjector = Union_[Projector, WindowAggregateSpecification]
 
 
 class Projection(Relation):
+    """A relation representing column selection.
+
+    Attributes
+    ----------
+    aggregations
+    projections
+
+    """
+
     __slots__ = "aggregations", "projections"
 
     def __init__(
@@ -149,6 +161,8 @@ class Projection(Relation):
 
 
 class Mutate(Projection):
+    """A relation representing appending columns to an existing relation."""
+
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
@@ -164,6 +178,14 @@ class Mutate(Projection):
 
 
 class Aggregation(Generic[AssociativeAggregate], Relation):
+    """A relation representing aggregation of columns.
+
+    Attributes
+    ----------
+    aggregations
+
+    """
+
     __slots__ = ("aggregations",)
 
     def __init__(
@@ -207,6 +229,16 @@ class Aggregation(Generic[AssociativeAggregate], Relation):
 
 
 class Selection(Relation):
+    """A relation representing filtering rows based on a predicate.
+
+    Attributes
+    ----------
+    predicate
+        A callable that takes an :class:`~stupidb.row.AbstractRow` and returns
+        a :class:`bool`.
+
+    """
+
     __slots__ = ("predicate",)
 
     def __init__(self, child: Relation, predicate: Predicate) -> None:
@@ -219,6 +251,16 @@ class Selection(Relation):
 
 
 class GroupBy(Relation):
+    """A relation representing a partitioning of rows by a key.
+
+    Attributes
+    ----------
+    group_by
+        A callable that takes an :class:`~stupidb.row.AbstractRow` and returns
+        an instance of :class:`typing.Hashable`.
+
+    """
+
     __slots__ = ("group_by",)
 
     def __init__(
@@ -234,6 +276,17 @@ class GroupBy(Relation):
 
 
 class SortBy(Relation):
+    """A relation representing rows of its child sorted by one or more keys.
+
+    Attributes
+    ----------
+    order_by
+        A callable that takes an :class:`~stupidb.row.AbstractRow` and returns
+        an instance of :class:`~stupidb.protocols.Comparable`.
+    nulls
+        Whether to place the nulls of a column first or last.
+
+    """
     __slots__ = "order_by", "nulls"
 
     def __init__(

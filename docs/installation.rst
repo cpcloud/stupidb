@@ -12,9 +12,7 @@ To install stupidb, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install stupidb
-
-This is the preferred method to install stupidb, as it will always install the most recent stable release.
+   $ pip install stupidb
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -26,26 +24,32 @@ you through the process.
 From sources
 ------------
 
-The sources for stupidb can be downloaded from the `Github repo`_.
+The sources for stupidb can be downloaded from the `GitHub repository`_.
 
 You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/cpcloud/stupidb
+   $ git clone git://github.com/cpcloud/stupidb
 
-Or download the `tarball`_:
+Or download and unpack the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/cpcloud/stupidb/tarball/master
+   $ curl --silent --location https://github.com/cpcloud/stupidb/tarball/master | tar xvzf
+
+Unpack the tarball in the current directory:
+
+.. code-block:: console
+
+   $ tar xzvf master.tar.gz
 
 Once you have a copy of the source, you can install it with:
 
 .. code-block:: console
 
-    $ python setup.py install
+   $ make install
 
 
-.. _Github repo: https://github.com/cpcloud/stupidb
+.. _GitHub repository: https://github.com/cpcloud/stupidb
 .. _tarball: https://github.com/cpcloud/stupidb/tarball/master
