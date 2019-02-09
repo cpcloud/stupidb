@@ -36,7 +36,7 @@ Or download and unpack the `tarball`_:
 
 .. code-block:: console
 
-   $ curl --silent --location https://github.com/cpcloud/stupidb/tarball/master | tar xvzf
+   $ curl -sL https://github.com/cpcloud/stupidb/tarball/master | tar xvzf
 
 Once you have a copy of the source, ``cd`` into source directory and install
 ``stupidb``:
