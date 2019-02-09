@@ -38,13 +38,8 @@ Or download and unpack the `tarball`_:
 
    $ curl --silent --location https://github.com/cpcloud/stupidb/tarball/master | tar xvzf
 
-Unpack the tarball in the current directory:
-
-.. code-block:: console
-
-   $ tar xzvf master.tar.gz
-
-Once you have a copy of the source, you can install it with:
+Once you have a copy of the source, ``cd`` into source directory and install
+``stupidb``:
 
 .. code-block:: console
 
