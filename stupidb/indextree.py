@@ -1,4 +1,3 @@
-import math
 from typing import Iterable, Iterator, Sequence, TypeVar
 
 T = TypeVar("T", covariant=True)
@@ -91,9 +90,6 @@ class Tree:
 
         """
         return (self.child(node, i) for i in range(self.fanout))
-
-    def next_power_of_fanout(self, value: int) -> int:
-        return math.ceil(math.log(value, base=self.fanout))
 
     def parent(self, node: int) -> int:
         """Return the parent node of `node`."""
