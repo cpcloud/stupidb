@@ -221,7 +221,6 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
             The end of the range to aggregate
 
         """
-        # TODO: investigate fanout
         fanout = self.fanout
         aggregate: AssociativeAggregate = self.aggregate_type()
         for i, level in enumerate(reversed(self.levels)):
