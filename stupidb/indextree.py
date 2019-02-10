@@ -1,5 +1,5 @@
 import math
-from typing import Any, Iterable, Iterator, Sequence, TypeVar
+from typing import Iterable, Iterator, Sequence, TypeVar
 
 T = TypeVar("T", covariant=True)
 

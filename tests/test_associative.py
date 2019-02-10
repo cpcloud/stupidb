@@ -10,7 +10,6 @@ from stupidb.associative import (
     SegmentTree,
     Sum,
     Total,
-    Variance,
     next_power_of_2,
 )
 
