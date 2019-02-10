@@ -149,23 +149,6 @@ def make_segment_tree(
     return segment_tree_nodes
 
 
-def next_power_of_2(value: int) -> int:
-    """Compute the next power of two of an integer.
-
-    Parameters
-    ----------
-    value
-        The value whose next power of two to compute.
-
-    """
-    if not value:
-        return value
-    if value < 0:
-        raise ValueError(f"Invalid value: {value:d}")
-    assert value > 0, f"value == {value}"
-    return 1 << int(math.ceil(math.log2(value)))
-
-
 class SegmentTree(Aggregator[AssociativeAggregate, Result]):
     """A segment tree for window aggregation.
 
@@ -189,16 +172,16 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         leaves: Sequence[Tuple[T, ...]],
         aggregate_type: Type[AssociativeAggregate],
         *,
-        fanout: int = 2,
+        fanout: int = 4,
     ) -> None:
         self.nodes: Sequence[AssociativeAggregate] = make_segment_tree(
             leaves, aggregate_type, fanout=fanout
         )
         self.aggregate_type: Type[AssociativeAggregate] = aggregate_type
+        self.fanout = fanout
         self.levels: Sequence[Sequence[AssociativeAggregate]] = list(
             self.iterlevels(self.nodes, fanout=fanout)
         )
-        self.fanout = fanout
 
     @classmethod
     def iterlevels(
@@ -214,7 +197,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
             The number child nodes per interior node
 
         """
-        height = int(math.ceil(math.log2(len(nodes))))
+        height = int(math.ceil(math.log(len(nodes), fanout)))
         getitem = nodes.__getitem__
         for level in range(1, height + 1):
             start = indextree.first_node(level, fanout=fanout)
