@@ -139,7 +139,7 @@ def make_segment_tree(
 
     # assert the invariant that we have traversed N - 1 nodes (-1 because we
     # don't traverse the root)
-    assert traversed + 1 == len(segment_tree_nodes), (
+    assert traversed == len(segment_tree_nodes) - 1, (
         f"traversed == {traversed}, "
         f"len(segment_tree_nodes) == {len(segment_tree_nodes)}"
     )
