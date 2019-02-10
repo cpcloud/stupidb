@@ -34,7 +34,8 @@ def test_repr_segment_tree():
         |-- Sum(total=1, count=1)
         |-- Sum(total=2, count=1)
     |-- Sum(total=3, count=1)
-        |-- Sum(total=3, count=1)"""
+        |-- Sum(total=3, count=1)
+        |-- Sum(total=None, count=0)"""
     assert result == expected
 
 
