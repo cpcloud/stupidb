@@ -99,6 +99,9 @@ def make_segment_tree(
 ) -> Sequence[AssociativeAggregate]:
     """Make a segment tree from tuples `leaves` and class `aggregate`.
 
+    The algorithm used here traverses from the bottom of tree upward, updating
+    the parent every time a new node is seen.
+
     Parameters
     ----------
     leaves
@@ -125,9 +128,9 @@ def make_segment_tree(
     traversed = 0
     while queue:
         node = queue.popleft()
-        node_agg = segment_tree_nodes[node]
-        parent = index_tree.parent(node)
         if node not in seen:
+            node_agg = segment_tree_nodes[node]
+            parent = index_tree.parent(node)
             parent_agg = segment_tree_nodes[parent]
             parent_agg.update(node_agg)
             seen.add(node)
