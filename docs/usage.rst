@@ -52,13 +52,17 @@ list of mappings
     Row({'name': 'Bob', 'balance': 200, 'date': datetime.date(2019, 2, 6)})]
 
 Since every :class:`~stupidb.stupidb.Relation` in StupiDB implements the
-:ref:`iterator` (see :meth:`stupidb.stupidb.Relation.__iter__`), you can
+`iterator protocol
+<https://docs.python.org/3/library/stdtypes.html#iterator-types>`_ (see
+:meth:`stupidb.stupidb.Relation.__iter__`), you can
+
 materialize the rows of a relation by calling :class:`list` on the relation.
 
 .. note::
 
-   The :class:`~stupidb.row.Row` objects that make up the elements of ``list``
-   above are a very thing layer on top of :class:`dict`, allowing two things:
+   The :class:`~stupidb.row.Row` objects that make up the elements of the
+   :class:`list` above are a very thin layer on top of :class:`dict`, allowing
+   two things:
 
      - Column access by attribute
      - User friendly handling of ambiguous column naming in
