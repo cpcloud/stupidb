@@ -73,7 +73,6 @@ from typing import (
     MutableSequence,
     Optional,
     Sequence,
-    Set,
     Tuple,
     Type,
     TypeVar,
@@ -82,6 +81,7 @@ from typing import (
 import stupidb.indextree as indextree
 from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
+from stupidb.bitset import BitSet
 from stupidb.protocols import Comparable
 from stupidb.typehints import R1, R2, Input1, Input2, Output, R, Result, T
 
@@ -124,7 +124,7 @@ def make_segment_tree(
         leaf = segment_tree_nodes[leaf_index]
         leaf.step(*args)
 
-    seen: Set[int] = set()
+    seen = BitSet()
 
     traversed = 0
     while queue:

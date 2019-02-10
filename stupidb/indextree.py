@@ -1,6 +1,8 @@
 """Module implementing an abstraction for navigation of array-backed trees."""
 
-from typing import Iterable, List, Sequence, Set, TypeVar
+from typing import Iterable, List, Sequence, TypeVar
+
+from stupidb.bitset import BitSet
 
 T = TypeVar("T", covariant=True)
 
@@ -22,7 +24,7 @@ def reprtree(nodes: Sequence[T], *, fanout: int, indent: str = 4 * " ") -> str:
     level_index_stack = [(0, 0)]
 
     # store the nodes that we've seen
-    seen: Set[int] = set()
+    seen = BitSet()
     template = "{indent}|-- {node}"
     node_repr_pieces: List[str] = []
 
@@ -30,9 +32,7 @@ def reprtree(nodes: Sequence[T], *, fanout: int, indent: str = 4 * " ") -> str:
         level, node_index = level_index_stack.pop()
         if node_index not in seen:
             node = nodes[node_index]
-            node_repr_piece = template.format(
-                indent=level * indent, node=node
-            )
+            node_repr_piece = template.format(indent=level * indent, node=node)
             node_repr_pieces.append(node_repr_piece)
             node_indices = (
                 fanout * node_index + i + 1 for i in reversed(range(fanout))
