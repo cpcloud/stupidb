@@ -188,7 +188,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
     def iterlevels(
         cls, nodes: Sequence[Optional[AssociativeAggregate]], *, fanout: int
     ) -> Iterator[List[AssociativeAggregate]]:
-        """Iterate over every level in the tree starting from the bottom.
+        """Iterate over every level in the tree.
 
         Parameters
         ----------
