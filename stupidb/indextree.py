@@ -76,14 +76,6 @@ class IndexTree:
         """Return the number of nodes in the tree."""
         return len(self.nodes)
 
-    def __getitem__(self, index: int) -> int:
-        """Return the node at position `index`."""
-        return self.nodes[index]
-
-    def __iter__(self) -> Iterator[int]:
-        """Iterate over the nodes in the tree."""
-        return iter(self.nodes)
-
     def first_node(self, level: int) -> int:
         """Return the first node at `level`."""
         return first_node(level, fanout=self.fanout)
@@ -91,23 +83,6 @@ class IndexTree:
     def last_node(self, level: int) -> int:
         """Return the last node at `level`."""
         return last_node(level, fanout=self.fanout)
-
-    def child(self, node: int, i: int) -> int:
-        r"""Return the :math:`i\mbox{th}` child of `node`."""
-        return self.fanout * node + i + 1
-
-    def children(self, node: int) -> Iterable[int]:
-        """Iterate over the children of an node.
-
-        Examples
-        --------
-        >>> list(children(parent=0, fanout=4))
-        [1, 2, 3, 4]
-        >>> list(children(parent=1, fanout=4))
-        [5, 6, 7, 8]
-
-        """
-        return (self.child(node, i) for i in range(self.fanout))
 
     def parent(self, node: int) -> int:
         """Return the parent node of `node`."""
