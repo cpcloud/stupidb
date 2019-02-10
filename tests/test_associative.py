@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import pytest
-
 from stupidb.associative import (
     Count,
     Mean,
@@ -10,22 +8,11 @@ from stupidb.associative import (
     SegmentTree,
     Sum,
     Total,
-    next_power_of_2,
 )
 
 
-def test_next_power_of_2():
-    result = next_power_of_2(0)
-    assert result == 0
-    with pytest.raises(ValueError):
-        next_power_of_2(-1)
-    assert next_power_of_2(1) == 1
-    assert next_power_of_2(3) == 4
-    assert next_power_of_2(5) == 8
-
-
-def test_repr_segment_tree():
-    tree = SegmentTree([(1,), (2,), (3,)], aggregate_type=Sum)
+def test_repr_segment_tree_fanout_2():
+    tree = SegmentTree([(1,), (2,), (3,)], aggregate_type=Sum, fanout=2)
     result = repr(tree)
     expected = """\
 |-- Sum(total=6, count=3)
@@ -35,6 +22,18 @@ def test_repr_segment_tree():
     |-- Sum(total=3, count=1)
         |-- Sum(total=3, count=1)
         |-- Sum(total=None, count=0)"""
+    assert result == expected
+
+
+def test_repr_segment_tree_fanout_4():
+    tree = SegmentTree([(1,), (2,), (3,)], aggregate_type=Sum, fanout=4)
+    result = repr(tree)
+    expected = """\
+|-- Sum(total=6, count=3)
+    |-- Sum(total=1, count=1)
+    |-- Sum(total=2, count=1)
+    |-- Sum(total=3, count=1)
+    |-- Sum(total=None, count=0)"""
     assert result == expected
 
 
