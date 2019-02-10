@@ -21,18 +21,26 @@ def reprtree(
 
     """
     # if node_index is past the maximum possible nodes, return
-    if node_index > len(nodes) - 1:
+    if node_index >= len(nodes):
         return ""
     node = nodes[node_index]
-    if node is None:
-        # Don't print null nodes
-        return ""
+    assert node is not None, f"node {node_index} is None"
     subtrees = "".join(
         reprtree(nodes, fanout, fanout * node_index + i + 1, level=level + 1)
         for i in range(fanout)
     )
     indent = level * 4 * " "
     return f"{indent}|-- {node}\n{subtrees}"
+
+
+def first_node(level: int, *, fanout: int) -> int:
+    """Return the first node at `level`."""
+    return int((fanout ** (level - 1) - 1) / (fanout - 1))
+
+
+def last_node(level: int, *, fanout: int) -> int:
+    """Return the last node at `level`."""
+    return int((fanout ** level - 1) / (fanout - 1))
 
 
 class Tree:
@@ -66,13 +74,11 @@ class Tree:
 
     def first_node(self, level: int) -> int:
         """Return the first node at `level`."""
-        fanout = self.fanout
-        return int((fanout ** (level - 1) - 1) / (fanout - 1))
+        return first_node(level, fanout=self.fanout)
 
     def last_node(self, level: int) -> int:
         """Return the last node at `level`."""
-        fanout = self.fanout
-        return int((fanout ** level - 1) / (fanout - 1))
+        return last_node(level, fanout=self.fanout)
 
     def child(self, node: int, i: int) -> int:
         r"""Return the :math:`i\mbox{th}` child of `node`."""

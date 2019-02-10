@@ -194,16 +194,6 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         )
         self.fanout = fanout
 
-    @staticmethod
-    def first_node(level: int, *, fanout: int) -> int:
-        """Return the first node at `level`."""
-        return int((fanout ** (level - 1) - 1) / (fanout - 1))
-
-    @staticmethod
-    def last_node(level: int, *, fanout: int) -> int:
-        """Return the last node at `level`."""
-        return int((fanout ** level - 1) / (fanout - 1))
-
     @classmethod
     def iterlevels(
         cls, nodes: Sequence[Optional[AssociativeAggregate]], *, fanout: int
@@ -221,8 +211,8 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         height = int(math.ceil(math.log2(len(nodes))))
         getitem = nodes.__getitem__
         for level in range(1, height + 1):
-            start = cls.first_node(level, fanout=fanout)
-            stop = cls.last_node(level, fanout=fanout)
+            start = indextree.first_node(level, fanout=fanout)
+            stop = indextree.last_node(level, fanout=fanout)
             res = list(filter(None, map(getitem, range(start, stop))))
             yield res
 
