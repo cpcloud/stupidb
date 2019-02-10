@@ -1,6 +1,6 @@
 """Module implementing an abstraction for navigation of array-backed trees."""
 
-from typing import Iterable, Iterator, Sequence, TypeVar
+from typing import Iterable, Sequence, TypeVar
 
 T = TypeVar("T", covariant=True)
 
