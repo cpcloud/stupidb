@@ -122,22 +122,25 @@ def make_segment_tree(
 
     seen: Set[int] = set()
 
-    consumed = 0
+    traversed = 0
     while queue:
         node = queue.popleft()
-        if not node:
-            break
         node_agg = segment_tree_nodes[node]
         parent = index_tree.parent(node)
         if node not in seen:
             parent_agg = segment_tree_nodes[parent]
             parent_agg.update(node_agg)
             seen.add(node)
-            queue.append(parent)
-            consumed += 1
+            if parent:
+                # don't append the root, since we've already aggregated into
+                # that node if parent == 0
+                queue.append(parent)
+            traversed += 1
 
-    assert consumed + 1 == len(segment_tree_nodes), (
-        f"consumed == {consumed}, "
+    # assert the invariant that we have traversed N - 1 nodes (-1 because we
+    # don't traverse the root)
+    assert traversed + 1 == len(segment_tree_nodes), (
+        f"traversed == {traversed}, "
         f"len(segment_tree_nodes) == {len(segment_tree_nodes)}"
     )
     return segment_tree_nodes
