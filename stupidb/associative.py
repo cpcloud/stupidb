@@ -203,12 +203,10 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         for level in range(1, height + 1):
             start = indextree.first_node(level, fanout=fanout)
             stop = indextree.last_node(level, fanout=fanout)
-            res = list(filter(None, map(getitem, range(start, stop))))
-            yield res
+            yield list(filter(None, map(getitem, range(start, stop))))
 
     def __repr__(self) -> str:
-        # strip because the base case is the empty string + a newline
-        return indextree.reprtree(self.nodes, fanout=self.fanout).strip()
+        return indextree.reprtree(self.nodes, fanout=self.fanout)
 
     def query(self, begin: int, end: int) -> Optional[Result]:
         """Aggregate the values between `begin` and `end` using `aggregate`.

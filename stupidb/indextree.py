@@ -1,13 +1,11 @@
 """Module implementing an abstraction for navigation of array-backed trees."""
 
-from typing import Iterable, Sequence, TypeVar
+from typing import Iterable, List, Sequence, Set, Tuple, TypeVar
 
 T = TypeVar("T", covariant=True)
 
 
-def reprtree(
-    nodes: Sequence[T], *, fanout: int, node_index: int = 0, level: int = 0
-) -> str:
+def reprtree(nodes: Sequence[T], *, fanout: int) -> str:
     """Return a string representation of `nodes`.
 
     Parameters
@@ -16,28 +14,31 @@ def reprtree(
         A sequence of nodes of a tree
     fanout
         Number of child nodes per nodes
-    node_index
-        The current node's index
-    level
-        The current level of the tree
 
     """
-    # if node_index is past the maximum possible nodes, return
-    if node_index >= len(nodes):
-        return ""
-    node = nodes[node_index]
-    assert node is not None, f"node {node_index} is None"
-    subtrees = "".join(
-        reprtree(
-            nodes,
-            fanout=fanout,
-            node_index=fanout * node_index + i + 1,
-            level=level + 1,
-        )
-        for i in range(fanout)
-    )
-    indent = level * 4 * " "
-    return f"{indent}|-- {node}\n{subtrees}"
+    level_index_stack = [(0, 0)]
+    seen: Set[Tuple[int, int]] = set()
+    template = "{indent}|-- {node}"
+    node_repr_pieces: List[str] = []
+
+    while level_index_stack:
+        pair = level, node_index = level_index_stack.pop()
+        if pair not in seen:
+            node = nodes[node_index]
+            node_repr_piece = template.format(
+                indent=level * 4 * " ", node=node
+            )
+            node_repr_pieces.append(node_repr_piece)
+            node_indices = (
+                fanout * node_index + i + 1 for i in reversed(range(fanout))
+            )
+            level_index_stack.extend(
+                (level + 1, index)
+                for index in node_indices
+                if index < len(nodes)
+            )
+            seen.add(pair)
+    return "\n".join(node_repr_pieces)
 
 
 def first_node(level: int, *, fanout: int) -> int:
@@ -53,12 +54,12 @@ def last_node(level: int, *, fanout: int) -> int:
 class IndexTree:
     """Abstraction for navigating around array-backed trees."""
 
+    __slots__ = "height", "nodes", "fanout"
+
     def __init__(self, *, height: int, fanout: int) -> None:
         """Construct an :class:`~stupidb.indextree.IndexTree`."""
         self.height = height
-        self.nodes = list(
-            range(int((fanout ** self.height - 1) / (fanout - 1)))
-        )
+        self.nodes = range(int((fanout ** self.height - 1) / (fanout - 1)))
         self.fanout = fanout
 
     @property
@@ -70,7 +71,7 @@ class IndexTree:
         return self.nodes[first:last]
 
     def __repr__(self) -> str:
-        return reprtree(self.nodes, fanout=self.fanout).strip()
+        return reprtree(self.nodes, fanout=self.fanout)
 
     def __len__(self) -> int:
         """Return the number of nodes in the tree."""
@@ -85,8 +86,14 @@ class IndexTree:
         return last_node(level, fanout=self.fanout)
 
     def parent(self, node: int) -> int:
-        """Return the parent node of `node`."""
+        """Return the index of the parent node of `node`."""
         if not node:
             # the parent's parent is itself
-            return 0
-        return (node - 1) // self.fanout
+            parent_node_index = 0
+        else:
+            parent_node_index = (node - 1) // self.fanout
+        # parent should never be negative
+        assert (
+            parent_node_index >= 0
+        ), f"parent_node_index == {parent_node_index}"
+        return parent_node_index

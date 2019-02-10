@@ -23,3 +23,8 @@ def test_tree_repr_fanout_4():
     |-- 3
     |-- 4"""
     assert repr(tree) == expected
+
+
+def test_parent_of_root():
+    tree = IndexTree(height=2, fanout=2)
+    assert tree.parent(0) == 0
