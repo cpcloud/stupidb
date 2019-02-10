@@ -1,32 +1,37 @@
 """Module implementing an abstraction for navigation of array-backed trees."""
 
-from typing import Iterable, List, Sequence, Set, Tuple, TypeVar
+from typing import Iterable, List, Sequence, Set, TypeVar
 
 T = TypeVar("T", covariant=True)
 
 
-def reprtree(nodes: Sequence[T], *, fanout: int) -> str:
+def reprtree(nodes: Sequence[T], *, fanout: int, indent: str = 4 * " ") -> str:
     """Return a string representation of `nodes`.
 
     Parameters
     ----------
     nodes
-        A sequence of nodes of a tree
+        A sequence of nodes in a tree.
     fanout
-        Number of child nodes per nodes
+        Number of children per node.
+    indent
+        The prefix to print at each level.
 
     """
+    # track the current level of the tree and the index of the current node
     level_index_stack = [(0, 0)]
-    seen: Set[Tuple[int, int]] = set()
+
+    # store the nodes that we've seen
+    seen: Set[int] = set()
     template = "{indent}|-- {node}"
     node_repr_pieces: List[str] = []
 
     while level_index_stack:
-        pair = level, node_index = level_index_stack.pop()
-        if pair not in seen:
+        level, node_index = level_index_stack.pop()
+        if node_index not in seen:
             node = nodes[node_index]
             node_repr_piece = template.format(
-                indent=level * 4 * " ", node=node
+                indent=level * indent, node=node
             )
             node_repr_pieces.append(node_repr_piece)
             node_indices = (
@@ -37,7 +42,7 @@ def reprtree(nodes: Sequence[T], *, fanout: int) -> str:
                 for index in node_indices
                 if index < len(nodes)
             )
-            seen.add(pair)
+            seen.add(node_index)
     return "\n".join(node_repr_pieces)
 
 
