@@ -11,6 +11,7 @@ Submodules
    stupidb.aggregator
    stupidb.api
    stupidb.associative
+   stupidb.indextree
    stupidb.navigation
    stupidb.protocols
    stupidb.ranking

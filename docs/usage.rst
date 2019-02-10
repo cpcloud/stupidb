@@ -17,7 +17,7 @@ list of mappings
    from stupidb import *
    from pprint import pprint
    from datetime import date, timedelta
-   today = date.today()
+   today = date(2019, 2, 9)
    days = timedelta(days=1)
    rows = [
        {"name": "Alice", "balance": 400, "date": today},
@@ -34,7 +34,7 @@ list of mappings
    >>> from stupidb import *
    >>> from pprint import pprint
    >>> from datetime import date, timedelta
-   >>> today = date.today()
+   >>> today = date(2019, 2, 9)
    >>> days = timedelta(days=1)
    >>> rows = [
    ...     {"name": "Alice", "balance": 400, "date": today},
