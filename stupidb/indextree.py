@@ -1,10 +1,12 @@
+"""Module implementing an abstraction for navigation of array-backed trees."""
+
 from typing import Iterable, Iterator, Sequence, TypeVar
 
 T = TypeVar("T", covariant=True)
 
 
 def reprtree(
-    nodes: Sequence[T], fanout: int, node_index: int = 0, level: int = 0
+    nodes: Sequence[T], *, fanout: int, node_index: int = 0, level: int = 0
 ) -> str:
     """Return a string representation of `nodes`.
 
@@ -26,7 +28,12 @@ def reprtree(
     node = nodes[node_index]
     assert node is not None, f"node {node_index} is None"
     subtrees = "".join(
-        reprtree(nodes, fanout, fanout * node_index + i + 1, level=level + 1)
+        reprtree(
+            nodes,
+            fanout=fanout,
+            node_index=fanout * node_index + i + 1,
+            level=level + 1,
+        )
         for i in range(fanout)
     )
     indent = level * 4 * " "
@@ -43,10 +50,11 @@ def last_node(level: int, *, fanout: int) -> int:
     return int((fanout ** level - 1) / (fanout - 1))
 
 
-class Tree:
-    """An array backed tree."""
+class IndexTree:
+    """Abstraction for navigating around array-backed trees."""
 
     def __init__(self, *, height: int, fanout: int) -> None:
+        """Construct an :class:`~stupidb.indextree.IndexTree`."""
         self.height = height
         self.nodes = list(
             range(int((fanout ** self.height - 1) / (fanout - 1)))
@@ -55,6 +63,7 @@ class Tree:
 
     @property
     def leaves(self) -> Iterable[int]:
+        """Return the indices of the leaves of the tree."""
         height = self.height
         first = self.first_node(height)
         last = self.last_node(height)
@@ -64,12 +73,15 @@ class Tree:
         return reprtree(self.nodes, fanout=self.fanout).strip()
 
     def __len__(self) -> int:
+        """Return the number of nodes in the tree."""
         return len(self.nodes)
 
-    def __getitem__(self, key: int) -> int:
-        return self.nodes[key]
+    def __getitem__(self, index: int) -> int:
+        """Return the node at position `index`."""
+        return self.nodes[index]
 
     def __iter__(self) -> Iterator[int]:
+        """Iterate over the nodes in the tree."""
         return iter(self.nodes)
 
     def first_node(self, level: int) -> int:
@@ -100,6 +112,6 @@ class Tree:
     def parent(self, node: int) -> int:
         """Return the parent node of `node`."""
         if not node:
-            # the parent has no parent
+            # the parent's parent is itself
             return 0
         return (node - 1) // self.fanout

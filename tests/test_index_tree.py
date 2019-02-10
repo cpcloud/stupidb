@@ -1,8 +1,8 @@
-from stupidb.indextree import Tree
+from stupidb.indextree import IndexTree
 
 
 def test_tree_repr_fanout_2():
-    tree = Tree(height=3, fanout=2)
+    tree = IndexTree(height=3, fanout=2)
     expected = """\
 |-- 0
     |-- 1
@@ -15,7 +15,7 @@ def test_tree_repr_fanout_2():
 
 
 def test_tree_repr_fanout_4():
-    tree = Tree(height=2, fanout=4)
+    tree = IndexTree(height=2, fanout=4)
     expected = """\
 |-- 0
     |-- 1
