@@ -96,7 +96,7 @@ def make_segment_tree(
     aggregate_type: Type[AssociativeAggregate],
     *,
     fanout: int,
-) -> Sequence[Optional[AssociativeAggregate]]:
+) -> Sequence[AssociativeAggregate]:
     """Make a segment tree from tuples `leaves` and class `aggregate`.
 
     Parameters
@@ -185,9 +185,9 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         *,
         fanout: int = 2,
     ) -> None:
-        self.nodes: Sequence[
-            Optional[AssociativeAggregate]
-        ] = make_segment_tree(leaves, aggregate_type, fanout=fanout)
+        self.nodes: Sequence[AssociativeAggregate] = make_segment_tree(
+            leaves, aggregate_type, fanout=fanout
+        )
         self.aggregate_type: Type[AssociativeAggregate] = aggregate_type
         self.levels: Sequence[Sequence[AssociativeAggregate]] = list(
             self.iterlevels(self.nodes, fanout=fanout)
