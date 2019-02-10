@@ -173,7 +173,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         leaves: Sequence[Tuple[T, ...]],
         aggregate_type: Type[AssociativeAggregate],
         *,
-        fanout: int = 4,
+        fanout: int,
     ) -> None:
         self.nodes: Sequence[AssociativeAggregate] = make_segment_tree(
             leaves, aggregate_type, fanout=fanout
