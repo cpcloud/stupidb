@@ -1,7 +1,7 @@
 """Abstract and concrete aggregation types."""
 
 import abc
-from typing import ClassVar, Generic, Sequence, Tuple, Type
+from typing import Callable, ClassVar, Generic, Sequence, Tuple
 
 from stupidb.aggregator import Aggregator
 from stupidb.row import AbstractRow
@@ -12,7 +12,7 @@ class Aggregate(Generic[Output], abc.ABC):
     """An aggregate or window function."""
 
     __slots__ = ()
-    aggregator_class: ClassVar[Type[Aggregator]]
+    aggregator_class: ClassVar[Callable[..., Aggregator]]
 
     @classmethod
     def prepare(

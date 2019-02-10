@@ -1,7 +1,16 @@
 """Navigation and simple window function interface and implementation."""
 
 import abc
-from typing import Any, ClassVar, Optional, Sequence, Tuple, Type, Union
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+)
 
 from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
@@ -39,7 +48,9 @@ class RankingAggregator(Aggregator["RankingAggregate", Result]):
 
 class RankingAggregate(Aggregate[Output]):
     __slots__ = ("order_by_values",)
-    aggregator_class: ClassVar[Type[RankingAggregator]] = RankingAggregator
+    aggregator_class: ClassVar[
+        Callable[..., RankingAggregator]
+    ] = RankingAggregator
 
     def __init__(
         self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]

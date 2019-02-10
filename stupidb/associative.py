@@ -61,6 +61,7 @@ specific aggregate to achieve optimal behavior from all aggregates.
 
 import abc
 import collections
+import functools
 import math
 import typing
 from typing import (
@@ -250,7 +251,10 @@ class AbstractAssociativeAggregate(Aggregate[Output]):
     """Base class for aggregations with an associative binary operation."""
 
     __slots__ = ("count",)
-    aggregator_class: ClassVar[Type[SegmentTree]] = SegmentTree
+
+    aggregator_class: ClassVar[Callable[..., Aggregator]] = functools.partial(
+        SegmentTree, fanout=4
+    )
 
     def __init__(self) -> None:
         self.count = 0

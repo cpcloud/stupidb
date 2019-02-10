@@ -52,7 +52,9 @@ class NavigationAggregate(Aggregate[Output]):
     """Base class for navigation aggregate functions."""
 
     __slots__ = ()
-    aggregator_class = NavigationAggregator
+    aggregator_class: ClassVar[
+        Callable[..., NavigationAggregator]
+    ] = NavigationAggregator
 
     @abc.abstractmethod
     def execute(self, begin: int, end: int) -> Optional[Output]:
