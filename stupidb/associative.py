@@ -184,9 +184,9 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
             self.iterlevels(self.nodes, fanout=fanout)
         )
 
-    @classmethod
+    @staticmethod
     def iterlevels(
-        cls, nodes: Sequence[Optional[AssociativeAggregate]], *, fanout: int
+        nodes: Sequence[Optional[AssociativeAggregate]], *, fanout: int
     ) -> Iterator[List[AssociativeAggregate]]:
         """Iterate over every level in the tree.
 
