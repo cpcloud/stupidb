@@ -22,24 +22,8 @@ aggregation, constructed with leaves::
 
    >>> [1, 2, 3, 4]
 
-.. graphviz::
+.. image:: _static/main.gif
    :align: center
-
-   digraph segtree {
-       0 [label=10];
-       1 [label=3];
-       2 [label=7];
-       3 [label=1];
-       4 [label=2];
-       5 [label=3];
-       6 [label=4];
-       0 -> 1 [dir=back];
-       0 -> 2 [dir=back];
-       1 -> 3 [dir=back];
-       1 -> 4 [dir=back];
-       2 -> 5 [dir=back];
-       2 -> 6 [dir=back];
-   }
 
 Using segment trees in this way results in window aggregations having
 :math:`O\left(N\log{N}\right)` worst case behavior rather than
