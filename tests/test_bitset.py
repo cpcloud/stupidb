@@ -1,4 +1,5 @@
 import pytest
+
 from stupidb.bitset import BitSet
 
 
