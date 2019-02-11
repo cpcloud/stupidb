@@ -186,7 +186,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
 
     @staticmethod
     def iterlevels(
-        nodes: Sequence[Optional[AssociativeAggregate]], *, fanout: int
+        nodes: Sequence[AssociativeAggregate], *, fanout: int
     ) -> Iterator[List[AssociativeAggregate]]:
         """Iterate over every level in the tree.
 
@@ -203,7 +203,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         for level in range(1, height + 1):
             start = indextree.first_node(level, fanout=fanout)
             stop = indextree.last_node(level, fanout=fanout)
-            yield list(filter(None, map(getitem, range(start, stop))))
+            yield list(map(getitem, range(start, stop)))
 
     def __repr__(self) -> str:
         return indextree.reprtree(self.nodes, fanout=self.fanout)
