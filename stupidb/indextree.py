@@ -48,29 +48,29 @@ def reprtree(nodes: Sequence[T], *, fanout: int, indent: str = 4 * " ") -> str:
 
 def first_node(level: int, *, fanout: int) -> int:
     """Return the first node at `level`."""
-    return int((fanout ** (level - 1) - 1) / (fanout - 1))
+    return (fanout ** level - 1) // (fanout - 1)
 
 
 def last_node(level: int, *, fanout: int) -> int:
     """Return the last node at `level`."""
-    return int((fanout ** level - 1) / (fanout - 1))
+    return (fanout ** (level + 1) - 1) // (fanout - 1)
 
 
 class IndexTree:
     """Abstraction for navigating around array-backed trees."""
 
-    __slots__ = "height", "nodes", "fanout"
+    __slots__ = "height", "fanout", "nodes"
 
     def __init__(self, *, height: int, fanout: int) -> None:
         """Construct an :class:`~stupidb.indextree.IndexTree`."""
         self.height = height
-        self.nodes = range(int((fanout ** self.height - 1) / (fanout - 1)))
         self.fanout = fanout
+        self.nodes = range((fanout ** height - 1) // (fanout - 1))
 
     @property
     def leaves(self) -> Iterable[int]:
         """Return the indices of the leaves of the tree."""
-        height = self.height
+        height = self.height - 1
         first = self.first_node(height)
         last = self.last_node(height)
         return self.nodes[first:last]

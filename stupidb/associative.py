@@ -124,9 +124,9 @@ def make_segment_tree(
                 queue.append(parent)
             traversed += 1
 
-    # assert the invariant that we have traversed N - 1 nodes (-1 because we
-    # don't traverse the root)
-    assert traversed == len(segment_tree_nodes) - 1, (
+    # assert the invariant that we have traversed less than N nodes (strictly
+    # less than because we don't traverse the root)
+    assert traversed < len(segment_tree_nodes), (
         f"traversed == {traversed}, "
         f"len(segment_tree_nodes) == {len(segment_tree_nodes)}"
     )
@@ -182,7 +182,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
 
         """
         height = int(math.ceil(math.log(len(nodes), fanout)))
-        for level in range(1, height + 1):
+        for level in range(height):
             start = indextree.first_node(level, fanout=fanout)
             stop = indextree.last_node(level, fanout=fanout)
             yield nodes[start:stop]
