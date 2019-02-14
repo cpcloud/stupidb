@@ -3,19 +3,22 @@ r"""Segment tree and corresponding aggregate function implementations.
 The segment tree implementation is based on `Leis, 2015
 <http://www.vldb.org/pvldb/vol8/p1058-leis.pdf>`_
 
-The segment tree here uses :class:`~stupidb.associative.AssociativeAggregate`
-instances as its nodes. The leaves are computed by call the
-:meth:`~stupidb.associative.AssociativeAggregate.step` method when the tree
-construction bottoms out. On the way back up the tree each aggregation instance
-is updated based on its children by calling the
-:meth:`~stupidb.associative.AssociativeAggregate.update` method. This method
-takes another instance of the same aggregation as input and updates the calling
-instance based on the value of the intermediate state of its input (the other
-aggregation).
+This segment tree implementation uses
+:class:`~stupidb.associative.AssociativeAggregate` instances as its nodes. The
+leaves of the tree are computed by calling the
+:meth:`~stupidb.associative.AssociativeAggregate.step` method once when the
+tree is initialized.
 
-Each interior node contains an intermediate value of a given aggregation such
-that it is possible to compute a range query in :math:`O\left(\log{N}\right)`
-time rather than :math:`O\left(N\right)`.
+From the leaves, the traversal continues breadth-first and bottom-up during
+which each interior node is updated based on its children by calling the
+:meth:`~stupidb.associative.AssociativeAggregate.update` method. This method
+takes another instance of the same aggregation as input and combines the
+calling instance's aggregation state with the input instance's aggregation
+state.
+
+Each interior node therefore contains the combined aggregation value of all of
+its children. This makes it possible to compute a range query in
+:math:`O\left(\log{N}\right)` time rather than :math:`O\left(N\right)`.
 
 Here's an example of a segment tree for the :class:`~stupidb.associative.Sum`
 aggregation, constructed with leaves::
