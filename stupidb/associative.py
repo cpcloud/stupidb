@@ -53,7 +53,6 @@ from typing import (
     ClassVar,
     Generic,
     Iterator,
-    List,
     MutableSequence,
     Optional,
     Sequence,
