@@ -1,7 +1,7 @@
 """Animate construction of segment trees."""
 
 import collections
-from typing import IO, Iterator, MutableMapping
+from typing import BinaryIO, Iterator, MutableMapping
 
 import imageio
 import networkx as nx
@@ -98,15 +98,25 @@ class SegmentTreeAnimator:
                     nx_parent_node["fontcolor"] = "white"
                     nx_parent_node["label"] = parent_agg.finalize()
 
-    def animate(self, io: IO, fps: float = 1.5) -> None:
+    def animate(self, io: BinaryIO, fps: float = 1.5) -> None:
         """Convert this segment tree's construction into an animated gif.
 
         Parameters
         ----------
-        outfile
-            A path to write the animated GIF to.
+        io
+            A writable binary input/output stream.
         fps
             Frames per second.
+
+        Examples
+        --------
+        >>> import os
+        >>> from stupidb.associative import SegmentTree, Sum
+        >>> from stupidb.animate import SegmentTreeAnimator
+        >>> segment_tree = SegmentTree([(1,), (2,), (3,), (4,)], Sum, fanout=2)
+        >>> animator = SegmentTreeAnimator(segment_tree)
+        >>> with open(os.devnull, "wb") as devnull:
+        ...     animator.animate(devnull)
 
         """
         imageio.mimsave(io, list(self.iterframes), fps=fps, format="gif")
@@ -145,10 +155,10 @@ def main() -> None:
     )
     args = parser.parse_args()
     if args.leaf is None:
-        leaves = [(1,), (2,), (3,), (4,)]
+        leaves = [(i,) for i in range(1, 9)]
     else:
         leaves = [(leaf,) for leaf in args.leaf]
-    segment_tree = SegmentTree(leaves, Sum, fanout=args.fanout)
+    segment_tree: SegmentTree = SegmentTree(leaves, Sum, fanout=args.fanout)
     animator = SegmentTreeAnimator(segment_tree)
     animator.animate(args.outfile)
 

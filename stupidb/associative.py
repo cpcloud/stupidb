@@ -29,6 +29,15 @@ aggregation, constructed with the following leaves and a fanout of 2::
 .. image:: _static/main.gif
    :align: center
 
+.. note::
+
+   You can generate this GIF yourself by typing::
+
+       $ python -m stupidb.animate > segment_tree.gif
+
+   at the command line, after you've installed stupidb. The code used to
+   generate the GIF lives in :mod:`stupidb.animate`.
+
 Using segment trees in this way results in window aggregations having
 :math:`O\left(N\log{N}\right)` worst case behavior rather than
 :math:`O\left(N^{2}\right)`, which is the complexity of naive window
@@ -129,7 +138,10 @@ def make_segment_tree(
     return segment_tree_nodes
 
 
-class SegmentTree(Aggregator[AssociativeAggregate, Result]):
+class SegmentTree(
+    Generic[T, AssociativeAggregate, Result],
+    Aggregator[AssociativeAggregate, Result],
+):
     """A segment tree for window aggregation.
 
     Attributes
@@ -149,7 +161,7 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
 
     def __init__(
         self,
-        leaves: Sequence[Tuple[T, ...]],
+        leaves: Sequence[Tuple[Optional[T], ...]],
         aggregate_type: Type[AssociativeAggregate],
         *,
         fanout: int,
