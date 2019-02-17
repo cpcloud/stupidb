@@ -7,11 +7,12 @@ This segment tree implementation uses
 :class:`~stupidb.associative.AssociativeAggregate` instances as its nodes. The
 leaves of the tree are computed by calling the
 :meth:`~stupidb.associative.AssociativeAggregate.step` method once when the
-tree is initialized.
+tree is initialized. The fanout of the tree is adjustable.
 
 From the leaves, the traversal continues breadth-first and bottom-up during
-which each interior node is updated based on its children by calling the
-:meth:`~stupidb.associative.AssociativeAggregate.update` method. This method
+which each interior node's current aggregation state is combined with those of
+its children by calling the
+:meth:`~stupidb.associative.AssociativeAggregate.combine` method. This method
 takes another instance of the same aggregation as input and combines the
 calling instance's aggregation state with the input instance's aggregation
 state.
@@ -21,9 +22,9 @@ its children. This makes it possible to compute a range query in
 :math:`O\left(\log{N}\right)` time rather than :math:`O\left(N\right)`.
 
 Here's an example of a segment tree for the :class:`~stupidb.associative.Sum`
-aggregation, constructed with leaves::
+aggregation, constructed with the following leaves and a fanout of 2::
 
-   >>> [1, 2, 3, 4]
+   >>> [1, 2, 3, 4, 5, 6, 7, 8]
 
 .. image:: _static/main.gif
    :align: center
@@ -100,8 +101,9 @@ def make_segment_tree(
     number_of_leaves = len(leaf_arguments)
     height = int(math.ceil(math.log(number_of_leaves, fanout))) + 1
     index_tree = indextree.IndexTree(height=height, fanout=fanout)
+    num_nodes = len(index_tree)
     segment_tree_nodes: MutableSequence[AssociativeAggregate] = [
-        aggregate_type() for _ in range(len(index_tree))
+        aggregate_type() for _ in range(num_nodes)
     ]
     queue = collections.deque(index_tree.leaves)
 
@@ -112,27 +114,18 @@ def make_segment_tree(
 
     seen = BitSet()
 
-    traversed = 0
     while queue:
         node = queue.popleft()
         if node not in seen:
+            seen.add(node)
             node_agg = segment_tree_nodes[node]
             parent = index_tree.parent(node)
             parent_agg = segment_tree_nodes[parent]
-            parent_agg.update(node_agg)
-            seen.add(node)
+            parent_agg.combine(node_agg)
             if parent:
                 # don't append the root, since we've already aggregated into
                 # that node if parent == 0
                 queue.append(parent)
-            traversed += 1
-
-    # assert the invariant that we have traversed less than N nodes (strictly
-    # less than because we don't traverse the root)
-    assert traversed < len(segment_tree_nodes), (
-        f"traversed == {traversed}, "
-        f"len(segment_tree_nodes) == {len(segment_tree_nodes)}"
-    )
     return segment_tree_nodes
 
 
@@ -161,11 +154,13 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         *,
         fanout: int,
     ) -> None:
+        """Construct a segment tree."""
         self.nodes: Sequence[AssociativeAggregate] = make_segment_tree(
             leaves, aggregate_type, fanout=fanout
         )
         self.aggregate_type: Type[AssociativeAggregate] = aggregate_type
         self.fanout = fanout
+        self.height = int(math.ceil(math.log(len(leaves), fanout))) + 1
         self.levels: Sequence[Sequence[AssociativeAggregate]] = list(
             self.iterlevels(self.nodes, fanout=fanout)
         )
@@ -206,24 +201,24 @@ class SegmentTree(Aggregator[AssociativeAggregate, Result]):
         """
         fanout = self.fanout
         aggregate: AssociativeAggregate = self.aggregate_type()
-        for i, level in enumerate(reversed(self.levels)):
+        for level in reversed(self.levels):
             parent_begin = begin // fanout
             parent_end = end // fanout
             if parent_begin == parent_end:
                 for item in level[begin:end]:
-                    aggregate.update(item)
+                    aggregate.combine(item)
                 result = aggregate.finalize()
                 return result
             group_begin = parent_begin * fanout
             if begin != group_begin:
                 limit = group_begin + fanout
                 for item in level[begin:limit]:
-                    aggregate.update(item)
+                    aggregate.combine(item)
                 parent_begin += 1
             group_end = parent_end * fanout
             if end != group_end:
                 for item in level[group_end:end]:
-                    aggregate.update(item)
+                    aggregate.combine(item)
             begin = parent_begin
             end = parent_end
         return None  # pragma: no cover
@@ -239,6 +234,7 @@ class AbstractAssociativeAggregate(Aggregate[Output]):
     )
 
     def __init__(self) -> None:
+        """Construct an abstract associative aggregate."""
         self.count = 0
 
     @abc.abstractmethod
@@ -253,6 +249,8 @@ BA = TypeVar("BA", bound="BinaryAssociativeAggregate")
 class UnaryAssociativeAggregate(
     AbstractAssociativeAggregate[Output], Generic[Input1, Output]
 ):
+    """A an abstract associative aggregate that takes one argument."""
+
     __slots__ = ()
 
     @abc.abstractmethod
@@ -260,13 +258,15 @@ class UnaryAssociativeAggregate(
         """Perform a single step of the aggregation."""
 
     @abc.abstractmethod
-    def update(self: UA, other: UA) -> None:
+    def combine(self: UA, other: UA) -> None:
         """Update this aggregation based on another of the same type."""
 
 
 class BinaryAssociativeAggregate(
     AbstractAssociativeAggregate[Output], Generic[Input1, Input2, Output]
 ):
+    """A an abstract associative aggregate that takes two arguments."""
+
     __slots__ = ()
 
     @abc.abstractmethod
@@ -274,14 +274,17 @@ class BinaryAssociativeAggregate(
         """Perform a single step of the aggregation."""
 
     @abc.abstractmethod
-    def update(self: BA, other: BA) -> None:
+    def combine(self: BA, other: BA) -> None:
         """Update this aggregation based on another of the same type."""
 
 
 class Count(UnaryAssociativeAggregate[Input1, int]):
+    """Count elements."""
+
     __slots__ = ()
 
     def step(self, input1: Optional[Input1]) -> None:
+        """Add one to the count if `input1` is not :data:`None`."""
         if input1 is not None:
             self.count += 1
 
@@ -289,9 +292,11 @@ class Count(UnaryAssociativeAggregate[Input1, int]):
         return f"{type(self).__name__}(count={self.count!r})"
 
     def finalize(self) -> Optional[int]:
+        """Return the count."""
         return self.count
 
-    def update(self, other: "Count[Input1]") -> None:
+    def combine(self, other: "Count[Input1]") -> None:
+        """Combine two :class:`Count` instances."""
         self.count += other.count
 
 
@@ -316,7 +321,7 @@ class Sum(UnaryAssociativeAggregate[R1, R2]):
     def finalize(self) -> Optional[R2]:
         return self.total if self.count else None
 
-    def update(self, other: "Sum[R1, R2]") -> None:
+    def combine(self, other: "Sum[R1, R2]") -> None:
         self.total += other.total
         self.count += other.count
 
@@ -365,7 +370,7 @@ class MinMax(UnaryAssociativeAggregate[Comparable, Comparable]):
     def finalize(self) -> Optional[Comparable]:
         return self.current_value
 
-    def update(self, other: "MinMax") -> None:
+    def combine(self, other: "MinMax") -> None:
         assert self.comparator == other.comparator, (
             f"self.comparator == {self.comparator!r}, "
             f"other.comparator == {other.comparator!r}"
@@ -425,7 +430,7 @@ class Covariance(BinaryAssociativeAggregate[R1, R2, float]):
         denom = self.count - self.ddof
         return self.cov / denom if denom > 0 else None
 
-    def update(self, other: "Covariance[R1, R2]") -> None:
+    def combine(self, other: "Covariance[R1, R2]") -> None:
         new_count = self.count + other.count
         self.cov += (
             other.cov
@@ -469,8 +474,8 @@ class Variance(UnaryAssociativeAggregate[R, float]):
     def finalize(self) -> Optional[float]:
         return self.aggregator.finalize()
 
-    def update(self, other: "Variance[R]") -> None:
-        self.aggregator.update(other.aggregator)
+    def combine(self, other: "Variance[R]") -> None:
+        self.aggregator.combine(other.aggregator)
 
 
 class SampleVariance(Variance[R]):
