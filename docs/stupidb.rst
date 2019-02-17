@@ -9,6 +9,7 @@ Submodules
    stupidb.aggregatetypes
    stupidb.aggregation
    stupidb.aggregator
+   stupidb.animate
    stupidb.api
    stupidb.associative
    stupidb.bitset
