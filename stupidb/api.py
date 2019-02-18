@@ -93,6 +93,19 @@ def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     rows
         An iterable of mappings whose keys are :class:`str` instances.
 
+    Examples
+    --------
+    >>> from stupidb.api import table
+    >>> rows = [
+    ...     dict(name="Bob", balance=-300),
+    ...     dict(name="Bob", balance=-100),
+    ...     dict(name="Alice", balance=400),
+    ...     dict(name="Alice", balance=700),
+    ... ]
+    >>> t = table(rows)
+    >>> t  # doctest: +ELLIPSIS
+    <stupidb.stupidb.Relation object at 0x...>
+
     """
     return Relation.from_iterable(rows)
 
@@ -107,6 +120,21 @@ def cross_join(right: Relation, left: Relation) -> Join:
         A relation
     left
         A relation
+
+    Examples
+    --------
+    >>> from stupidb.api import cross_join, table
+    >>> rows = [
+    ...     dict(name="Bob", balance=-300),
+    ...     dict(name="Bob", balance=-100),
+    ...     dict(name="Alice", balance=400),
+    ...     dict(name="Alice", balance=700),
+    ... ]
+    >>> t = table(rows)
+    >>> s = table(rows)
+    >>> crossed = cross_join(t, s)
+    >>> crossed  # doctest: +ELLIPSIS
+    <stupidb.stupidb.CrossJoin object at 0x...>
 
     """
     return CrossJoin(left, right)
@@ -126,6 +154,21 @@ def inner_join(
         A relation
     predicate
         A callable taking two arguments and returning a :class:`bool`.
+
+    Examples
+    --------
+    >>> from stupidb.api import cross_join, table
+    >>> rows = [
+    ...     dict(name="Bob", balance=-300),
+    ...     dict(name="Bob", balance=-100),
+    ...     dict(name="Alice", balance=400),
+    ...     dict(name="Alice", balance=700),
+    ... ]
+    >>> t = table(rows)
+    >>> s = table(rows)
+    >>> crossed = cross_join(t, s)
+    >>> crossed  # doctest: +ELLIPSIS
+    <stupidb.stupidb.CrossJoin object at 0x...>
 
     """
     return Join(left, right, predicate)
@@ -192,6 +235,20 @@ def order_by(*order_by: OrderBy, nulls: Nulls = Nulls.FIRST) -> SortBy:
         :attr:`~stupidb.aggregation.Nulls.LAST` treats them as greater than
         every other value.
 
+    Examples
+    --------
+    >>> from stupidb.api import order_by, table
+    >>> rows = [
+    ...     dict(name="Bob", balance=-300),
+    ...     dict(name="Alice", balance=400),
+    ...     dict(name="Bob", balance=-100),
+    ...     dict(name="Alice", balance=700),
+    ... ]
+    >>> ordered = table(rows) >> order_by(lambda r: r.balance)
+    >>> balances = [row.balance for row in ordered]
+    >>> balances
+    [-300, -100, 400, 700]
+
     """
     return _order_by(order_by, nulls)
 
@@ -204,12 +261,30 @@ def _select(
 
 
 def select(**projectors: FullProjector) -> Projection:
-    """Subset or compute columns from `projectors`.
+    """Subset or compute new columns from `projectors`.
 
     Parameters
     ----------
     projectors
-        A mapping from :class:`str` to ``FullProjector`` instances.
+        A mapping from :class:`str` to :data:`FullProjector` instances.
+
+    Examples
+    --------
+    >>> from stupidb.api import select, table
+    >>> rows = [
+    ...     dict(name="Bob", balance=-300),
+    ...     dict(name="Alice", balance=400),
+    ...     dict(name="Bob", balance=-100),
+    ...     dict(name="Alice", balance=700),
+    ... ]
+    >>> names = table(rows) >> select(lower_name=lambda r: r.name.lower())
+    >>> names = [row.lower_name for row in names]
+    >>> names
+    ['bob', 'alice', 'bob', 'alice']
+
+    See Also
+    --------
+    mutate
 
     """
     valid_projectors = {
@@ -234,11 +309,28 @@ def mutate(**mutators: FullProjector) -> Mutate:
     Parameters
     ----------
     projectors
-        A mapping from :class:`str` to ``FullProjector`` instances.
+        A mapping from :class:`str` to :data:`FullProjector` instances.
 
     Notes
     -----
     Columns are appended, unlike :func:`~stupidb.api.select`.
+
+    Examples
+    --------
+    >>> from pprint import pprint
+    >>> from stupidb.api import mutate, table
+    >>> rows = [
+    ...     dict(name="Bob", balance=-300),
+    ...     dict(name="Alice", balance=400),
+    ...     dict(name="Bob", balance=-100),
+    ...     dict(name="Alice", balance=700),
+    ... ]
+    >>> rows = table(rows) >> mutate(lower_name=lambda r: r.name.lower())
+    >>> pprint(list(rows))
+    [Row({'name': 'Bob', 'balance': -300, 'lower_name': 'bob'}),
+     Row({'name': 'Alice', 'balance': 400, 'lower_name': 'alice'}),
+     Row({'name': 'Bob', 'balance': -100, 'lower_name': 'bob'}),
+     Row({'name': 'Alice', 'balance': 700, 'lower_name': 'alice'})]
 
     See Also
     --------
@@ -257,6 +349,21 @@ def sift(predicate: Predicate, child: Relation) -> Selection:
     predicate
         A callable of one argument taking an :class:`~stupidb.row.AbstractRow`
         and returning a ``bool``.
+
+    Examples
+    --------
+    >>> from pprint import pprint
+    >>> from stupidb.api import sift, table
+    >>> rows = [
+    ...     dict(name="Bob", balance=-300),
+    ...     dict(name="Alice", balance=400),
+    ...     dict(name="Bob", balance=-100),
+    ...     dict(name="Alice", balance=700),
+    ... ]
+    >>> rows = table(rows) >> sift(lambda r: r.name.lower().startswith("a"))
+    >>> pprint(list(rows), width=79)
+    [Row({'name': 'Alice', 'balance': 400}),
+     Row({'name': 'Alice', 'balance': 700})]
 
     """
     return Selection(child, predicate)
@@ -287,6 +394,36 @@ def aggregate(**aggregations: AggregateSpecification) -> Aggregation:
         A mapping from :class:`str` column names to
         :class:`~stupidb.aggregation.AggregateSpecification` instances.
 
+    Examples
+    --------
+    Compute the average of a column:
+
+    >>> from pprint import pprint
+    >>> from stupidb.api import aggregate, group_by, mean, table
+    >>> rows = [
+    ...     dict(name="Bob", age=30, timezone="America/New_York"),
+    ...     dict(name="Susan", age=20, timezone="America/New_York"),
+    ...     dict(name="Joe", age=41, timezone="America/Los_Angeles"),
+    ...     dict(name="Alice", age=39, timezone="America/Los_Angeles"),
+    ... ]
+    >>> average_age = table(rows) >> aggregate(avg_age=mean(lambda r: r.age))
+    >>> pprint(list(average_age), width=79)
+    [Row({'avg_age': 32.5})]
+
+    Compute the average a column, grouped by another column:
+
+    >>> average_age_by_timezone = (
+    ...     table(rows) >> group_by(tz=lambda r: r.timezone)
+    ...                 >> aggregate(avg_age=mean(lambda r: r.age))
+    ... )
+    >>> pprint(list(average_age_by_timezone), width=79)
+    [Row({'tz': 'America/New_York', 'avg_age': 25.0}),
+     Row({'tz': 'America/Los_Angeles', 'avg_age': 40.0})]
+
+    See Also
+    --------
+    group_by
+
     """
     return _aggregate(aggregations)
 
@@ -311,6 +448,38 @@ def over(
     This is one of the few user-facing functions that does **not** return a
     :class:`~stupidb.stupidb.Relation`. The behavior of materializing the rows
     of the result of calling this function is undefined.
+
+    Examples
+    --------
+    >>> from stupidb.api import Window, over, mean, select, table
+    >>> from datetime import date, timedelta
+    >>> today = date(2019, 2, 9)
+    >>> days = timedelta(days=1)
+    >>> rows = [
+    ...     {"name": "Alice", "balance": 400, "date": today},
+    ...     {"name": "Alice", "balance": 300, "date": today + 1 * days},
+    ...     {"name": "Alice", "balance": 100, "date": today + 2 * days},
+    ...     {"name": "Bob", "balance": -150, "date": today - 4 * days},
+    ...     {"name": "Bob", "balance": 200, "date": today - 3 * days},
+    ... ]
+    >>> t = table(rows)
+    >>> window = Window.range(
+    ...     partition_by=[lambda r: r.name],
+    ...     order_by=[lambda r: r.date],
+    ...     preceding=lambda r: 2 * days  # two days behind + the current row
+    ... )
+    >>> avg_balance_per_person = table(rows) >> select(
+    ...     name=lambda r: r.name,
+    ...     avg_balance=mean(lambda r: r.balance) >> over(window),
+    ...     balance=lambda r: r.balance,
+    ...     date=lambda r: r.date,
+    ... ) >> order_by(lambda r: r.name, lambda r: r.date)
+    >>> pprint(list(avg_balance_per_person), width=79)  # noqa: E501
+    [Row({'name': 'Alice', 'balance': 400, 'date': datetime.date(2019, 2, 9), 'avg_balance': 400.0}),
+     Row({'name': 'Alice', 'balance': 300, 'date': datetime.date(2019, 2, 10), 'avg_balance': 350.0}),
+     Row({'name': 'Alice', 'balance': 100, 'date': datetime.date(2019, 2, 11), 'avg_balance': 266.6666666666667}),
+     Row({'name': 'Bob', 'balance': -150, 'date': datetime.date(2019, 2, 5), 'avg_balance': -150.0}),
+     Row({'name': 'Bob', 'balance': 200, 'date': datetime.date(2019, 2, 6), 'avg_balance': 25.0})]
 
     """
     return WindowAggregateSpecification(
@@ -338,6 +507,24 @@ def group_by(**group_by: PartitionBy) -> GroupBy:
     since its :meth:`~stupidb.stupidb.GroupBy.__iter__` method just yields
     the rows of its child. A call to this function is best followed by a call
     to :func:`~stupidb.api.aggregate`.
+
+    Examples
+    --------
+    >>> from pprint import pprint
+    >>> from stupidb.api import aggregate, group_by, mean, table
+    >>> rows = [
+    ...     dict(name="Bob", age=30, timezone="America/New_York"),
+    ...     dict(name="Susan", age=20, timezone="America/New_York"),
+    ...     dict(name="Joe", age=41, timezone="America/Los_Angeles"),
+    ...     dict(name="Alice", age=39, timezone="America/Los_Angeles"),
+    ... ]
+    >>> average_age_by_timezone = (
+    ...     table(rows) >> group_by(tz=lambda r: r.timezone)
+    ...                 >> aggregate(avg_age=mean(lambda r: r.age))
+    ... )
+    >>> pprint(list(average_age_by_timezone), width=79)
+    [Row({'tz': 'America/New_York', 'avg_age': 25.0}),
+     Row({'tz': 'America/Los_Angeles', 'avg_age': 40.0})]
 
     See Also
     --------
@@ -596,7 +783,7 @@ def lag(
 
 
 def mean(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
-    """Average of a column.
+    """Compute the average of a column.
 
     Parameters
     ----------
@@ -610,7 +797,7 @@ def mean(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
 def min(
     x: Callable[[AbstractRow], Optional[Comparable]]
 ) -> AggregateSpecification:
-    """Minimum of a column.
+    """Compute the minimum of a column.
 
     Parameters
     ----------
@@ -624,7 +811,7 @@ def min(
 def max(
     x: Callable[[AbstractRow], Optional[Comparable]]
 ) -> AggregateSpecification:
-    """Maximum of a column.
+    """Compute the maximum of a column.
 
     Parameters
     ----------
@@ -638,7 +825,7 @@ def max(
 def cov_samp(
     x: Callable[[AbstractRow], R1], y: Callable[[AbstractRow], R2]
 ) -> AggregateSpecification:
-    """Sample covariance of two columns.
+    """Compute the sample covariance of two columns.
 
     Parameters
     ----------
@@ -652,7 +839,7 @@ def cov_samp(
 
 
 def var_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
-    """Sample variance of a column.
+    """Compute the sample variance of a column.
 
     Parameters
     ----------
@@ -664,7 +851,7 @@ def var_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
 
 
 def stdev_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
-    """Sample standard deviation of a column.
+    """Compute the sample standard deviation of a column.
 
     Parameters
     ----------
@@ -678,7 +865,7 @@ def stdev_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
 def cov_pop(
     x: Callable[[AbstractRow], R1], y: Callable[[AbstractRow], R2]
 ) -> AggregateSpecification:
-    """Population covariance of two columns.
+    """Compute the population covariance of two columns.
 
     Parameters
     ----------
@@ -692,7 +879,7 @@ def cov_pop(
 
 
 def var_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
-    """Population variance of a column.
+    """Compute the population variance of a column.
 
     Parameters
     ----------
@@ -704,7 +891,7 @@ def var_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
 
 
 def stdev_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
-    """Population standard deviation of a column.
+    """Compute the population standard deviation of a column.
 
     Parameters
     ----------
