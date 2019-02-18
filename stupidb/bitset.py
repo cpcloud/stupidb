@@ -1,19 +1,37 @@
-"""Abstraction for efficiently testing set membership of unsigned integers."""
+"""An efficiently stored set of unsigned integers."""
 
 import math
 from typing import Any, Iterable, Iterator, MutableSet
 
 
 class BitSet(MutableSet[int]):
-    """A set for efficiently testing membership of unsigned integers."""
+    """A efficiently stored set of unsigned integers."""
 
     __slots__ = ("bitset",)
 
-    def __init__(self, elements: Iterable[int] = ()) -> None:
-        """Construct a bitset."""
+    def __init__(self) -> None:
+        """Construct an empty bitset."""
         self.bitset = 0
+
+    @classmethod
+    def from_iterable(cls, elements: Iterable[int]) -> "BitSet":
+        """Construct a :class:`BitSet` from an iterable of integers.
+
+        Parameters
+        ----------
+        elements
+            An iterable of unsigned integers.
+
+        Raises
+        ------
+        ValueError
+            If any element of `elements` is negative.
+
+        """
+        bitset = cls()
         for element in elements:
-            self.add(element)
+            bitset.add(element)
+        return bitset
 
     def __iter__(self) -> Iterator[int]:
         """Iterate over the elements of a bitset."""
@@ -34,7 +52,19 @@ class BitSet(MutableSet[int]):
         return self.bitset & (1 << element) != 0
 
     def add(self, element: int) -> None:
-        """Add `element` to the set."""
+        """Add `element` to the set.
+
+        Parameters
+        ----------
+        element
+            An unsigned integer
+
+        Raises
+        ------
+        ValueError
+            If `element` is negative
+
+        """
         if element < 0:
             raise ValueError(
                 f"element not greater than or equal to 0, element == {element}"
@@ -42,7 +72,19 @@ class BitSet(MutableSet[int]):
         self.bitset |= 1 << element
 
     def discard(self, element: int) -> None:
-        """Remove `element` from the set."""
+        """Remove `element` from the set.
+
+        Parameters
+        ----------
+        element
+            An unsigned integer
+
+        Raises
+        ------
+        ValueError
+            If `element` is negative
+
+        """
         if element < 0:
             raise ValueError(
                 f"element not greater than or equal to 0, element == {element}"
