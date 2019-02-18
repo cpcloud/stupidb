@@ -150,12 +150,12 @@ def main(argv: Sequence[str]) -> None:
         "-l",
         "--leaf",
         type=int,
-        default=None,
+        default=[],
         action="append",
         help="The leaves of the tree.",
     )
     args = parser.parse_args(argv)
-    if args.leaf is None:
+    if not args.leaf:
         leaves = [(i,) for i in range(1, 9)]
     else:
         leaves = [(leaf,) for leaf in args.leaf]
