@@ -1,3 +1,5 @@
+"""Module containing classes for representing rows."""
+
 import abc
 from typing import Any, Hashable, Iterator, Mapping
 
@@ -28,6 +30,16 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
     def __init__(
         self, piece: Mapping[str, Any], *pieces: Mapping[str, Any], _id: int
     ) -> None:
+        """Construct an :class:`AbstractRow`.
+
+        Parameters
+        ----------
+        piece
+            A mapping from :class:`str` to :class:`typing.Any`.
+        pieces
+            A tuple of mappings from :class:`str` to :class:`typing.Any`.
+
+        """
         self.pieces = (piece,) + pieces
         self._id = _id
 
@@ -120,11 +132,11 @@ class JoinedRow(AbstractRow):
 
     .. note::
 
-       :class:`JoinedRow` is the row type yielded when iterating over a join.
-       If you want to consume the rows of a join and there are overlapping
-       column names in the left and right relations you must select from the
-       :attr:`left` and :attr:`right` attributes of instances of this class to
-       disambiguate.
+       :class:`JoinedRow` is the row type yielded when iterating over an
+       instance of :class:`~stupidb.stupidb.Join`.  If you want to consume the
+       rows of a join and there are overlapping column names in the left and
+       right relations you must select from the :attr:`left` and :attr:`right`
+       attributes of instances of this class to disambiguate.
 
     Attributes
     ----------
@@ -132,11 +144,24 @@ class JoinedRow(AbstractRow):
         A row from the left relation
     right
         A row from the right relation
+
     """
 
     def __init__(
         self, left: Mapping[str, Any], right: Mapping[str, Any], *, _id: int
     ) -> None:
+        """Construct a :class:`JoinedRow` instance.
+
+        Parameters
+        ----------
+        left
+            A mapping of :class:`str` to :class:`typing.Any`.
+        right
+            A mapping of :class:`str` to :class:`typing.Any`.
+        _id
+            The row id of this row.
+
+        """
         self.left = Row.from_mapping(left, _id=_id)
         self.right = Row.from_mapping(right, _id=_id)
         self._overlapping_keys = left.keys() & right.keys()
@@ -148,6 +173,7 @@ class JoinedRow(AbstractRow):
 
     @property
     def data(self) -> Mapping[str, Any]:
+        """Return the underlying data of the row."""
         return self._data
 
     @classmethod
