@@ -97,7 +97,7 @@ def make_segment_tree(
     *,
     fanout: int,
 ) -> Sequence[AssociativeAggregate]:
-    """Make a segment tree from tuples `leaves` and class `aggregate`.
+    """Make a segment tree from tuples `leaves` and class `aggregate_type`.
 
     The algorithm used here traverses from the bottom of tree upward, updating
     the parent every time a new node is seen.
