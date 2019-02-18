@@ -21,7 +21,7 @@ class SegmentTreeAnimator:
         self.segment_tree = segment_tree
 
     @property
-    def nx_graph(self) -> nx.DiGraph:
+    def graph(self) -> nx.DiGraph:
         """Return a NetworkX graph created from self.nodes."""
         segment_tree = self.segment_tree
         tree = indextree.IndexTree(
@@ -53,7 +53,7 @@ class SegmentTreeAnimator:
     @property
     def iterframes(self) -> Iterator[imageio.core.Array]:
         """Produce the frames of an animated construction of the tree."""
-        graph = self.nx_graph
+        graph = self.graph
         segment_tree = self.segment_tree
         queue = collections.deque(
             u for u, out_edge_count in graph.out_degree if not out_edge_count
