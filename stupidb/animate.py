@@ -1,7 +1,9 @@
 """Animate construction of segment trees."""
 
 import collections
-from typing import BinaryIO, Iterator, MutableMapping
+import sys
+
+from typing import BinaryIO, Iterator, MutableMapping, Sequence
 
 import imageio
 import networkx as nx
@@ -122,10 +124,9 @@ class SegmentTreeAnimator:
         imageio.mimsave(io, list(self.iterframes), fps=fps, format="gif")
 
 
-def main() -> None:
+def main(argv: Sequence[str]) -> None:
     """Animate the construction of a SegmentTree."""
     import argparse
-    import sys
 
     from stupidb.associative import Sum
 
@@ -153,7 +154,7 @@ def main() -> None:
         action="append",
         help="The leaves of the tree.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.leaf is None:
         leaves = [(i,) for i in range(1, 9)]
     else:
@@ -163,5 +164,5 @@ def main() -> None:
     animator.animate(args.outfile)
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__":  # pragma: no cover
+    main(sys.argv)
