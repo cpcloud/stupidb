@@ -26,6 +26,9 @@ aggregation, constructed with the following leaves and a fanout of 2::
 
    >>> [1, 2, 3, 4, 5, 6, 7, 8]
 
+Blue indicates that a node was just aggregated into its parent, and red
+indicates a node that contains the aggregate value of all of its children.
+
 .. image:: _static/main.gif
    :align: center
 
