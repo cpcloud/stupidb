@@ -16,3 +16,4 @@ pydocstyle==3.0.0
 networkx==2.2
 pydot==1.4.1
 imageio==2.5.0
+sly==0.3
