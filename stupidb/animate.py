@@ -2,7 +2,6 @@
 
 import collections
 import sys
-
 from typing import BinaryIO, Iterator, MutableMapping, Sequence
 
 import imageio

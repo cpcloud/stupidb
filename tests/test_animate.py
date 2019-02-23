@@ -1,7 +1,7 @@
 import os
 
-from stupidb.associative import SegmentTree, Sum
 from stupidb.animate import SegmentTreeAnimator, main
+from stupidb.associative import SegmentTree, Sum
 
 
 def test_to_gif():
