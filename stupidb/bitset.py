@@ -4,14 +4,6 @@ import math
 from typing import Any, AbstractSet, Iterable, Iterator, MutableSet
 
 
-def bitchunks(value: int, *, chunksize: int) -> Iterator[int]:
-    """Yield the bits of `value` in `chunksize`-bit size chunks."""
-    mask = (1 << chunksize) - 1
-    while value:
-        yield value & mask
-        value >>= chunksize
-
-
 class BitSet(MutableSet[int]):
     """A efficiently stored set of unsigned integers."""
 
@@ -71,13 +63,14 @@ class BitSet(MutableSet[int]):
         """Compute the length of the set."""
         bitcount = 0
         value = self.bitset
-        for chunk in bitchunks(value, chunksize=32):
-            assert 0 <= chunk <= 0xFFFFFFFF, "chunk has more than 32 bits"
+        while value:
+            chunk = value & 0xFFFFFFFF
             chunk -= (chunk >> 1) & 0x55555555
             chunk = (chunk & 0x33333333) + ((chunk >> 2) & 0x33333333)
             bitcount += (
                 ((chunk + (chunk >> 4) & 0xF0F0F0F) * 0x1010101) & 0xFFFFFFFF
             ) >> 24
+            value >>= 32
         return bitcount
 
     def __repr__(self) -> str:
