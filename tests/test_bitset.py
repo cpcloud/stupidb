@@ -7,18 +7,18 @@ def test_construction():
     bs = BitSet()
     assert bs.bitset == 0
 
-    bs = BitSet.from_iterable({1, 2})
+    bs = BitSet({1, 2})
     assert list(bs) == [1, 2]
 
     with pytest.raises(ValueError):
-        BitSet.from_iterable({2, -1})
+        BitSet({2, -1})
 
 
 def test_repr():
     bs = BitSet()
     assert repr(bs) == "BitSet(set())"
 
-    bs = BitSet.from_iterable([1, 2])
+    bs = BitSet([1, 2])
     assert repr(bs) == f"BitSet({{1, 2}})"
 
 

@@ -1,7 +1,15 @@
 """An efficiently stored set of unsigned integers."""
 
 import math
-from typing import Any, Iterable, Iterator, MutableSet
+from typing import Any, AbstractSet, Iterable, Iterator, MutableSet
+
+
+def bitchunks(value: int, *, chunksize: int) -> Iterator[int]:
+    """Yield the bits of `value` in `chunksize`-bit size chunks."""
+    mask = (1 << chunksize) - 1
+    while value:
+        yield value & mask
+        value >>= chunksize
 
 
 class BitSet(MutableSet[int]):
@@ -9,29 +17,49 @@ class BitSet(MutableSet[int]):
 
     __slots__ = ("bitset",)
 
-    def __init__(self) -> None:
-        """Construct an empty bitset."""
+    def __init__(self, elements: Iterable[int] = ()) -> None:
+        """Construct a bitset."""
         self.bitset = 0
-
-    @classmethod
-    def from_iterable(cls, elements: Iterable[int]) -> "BitSet":
-        """Construct a :class:`BitSet` from an iterable of integers.
-
-        Parameters
-        ----------
-        elements
-            An iterable of unsigned integers.
-
-        Raises
-        ------
-        ValueError
-            If any element of `elements` is negative.
-
-        """
-        bitset = cls()
         for element in elements:
-            bitset.add(element)
-        return bitset
+            self.add(element)
+
+    def intersection(self, other: Iterable[int]) -> AbstractSet[int]:
+        """Return the intersection of `self` and `other`."""
+        return self & BitSet(other)
+
+    def intersection_update(
+        self: AbstractSet[int], other: Iterable[int]
+    ) -> None:
+        """Update `self` to be its intersection with `other`."""
+        self &= BitSet(other)
+
+    def union(self, other: Iterable[int]) -> AbstractSet[int]:
+        """Return the union of `self` and `other`."""
+        return self | BitSet(other)
+
+    def update(self: AbstractSet[int], other: Iterable[int]) -> None:
+        """Add the elements of `other` to `self`."""
+        self |= BitSet(other)
+
+    def difference(self, other: Iterable[int]) -> AbstractSet[int]:
+        """Return the set difference of `self` and `other`."""
+        return self - BitSet(other)
+
+    def difference_update(
+        self: AbstractSet[int], other: Iterable[int]
+    ) -> None:
+        """Update `self` to be its set difference with `other`."""
+        self -= BitSet(other)
+
+    def symmetric_difference(self, other: Iterable[int]) -> AbstractSet[int]:
+        """Return the symmetric difference of `self` and `other`."""
+        return self ^ BitSet(other)
+
+    def symmetric_difference_update(
+        self: AbstractSet[int], other: Iterable[int]
+    ) -> None:
+        """Update `self` to be its symmetric difference with `other`."""
+        self ^= BitSet(other)
 
     def __iter__(self) -> Iterator[int]:
         """Iterate over the elements of a bitset."""
@@ -41,7 +69,16 @@ class BitSet(MutableSet[int]):
 
     def __len__(self) -> int:
         """Compute the length of the set."""
-        return bin(self.bitset).count("1")
+        bitcount = 0
+        value = self.bitset
+        for chunk in bitchunks(value, chunksize=32):
+            assert 0 <= chunk <= 0xFFFFFFFF, "chunk has more than 32 bits"
+            chunk -= (chunk >> 1) & 0x55555555
+            chunk = (chunk & 0x33333333) + ((chunk >> 2) & 0x33333333)
+            bitcount += (
+                ((chunk + (chunk >> 4) & 0xF0F0F0F) * 0x1010101) & 0xFFFFFFFF
+            ) >> 24
+        return bitcount
 
     def __repr__(self) -> str:
         """Return the string representation of a bitset."""
