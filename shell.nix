@@ -5,6 +5,11 @@ let
     editablePackageSources = {
       stupidb = ./stupidb;
     };
+    overrides = pkgs.poetry2nix.overrides.withDefaults (
+      import ./poetry-overlay.nix {
+        inherit pkgs;
+      }
+    );
   };
   condaShellRun = pkgs.writeShellScriptBin "conda-shell-run" ''
     ${pkgs.conda}/bin/conda-shell -c "$@"
