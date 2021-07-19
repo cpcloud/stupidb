@@ -19,8 +19,22 @@ jobs:
         with:
           name: nix-community
 
-      - name: Run tests
-        run: nix-shell --pure shell.nix --run pytest
+      - name: Use the nix-community cachix cache
+        uses: cachix/cachix-action@v10
+        with:
+          name: nix-community
+
+      - name: Use the nix-community cachix cache
+        uses: cachix/cachix-action@v10
+        with:
+          name: stupidb
+
+      - name: Cache artifacts and Run tests
+        run: |
+          cachix watch-store stupidb
+          nix-shell --pure shell.nix --run pytest
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
   release:
     needs: [ci]
