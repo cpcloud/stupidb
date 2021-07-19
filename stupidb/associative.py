@@ -59,6 +59,8 @@ specific aggregate to achieve optimal behavior from all aggregates.
 
 """
 
+from __future__ import annotations
+
 import abc
 import collections
 import functools
@@ -71,6 +73,7 @@ from typing import (
     Iterator,
     MutableSequence,
     Optional,
+    Protocol,
     Sequence,
     Tuple,
     Type,
@@ -259,10 +262,37 @@ class AbstractAssociativeAggregate(Aggregate[Output]):
 
 UA = TypeVar("UA", bound="UnaryAssociativeAggregate")
 BA = TypeVar("BA", bound="BinaryAssociativeAggregate")
+C = TypeVar("C")
+F = TypeVar("F")
+
+
+class TraversableAggregate(Combine[C], Finalizable[T]):
+    @abc.abstractmethod
+    def combine(self: C, other: C) -> C:
+        ...
+
+    @abc.abstractmethod
+    def finalize(self):
+        ...
+
+
+class TraversableAggregate(Combine[C], Finalizable[T]):
+    @abc.abstractmethod
+    def combine(self: C, other: C) -> C:
+        ...
+
+    @abc.abstractmethod
+    def finalize(self):
+        ...
+
+
+class TraversableAggregate(Combine[C], Finalizable[T]):
+    ...
 
 
 class UnaryAssociativeAggregate(
-    AbstractAssociativeAggregate[Output], Generic[Input1, Output]
+    AbstractAssociativeAggregate[Output],
+    Generic[Input1, Output]
 ):
     """A an abstract associative aggregate that takes one argument."""
 
@@ -271,10 +301,6 @@ class UnaryAssociativeAggregate(
     @abc.abstractmethod
     def step(self, input1: Optional[Input1]) -> None:
         """Perform a single step of the aggregation."""
-
-    @abc.abstractmethod
-    def combine(self: UA, other: UA) -> None:
-        """Update this aggregation based on another of the same type."""
 
 
 class BinaryAssociativeAggregate(
@@ -287,10 +313,6 @@ class BinaryAssociativeAggregate(
     @abc.abstractmethod
     def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
         """Perform a single step of the aggregation."""
-
-    @abc.abstractmethod
-    def combine(self: BA, other: BA) -> None:
-        """Update this aggregation based on another of the same type."""
 
 
 class Count(UnaryAssociativeAggregate[Input1, int]):
@@ -310,7 +332,7 @@ class Count(UnaryAssociativeAggregate[Input1, int]):
         """Return the count."""
         return self.count
 
-    def combine(self, other: "Count[Input1]") -> None:
+    def combine(self: Count[Input1], other: Count[Input1]) -> None:
         """Combine two :class:`Count` instances."""
         self.count += other.count
 
@@ -336,7 +358,7 @@ class Sum(UnaryAssociativeAggregate[R1, R2]):
     def finalize(self) -> Optional[R2]:
         return self.total if self.count else None
 
-    def combine(self, other: "Sum[R1, R2]") -> None:
+    def combine(self: Self, other: Self) -> None:
         self.total += other.total
         self.count += other.count
 
@@ -378,9 +400,7 @@ class MinMax(UnaryAssociativeAggregate[Comparable, Comparable]):
             if self.current_value is None:
                 self.current_value = input1
             else:
-                self.current_value = self.comparator(
-                    self.current_value, input1
-                )
+                self.current_value = self.comparator(self.current_value, input1)
 
     def finalize(self) -> Optional[Comparable]:
         return self.current_value
@@ -454,12 +474,8 @@ class Covariance(BinaryAssociativeAggregate[R1, R2, float]):
             * (self.count * other.count)
             / new_count
         )
-        self.meanx = (
-            self.count * self.meanx + other.count * other.meanx
-        ) / new_count
-        self.meany = (
-            self.count * self.meany + other.count * other.meany
-        ) / new_count
+        self.meanx = (self.count * self.meanx + other.count * other.meanx) / new_count
+        self.meany = (self.count * self.meany + other.count * other.meany) / new_count
         self.count = new_count
 
 

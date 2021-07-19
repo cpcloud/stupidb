@@ -9,12 +9,12 @@ import typing
 from typing import (
     Any,
     Callable,
-    Dict,
     Generic,
     Hashable,
     Iterable,
     Iterator,
     List,
+    MutableMapping,
     Optional,
     Sequence,
     Tuple,
@@ -24,10 +24,7 @@ from typing import (
 
 from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
-from stupidb.associative import (
-    BinaryAssociativeAggregate,
-    UnaryAssociativeAggregate,
-)
+from stupidb.associative import BinaryAssociativeAggregate, UnaryAssociativeAggregate
 from stupidb.navigation import (
     BinaryNavigationAggregate,
     TernaryNavigationAggregate,
@@ -35,14 +32,7 @@ from stupidb.navigation import (
 )
 from stupidb.ranking import RankingAggregate
 from stupidb.row import AbstractRow
-from stupidb.typehints import (
-    Following,
-    OrderBy,
-    OrderingKey,
-    PartitionBy,
-    Preceding,
-    T,
-)
+from stupidb.typehints import Following, OrderBy, OrderingKey, PartitionBy, Preceding, T
 
 StartStop = typing.NamedTuple("StartStop", [("start", int), ("stop", int)])
 Ranges = Tuple[StartStop, StartStop, StartStop]
@@ -241,9 +231,7 @@ class RowsMode(FrameClause):
     ) -> int:
         following = self.following
         assert following is not None, "following is None"
-        return (
-            row_id_in_partition + typing.cast(int, following(current_row)) + 1
-        )
+        return row_id_in_partition + typing.cast(int, following(current_row)) + 1
 
     def setup_window(
         self,
@@ -252,8 +240,7 @@ class RowsMode(FrameClause):
         order_by_columns: Sequence[str],
     ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:
         cols = [
-            tuple(map(peer.__getitem__, order_by_columns))
-            for _, peer in possible_peers
+            tuple(map(peer.__getitem__, order_by_columns)) for _, peer in possible_peers
         ]
         return tuple(map(current_row.__getitem__, order_by_columns)), cols
 
@@ -300,10 +287,8 @@ class RangeMode(FrameClause):
 
         ncolumns = len(order_by_columns)
         assert ncolumns == 1, f"ncolumns == {ncolumns:d}"
-        order_by_column, = order_by_columns
-        order_by_values = [
-            (peer[order_by_column],) for _, peer in possible_peers
-        ]
+        (order_by_column,) = order_by_columns
+        order_by_values = [(peer[order_by_column],) for _, peer in possible_peers]
         current_row_order_by_value = (current_row[order_by_column],)
         return current_row_order_by_value, order_by_values
 
@@ -322,7 +307,7 @@ class RangeMode(FrameClause):
         if not current_row_order_by_values:
             return 0
         assert len(current_row_order_by_values) == 1
-        current_row_order_by_value, = current_row_order_by_values
+        (current_row_order_by_value,) = current_row_order_by_values
         value_to_find = current_row_order_by_value - preceding(current_row)
         bisected_index = bisect.bisect_left(
             [value for value, in order_by_values], value_to_find
@@ -344,7 +329,7 @@ class RangeMode(FrameClause):
         if not current_row_order_by_values:
             return len(order_by_values)
         assert len(current_row_order_by_values) == 1
-        current_row_order_by_value, = current_row_order_by_values
+        (current_row_order_by_value,) = current_row_order_by_values
         value_to_find = current_row_order_by_value + following(current_row)
         bisected_index = bisect.bisect_right(
             [value for value, in order_by_values], value_to_find
@@ -497,9 +482,7 @@ def make_key_func(
 
     """
 
-    def cmp(
-        lefts: Tuple[int, AbstractRow], rights: Tuple[int, AbstractRow]
-    ) -> int:
+    def cmp(lefts: Tuple[int, AbstractRow], rights: Tuple[int, AbstractRow]) -> int:
         _, left_row = lefts
         _, right_row = rights
         return row_key_compare(order_by, nulls, left_row, right_row)
@@ -557,7 +540,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
 
         # A mapping from each row's partition key to a list of rows in that
         # partition.
-        partitions: Dict[
+        partitions: MutableMapping[
             Tuple[Hashable, ...], List[Tuple[int, AbstractRow]]
         ] = {}
 
@@ -589,9 +572,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         # partition
         for table_row_index, row in rows_for_partition:
             partition_key = compute_partition_key(row, partition_by)
-            partitions.setdefault(partition_key, []).append(
-                (table_row_index, row)
-            )
+            partitions.setdefault(partition_key, []).append((table_row_index, row))
 
         # sort
         key = make_key_func(order_by, frame_clause.nulls)
@@ -637,6 +618,4 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         # Sort the results in order of the child relation, because we processed
         # them in partition order, which might not be the same. Pull out the
         # second element of each element in results.
-        return (
-            value for _, value in sorted(results, key=operator.itemgetter(0))
-        )
+        return (value for _, value in sorted(results, key=operator.itemgetter(0)))
