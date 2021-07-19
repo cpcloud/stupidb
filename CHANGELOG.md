@@ -3,6 +3,10 @@ Release Notes
 
 <!--next-version-placeholder-->
 
+## v1.0.1 (2021-07-19)
+### Performance
+* Use faster to run but slower to build because we now have caching ([`f2d71ac`](https://github.com/cpcloud/stupidb/commit/f2d71acb4011295b02e4229618c5f7c2a7a937a1))
+
 ## v1.0.0 (2021-07-19)
 ### Feature
 * **dev:** Add the ability to use conda with nix ([`830ec2c`](https://github.com/cpcloud/stupidb/commit/830ec2cd61d2eaad0c71118c8b146adb67d68f63))
