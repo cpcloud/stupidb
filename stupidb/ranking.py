@@ -1,16 +1,7 @@
 """Navigation and simple window function interface and implementation."""
 
 import abc
-from typing import (
-    Any,
-    Callable,
-    ClassVar,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, Callable, ClassVar, Optional, Sequence, Tuple, Type, Union
 
 from stupidb.aggregatetypes import Aggregate
 from stupidb.aggregator import Aggregator
@@ -48,9 +39,7 @@ class RankingAggregator(Aggregator["RankingAggregate", Result]):
 
 class RankingAggregate(Aggregate[Output]):
     __slots__ = ("order_by_values",)
-    aggregator_class: ClassVar[
-        Callable[..., RankingAggregator]
-    ] = RankingAggregator
+    aggregator_class: ClassVar[Callable[..., RankingAggregator]] = RankingAggregator
 
     def __init__(
         self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
@@ -123,9 +112,7 @@ class AbstractRank(RowNumber):
         self.previous_value: Optional[Either] = Sentinel()
 
     @abc.abstractmethod
-    def rank(
-        self, current_order_by_value: Comparable, current_row_number: int
-    ) -> int:
+    def rank(self, current_order_by_value: Comparable, current_row_number: int) -> int:
         """Compute the rank of the current row."""
 
     def execute(self, begin: int, end: int) -> int:
@@ -149,9 +136,7 @@ class Rank(AbstractRank):
         super().__init__(order_by_values)
         self.previous_rank = -1
 
-    def rank(
-        self, current_order_by_value: Comparable, current_row_number: int
-    ) -> int:
+    def rank(self, current_order_by_value: Comparable, current_row_number: int) -> int:
         if current_order_by_value != self.previous_value:
             rank = current_row_number
         else:
@@ -169,9 +154,7 @@ class DenseRank(AbstractRank):
         super().__init__(order_by_values)
         self.current_rank = -1
 
-    def rank(
-        self, current_order_by_value: Comparable, current_row_number: int
-    ) -> int:
+    def rank(self, current_order_by_value: Comparable, current_row_number: int) -> int:
         self.current_rank += current_order_by_value != self.previous_value
         return self.current_rank
 

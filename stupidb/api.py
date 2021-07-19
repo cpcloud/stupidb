@@ -141,9 +141,7 @@ def cross_join(right: Relation, left: Relation) -> Join:
 
 
 @_shiftable
-def inner_join(
-    right: Relation, predicate: JoinPredicate, left: Relation
-) -> Join:
+def inner_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Join:
     """Join `left` and `right` relations using `predicate`.
 
     Drop rows if `predicate` returns ``False``.
@@ -175,9 +173,7 @@ def inner_join(
 
 
 @_shiftable
-def left_join(
-    right: Relation, predicate: JoinPredicate, left: Relation
-) -> LeftJoin:
+def left_join(right: Relation, predicate: JoinPredicate, left: Relation) -> LeftJoin:
     """Join `left` and `right` relations using `predicate`.
 
     Drop rows if `predicate` returns ``False``.  Returns at least one of every
@@ -195,9 +191,7 @@ def left_join(
 
 
 @_shiftable
-def right_join(
-    right: Relation, predicate: JoinPredicate, left: Relation
-) -> RightJoin:
+def right_join(right: Relation, predicate: JoinPredicate, left: Relation) -> RightJoin:
     """Join `left` and `right` relations using `predicate`.
 
     Drop rows if `predicate` returns ``False``.  Returns at least one of every
@@ -215,9 +209,7 @@ def right_join(
 
 
 @_shiftable
-def _order_by(
-    order_by: Tuple[OrderBy, ...], nulls: Nulls, child: Relation
-) -> SortBy:
+def _order_by(order_by: Tuple[OrderBy, ...], nulls: Nulls, child: Relation) -> SortBy:
     return SortBy(child, order_by, nulls)
 
 
@@ -254,9 +246,7 @@ def order_by(*order_by: OrderBy, nulls: Nulls = Nulls.FIRST) -> SortBy:
 
 
 @_shiftable
-def _select(
-    projectors: Mapping[str, FullProjector], child: Relation
-) -> Projection:
+def _select(projectors: Mapping[str, FullProjector], child: Relation) -> Projection:
     return Projection(child, projectors)
 
 
@@ -290,8 +280,7 @@ def select(**projectors: FullProjector) -> Projection:
     valid_projectors = {
         name: projector
         for name, projector in projectors.items()
-        if callable(projector)
-        or isinstance(projector, WindowAggregateSpecification)
+        if callable(projector) or isinstance(projector, WindowAggregateSpecification)
     }
     if len(valid_projectors) != len(projectors):
         raise TypeError("Invalid projection")
@@ -482,9 +471,7 @@ def over(
      Row({'name': 'Bob', 'balance': 200, 'date': datetime.date(2019, 2, 6), 'avg_balance': 25.0})]
 
     """
-    return WindowAggregateSpecification(
-        child.aggregate_type, child.getters, window
-    )
+    return WindowAggregateSpecification(child.aggregate_type, child.getters, window)
 
 
 @_shiftable
@@ -794,9 +781,7 @@ def mean(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     return AggregateSpecification(Mean, (x,))
 
 
-def min(
-    x: Callable[[AbstractRow], Optional[Comparable]]
-) -> AggregateSpecification:
+def min(x: Callable[[AbstractRow], Optional[Comparable]]) -> AggregateSpecification:
     """Compute the minimum of a column.
 
     Parameters
@@ -808,9 +793,7 @@ def min(
     return AggregateSpecification(Min, (x,))
 
 
-def max(
-    x: Callable[[AbstractRow], Optional[Comparable]]
-) -> AggregateSpecification:
+def max(x: Callable[[AbstractRow], Optional[Comparable]]) -> AggregateSpecification:
     """Compute the maximum of a column.
 
     Parameters

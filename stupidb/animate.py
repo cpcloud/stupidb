@@ -2,7 +2,6 @@
 
 import collections
 import sys
-
 from typing import BinaryIO, Iterator, MutableMapping, Sequence
 
 import imageio
@@ -61,10 +60,7 @@ class SegmentTreeAnimator:
             u for u, out_edge_count in graph.out_degree if not out_edge_count
         )
         parent_count: MutableMapping[int, int] = collections.Counter()
-        nodes = [
-            segment_tree.aggregate_type()
-            for _ in range(len(segment_tree.nodes))
-        ]
+        nodes = [segment_tree.aggregate_type() for _ in range(len(segment_tree.nodes))]
         for leaf in queue:
             nodes[leaf] = segment_tree.nodes[leaf]
 
@@ -73,7 +69,7 @@ class SegmentTreeAnimator:
             node = queue.popleft()
             if node not in seen:
                 seen.add(node)
-                parent, = graph.predecessors(node)
+                (parent,) = graph.predecessors(node)
                 node_agg = nodes[node]
                 parent_agg = nodes[parent]
                 parent_agg.combine(node_agg)
@@ -132,8 +128,7 @@ def main(argv: Sequence[str]) -> None:
 
     parser = argparse.ArgumentParser(
         description=(
-            "Animate the construction of a segment tree using the Sum "
-            "aggregation."
+            "Animate the construction of a segment tree using the Sum " "aggregation."
         )
     )
     parser.add_argument(
@@ -143,9 +138,7 @@ def main(argv: Sequence[str]) -> None:
         default=sys.stdout.buffer,
         help="Where to write the animated GIF. Defaults to stdout.",
     )
-    parser.add_argument(
-        "-f", "--fanout", type=int, default=2, help="The tree fanout."
-    )
+    parser.add_argument("-f", "--fanout", type=int, default=2, help="The tree fanout.")
     parser.add_argument(
         "-l",
         "--leaf",

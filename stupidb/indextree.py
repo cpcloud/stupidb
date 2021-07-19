@@ -38,9 +38,7 @@ def reprtree(nodes: Sequence[T], *, fanout: int, indent: str = 4 * " ") -> str:
                 fanout * node_index + i + 1 for i in reversed(range(fanout))
             )
             level_index_stack.extend(
-                (level + 1, index)
-                for index in node_indices
-                if index < len(nodes)
+                (level + 1, index) for index in node_indices if index < len(nodes)
             )
             seen.add(node_index)
     return "\n".join(node_repr_pieces)
@@ -98,7 +96,5 @@ class IndexTree:
         else:
             parent_node_index = (node - 1) // self.fanout
         # parent should never be negative
-        assert (
-            parent_node_index >= 0
-        ), f"parent_node_index == {parent_node_index}"
+        assert parent_node_index >= 0, f"parent_node_index == {parent_node_index}"
         return parent_node_index

@@ -1,7 +1,7 @@
 """An efficiently stored set of unsigned integers."""
 
 import math
-from typing import Any, AbstractSet, Iterable, Iterator, MutableSet
+from typing import AbstractSet, Any, Iterable, Iterator, MutableSet
 
 
 class BitSet(MutableSet[int]):
@@ -19,9 +19,7 @@ class BitSet(MutableSet[int]):
         """Return the intersection of `self` and `other`."""
         return self & BitSet(other)
 
-    def intersection_update(
-        self: AbstractSet[int], other: Iterable[int]
-    ) -> None:
+    def intersection_update(self: AbstractSet[int], other: Iterable[int]) -> None:
         """Update `self` to be its intersection with `other`."""
         self &= BitSet(other)
 
@@ -37,9 +35,7 @@ class BitSet(MutableSet[int]):
         """Return the set difference of `self` and `other`."""
         return self - BitSet(other)
 
-    def difference_update(
-        self: AbstractSet[int], other: Iterable[int]
-    ) -> None:
+    def difference_update(self: AbstractSet[int], other: Iterable[int]) -> None:
         """Update `self` to be its set difference with `other`."""
         self -= BitSet(other)
 

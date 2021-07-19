@@ -61,9 +61,7 @@ class NavigationAggregate(Aggregate[Output]):
         """Execute the aggregation over the range from `begin` to `end`."""
 
 
-class UnaryNavigationAggregate(
-    Generic[Input1, Output], NavigationAggregate[Output]
-):
+class UnaryNavigationAggregate(Generic[Input1, Output], NavigationAggregate[Output]):
     """Navigation function taking one argument."""
 
     __slots__ = ("inputs1",)
@@ -186,9 +184,7 @@ class FirstLast(UnaryNavigationAggregate[Input1, Input1]):
         except KeyError:
             inputs = (self.inputs1[i] for i in range(begin, end))
             try:
-                value: Optional[Input1] = next(
-                    arg for arg in inputs if arg is not None
-                )
+                value: Optional[Input1] = next(arg for arg in inputs if arg is not None)
             except StopIteration:
                 value = None
             self.cache[begin, end] = value

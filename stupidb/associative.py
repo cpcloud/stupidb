@@ -73,7 +73,6 @@ from typing import (
     Iterator,
     MutableSequence,
     Optional,
-    Protocol,
     Sequence,
     Tuple,
     Type,
@@ -262,37 +261,10 @@ class AbstractAssociativeAggregate(Aggregate[Output]):
 
 UA = TypeVar("UA", bound="UnaryAssociativeAggregate")
 BA = TypeVar("BA", bound="BinaryAssociativeAggregate")
-C = TypeVar("C")
-F = TypeVar("F")
-
-
-class TraversableAggregate(Combine[C], Finalizable[T]):
-    @abc.abstractmethod
-    def combine(self: C, other: C) -> C:
-        ...
-
-    @abc.abstractmethod
-    def finalize(self):
-        ...
-
-
-class TraversableAggregate(Combine[C], Finalizable[T]):
-    @abc.abstractmethod
-    def combine(self: C, other: C) -> C:
-        ...
-
-    @abc.abstractmethod
-    def finalize(self):
-        ...
-
-
-class TraversableAggregate(Combine[C], Finalizable[T]):
-    ...
 
 
 class UnaryAssociativeAggregate(
-    AbstractAssociativeAggregate[Output],
-    Generic[Input1, Output]
+    AbstractAssociativeAggregate[Output], Generic[Input1, Output]
 ):
     """A an abstract associative aggregate that takes one argument."""
 
@@ -358,7 +330,7 @@ class Sum(UnaryAssociativeAggregate[R1, R2]):
     def finalize(self) -> Optional[R2]:
         return self.total if self.count else None
 
-    def combine(self: Self, other: Self) -> None:
+    def combine(self: Sum[R1, R2], other: Sum[R1, R2]) -> None:
         self.total += other.total
         self.count += other.count
 

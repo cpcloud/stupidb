@@ -23,7 +23,6 @@ class Aggregate(Generic[Output], abc.ABC):
     ) -> Aggregator["Aggregate[Output]", Output]:
         """Prepare an aggregation of this type for computation."""
         arguments = [
-            tuple(getter(peer) for getter in getters)
-            for _, peer in possible_peers
+            tuple(getter(peer) for getter in getters) for _, peer in possible_peers
         ]
         return cls.aggregator_class(arguments, cls)
