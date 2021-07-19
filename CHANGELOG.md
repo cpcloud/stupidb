@@ -1,5 +1,4 @@
-Release Notes
--------------
+# Release Notes
 
 <!--next-version-placeholder-->
 
