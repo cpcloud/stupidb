@@ -19,7 +19,7 @@ def test_repr():
     assert repr(bs) == "BitSet(set())"
 
     bs = BitSet([1, 2])
-    assert repr(bs) == "BitSet({{1, 2}})"
+    assert repr(bs) == "BitSet({1, 2})"
 
 
 def test_add():
