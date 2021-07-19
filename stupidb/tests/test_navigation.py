@@ -1,17 +1,8 @@
 from datetime import date
 
-from conftest import assert_rowset_equal
-from stupidb.api import (
-    Window,
-    first,
-    lag,
-    last,
-    lead,
-    nth,
-    over,
-    select,
-    table,
-)
+from stupidb.api import Window, first, lag, last, lead, nth, over, select, table
+
+from .conftest import assert_rowset_equal
 
 
 def test_first_last(t_rows):

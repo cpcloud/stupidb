@@ -12,7 +12,6 @@ from typing import Callable, Iterable, Iterator, TypeVar
 import pytest
 import toolz
 
-from conftest import assert_rowset_equal
 from stupidb.aggregation import Window
 from stupidb.api import (
     aggregate,
@@ -41,8 +40,10 @@ from stupidb.api import (
     var_pop,
     var_samp,
 )
+from stupidb.core import Join
 from stupidb.row import JoinedRow, Row
-from stupidb.stupidb import Join
+
+from .conftest import assert_rowset_equal
 
 
 def test_projection(rows):
@@ -115,8 +116,8 @@ def test_cross_join(left, right):
     result = list(join)
     assert len(result) == len(left) * len(right)
     expected = [
-        {"left_z": l["z"], "right_z": r["z"]}
-        for l, r in list(itertools.product(left, right))
+        {"left_z": left["z"], "right_z": right["z"]}
+        for left, right in list(itertools.product(left, right))
     ]
     assert len(expected) == len(result)
     assert_rowset_equal(result, expected)
@@ -128,9 +129,7 @@ def test_inner_join(left, right):
         >> inner_join(
             table(right),
             lambda left, right: (
-                left["z"] == "a"
-                and right["z"] == "a"
-                and left["a"] == right["a"]
+                left["z"] == "a" and right["z"] == "a" and left["a"] == right["a"]
             ),
         )
         >> select(
@@ -181,9 +180,7 @@ def test_left_join(left, right):
 def test_right_join(left, right):
     join = (
         table(left)
-        >> right_join(
-            table(right), lambda left, right: left["z"] == right["z"]
-        )
+        >> right_join(table(right), lambda left, right: left["z"] == right["z"])
         >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
     )
     result = list(join)
@@ -350,8 +347,7 @@ def test_rows_window_partition(rows):
     pipeline = (
         table(rows)
         >> mutate(
-            my_agg=sum(lambda r: r.a)
-            >> over(Window.rows(partition_by=[lambda r: r.z]))
+            my_agg=sum(lambda r: r.a) >> over(Window.rows(partition_by=[lambda r: r.z]))
         )
         >> order_by(lambda r: r.z, lambda r: r.e)
     )
@@ -497,7 +493,7 @@ def test_agg(rows):
         mean=mean(lambda r: r["e"]),
         count=count(lambda r: r["e"]),
     )
-    result, = list(pipeline)
+    (result,) = list(pipeline)
     assert result["sum"] == 28
     assert result["mean"] == result["sum"] / result["count"]
 
@@ -545,15 +541,13 @@ def test_total_vs_sum():
     query = table(rows) >> aggregate(
         sum=sum(lambda r: r.value), total=total(lambda r: r.value)
     )
-    result_row, = list(query)
+    (result_row,) = list(query)
     assert result_row.sum is None
     assert result_row.total == 0
 
 
 def test_minmax(rows):
-    query = table(rows) >> aggregate(
-        min=min(lambda r: r.e), max=max(lambda r: r.e)
-    )
+    query = table(rows) >> aggregate(min=min(lambda r: r.e), max=max(lambda r: r.e))
     result = list(query)
     e = [r["e"] for r in rows]
     expected = [dict(min=builtins.min(e), max=builtins.max(e))]

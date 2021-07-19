@@ -1,4 +1,3 @@
-from conftest import assert_rowset_equal
 from stupidb.api import (
     Window,
     dense_rank,
@@ -10,6 +9,8 @@ from stupidb.api import (
     table,
 )
 from stupidb.ranking import Sentinel
+
+from .conftest import assert_rowset_equal
 
 
 def test_row_number(t_rows):
@@ -38,9 +39,7 @@ def test_rank():
         dict(name="watermelon"),
     ]
     window = Window.rows(order_by=[lambda r: r.name])
-    query = table(rows) >> select(
-        name=lambda r: r.name, ranked=rank() >> over(window)
-    )
+    query = table(rows) >> select(name=lambda r: r.name, ranked=rank() >> over(window))
     result = [row.ranked for row in query]
     expected = [0, 0, 2, 2, 4, 5]
     assert result == expected

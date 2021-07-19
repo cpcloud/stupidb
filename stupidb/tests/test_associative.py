@@ -80,15 +80,8 @@ def test_min_repr():
 
 def test_sample_covariance_repr():
     cov = SampleCovariance()
-    assert (
-        repr(cov) == "SampleCovariance(meanx=0.0, meany=0.0, cov=0.0, count=0)"
-    )
+    assert repr(cov) == "SampleCovariance(meanx=0.0, meany=0.0, cov=0.0, count=0)"
     cov.step(1.0, 2.0)
-    assert (
-        repr(cov) == "SampleCovariance(meanx=2.0, meany=2.0, cov=0.0, count=1)"
-    )
+    assert repr(cov) == "SampleCovariance(meanx=2.0, meany=2.0, cov=0.0, count=1)"
     cov.step(3.0, 4.5)
-    assert (
-        repr(cov)
-        == "SampleCovariance(meanx=5.0, meany=3.25, cov=1.25, count=2)"
-    )
+    assert repr(cov) == "SampleCovariance(meanx=5.0, meany=3.25, cov=1.25, count=2)"

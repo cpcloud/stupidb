@@ -16,9 +16,7 @@ def test_invertible(rev):
     assert list(reversed(rev)) == rev.values
 
 
-@pytest.mark.parametrize(
-    ("index", "expected"), [(0, 4), (1, 3), (2, 2), (3, 1)]
-)
+@pytest.mark.parametrize(("index", "expected"), [(0, 4), (1, 3), (2, 2), (3, 1)])
 def test_indexing(rev, index, expected):
     assert rev[index] == expected
 
@@ -28,9 +26,7 @@ def test_invalid_indexing(rev):
         rev[5]
 
 
-@pytest.mark.parametrize(
-    ("index", "expected"), [(-1, 1), (-2, 2), (-3, 3), (-4, 4)]
-)
+@pytest.mark.parametrize(("index", "expected"), [(-1, 1), (-2, 2), (-3, 3), (-4, 4)])
 def test_negative_indexing(rev, index, expected):
     assert rev[index] == expected
 

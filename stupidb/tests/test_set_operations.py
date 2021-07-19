@@ -1,4 +1,3 @@
-from conftest import assert_rowset_equal
 from stupidb.api import (
     difference,
     difference_all,
@@ -8,6 +7,8 @@ from stupidb.api import (
     union,
     union_all,
 )
+
+from .conftest import assert_rowset_equal
 
 
 def test_union_distinct():
