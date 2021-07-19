@@ -13,6 +13,10 @@ in
 {
   conda = pkgs.mkShell {
     name = "stupidb-conda";
+    shellHook = ''
+      ${(import ./pre-commit.nix).pre-commit-check.shellHook}
+      ${pkgs.conda}/bin/conda-shell -c 'conda-install 2> /dev/null || true'
+    '';
     buildInputs = (
       with pkgs; [
         conda
@@ -28,7 +32,6 @@ in
     name = "stupidb-dev";
     shellHook = ''
       ${(import ./pre-commit.nix).pre-commit-check.shellHook}
-      ${pkgs.conda}/bin/conda-shell -c 'conda-install 2> /dev/null || true'
     '';
     buildInputs = (
       with pkgs; [
