@@ -463,6 +463,26 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 dev = ["pre-commit", "tox"]
 
 [[package]]
+name = "poetry-semver"
+version = "0.1.0"
+description = "A semantic versioning library for Python"
+category = "dev"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
+name = "poetry2conda"
+version = "0.3.0"
+description = "Convert pyproject.toml to environment.yaml"
+category = "dev"
+optional = false
+python-versions = ">=3.6,<4.0"
+
+[package.dependencies]
+poetry-semver = ">=0.1.0,<0.2.0"
+toml = ">=0.10.0,<0.11.0"
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.19"
 description = "Library for building powerful interactive command lines in Python"
@@ -799,7 +819,7 @@ animation = ["networkx", "pydot", "imageio"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "3d278f18a157adb7346b66cbdf284ede30bdd728ce74747215f9b1bab6e10f9d"
+content-hash = "3125053afc4a338a9df37bdf5c905cb25a9ac2202f8062adf4d429a3c8134537"
 
 [metadata.files]
 alabaster = [
@@ -1128,6 +1148,14 @@ pillow = [
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},
     {file = "pluggy-0.13.1.tar.gz", hash = "sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0"},
+]
+poetry-semver = [
+    {file = "poetry-semver-0.1.0.tar.gz", hash = "sha256:d809b612aa27b39bf2d0fc9d31b4f4809b0e972646c5f19cfa46c725b7638810"},
+    {file = "poetry_semver-0.1.0-py2.py3-none-any.whl", hash = "sha256:4e6349bd7231cc657f0e1930f7b204e87e33dfd63eef5cac869363969515083a"},
+]
+poetry2conda = [
+    {file = "poetry2conda-0.3.0-py3-none-any.whl", hash = "sha256:218618d37331bd6d3d3007edcf21d71802990a0ce9c27e8bb23f739cfa82ed03"},
+    {file = "poetry2conda-0.3.0.tar.gz", hash = "sha256:574b6295ff877ff8fb56fe2034160ff9ee9db55a3f3c2faec65458e69125491b"},
 ]
 prompt-toolkit = [
     {file = "prompt_toolkit-3.0.19-py3-none-any.whl", hash = "sha256:7089d8d2938043508aa9420ec18ce0922885304cddae87fb96eebca942299f88"},
