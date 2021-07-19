@@ -21,3 +21,21 @@ jobs:
 
       - name: Run tests
         run: nix-shell --pure shell.nix --run pytest
+
+  release:
+    needs: [ci]
+    runs-on: ubuntu-latest
+    concurrency: release
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v12
+
+    - name: Python Semantic Release
+      uses: relekang/python-semantic-release@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
