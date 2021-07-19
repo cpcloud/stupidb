@@ -28,7 +28,13 @@ in
         types = [ "python" ];
       };
 
-      nix-linter.enable = true;
+      nix-linter = {
+        enable = true;
+        excludes = [
+          "nix/sources.nix"
+        ];
+      };
+      nixpkgs-fmt.enable = true;
     };
   };
 }
