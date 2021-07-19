@@ -35,6 +35,11 @@ jobs:
     - name: Install Nix
       uses: cachix/install-nix-action@v12
 
+    - name: Use the nix-community cachix cache
+      uses: cachix/cachix-action@v10
+      with:
+        name: nix-community
+
     - name: Python Semantic Release
       uses: relekang/python-semantic-release@master
       with:
