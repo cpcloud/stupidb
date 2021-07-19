@@ -19,12 +19,7 @@ jobs:
         with:
           name: nix-community
 
-      - name: Use the nix-community cachix cache
-        uses: cachix/cachix-action@v10
-        with:
-          name: nix-community
-
-      - name: Use the nix-community cachix cache
+      - name: Use the stupidb cache
         uses: cachix/cachix-action@v10
         with:
           name: stupidb
