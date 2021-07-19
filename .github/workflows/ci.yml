@@ -24,7 +24,7 @@ jobs:
       - name: Cache artifacts and Run tests
         run: |
           cachix watch-store stupidb &
-          nix-shell --pure shell.nix --run pytest
+          nix-shell --pure shell.nix -A dev --run pytest
         env:
           CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
