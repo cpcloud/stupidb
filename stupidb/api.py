@@ -17,14 +17,14 @@ from typing import Any, Callable, Iterable, Mapping, Optional
 
 from toolz import curry
 
-from stupidb.aggregation import Window  # noqa: F401
-from stupidb.aggregation import (
+from .aggregation import Window  # noqa: F401
+from .aggregation import (
     AggregateSpecification,
     FrameClause,
     Nulls,
     WindowAggregateSpecification,
 )
-from stupidb.associative import (
+from .associative import (
     Count,
     Max,
     Mean,
@@ -38,11 +38,7 @@ from stupidb.associative import (
     Sum,
     Total,
 )
-from stupidb.navigation import First, Lag, Last, Lead, Nth
-from stupidb.protocols import Comparable
-from stupidb.ranking import DenseRank, Rank, RowNumber
-from stupidb.row import AbstractRow
-from stupidb.stupidb import (
+from .core import (
     Aggregation,
     CrossJoin,
     Difference,
@@ -66,7 +62,11 @@ from stupidb.stupidb import (
     Union,
     UnionAll,
 )
-from stupidb.typehints import R1, R2, OrderBy, R, T
+from .navigation import First, Lag, Last, Lead, Nth
+from .protocols import Comparable
+from .ranking import DenseRank, Rank, RowNumber
+from .row import AbstractRow
+from .typehints import R1, R2, OrderBy, R, T
 
 
 class _shiftable(curry):

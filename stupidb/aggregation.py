@@ -22,17 +22,17 @@ from typing import (
     TypeVar,
 )
 
-from stupidb.aggregatetypes import Aggregate
-from stupidb.aggregator import Aggregator
-from stupidb.associative import BinaryAssociativeAggregate, UnaryAssociativeAggregate
-from stupidb.navigation import (
+from .aggregatetypes import Aggregate
+from .aggregator import Aggregator
+from .associative import BinaryAssociativeAggregate, UnaryAssociativeAggregate
+from .navigation import (
     BinaryNavigationAggregate,
     TernaryNavigationAggregate,
     UnaryNavigationAggregate,
 )
-from stupidb.ranking import RankingAggregate
-from stupidb.row import AbstractRow
-from stupidb.typehints import Following, OrderBy, OrderingKey, PartitionBy, Preceding, T
+from .ranking import RankingAggregate
+from .row import AbstractRow
+from .typehints import Following, OrderBy, OrderingKey, PartitionBy, Preceding, T
 
 StartStop = typing.NamedTuple("StartStop", [("start", int), ("stop", int)])
 Ranges = Tuple[StartStop, StartStop, StartStop]
