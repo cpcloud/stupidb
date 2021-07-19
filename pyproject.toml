@@ -47,7 +47,7 @@ python-semantic-release = "7.16.2"
 
 [tool.semantic_release]
 version_toml = "pyproject.toml:tool.poetry.version"
-branch = "nix-env"
+branch = "master"
 upload_to_pypi = false
 build_command = "pip install poetry && poetry build"
 
