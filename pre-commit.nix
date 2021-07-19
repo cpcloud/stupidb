@@ -1,5 +1,6 @@
 let
   pkgs = import ./nix;
+  inherit (pkgs) lib;
   sources = import ./nix/sources.nix;
   pre-commit-hooks = import sources.pre-commit-hooks;
 in
@@ -9,14 +10,14 @@ in
     hooks = {
       black = {
         enable = true;
-        entry = pkgs.lib.mkForce "black --check";
+        entry = lib.mkForce "black --check";
       };
 
       isort = {
         enable = true;
         name = "isort";
         language = "python";
-        entry = pkgs.lib.mkForce "isort --check";
+        entry = "isort --check";
         types_or = [ "cython" "pyi" "python" ];
       };
 
@@ -35,6 +36,22 @@ in
         ];
       };
       nixpkgs-fmt.enable = true;
+
+      prettier =
+        let
+          prettier-toml = pkgs.writeShellScriptBin "prettier-toml" ''
+            ${pkgs.nodePackages.prettier}/bin/prettier \
+            --plugin-search-dir "${pkgs.nodePackages.prettier-plugin-toml}/lib" \
+            --check \
+            "$@"
+          '';
+        in
+        {
+          enable = true;
+          entry = lib.mkForce "${prettier-toml}/bin/prettier-toml";
+          types_or = lib.mkForce [ "toml" ];
+          types = [ "toml" ];
+        };
     };
   };
 }
