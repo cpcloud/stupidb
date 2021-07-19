@@ -1,6 +1,6 @@
 on:
   push:
-    branches: [ "**" ]
+    branches: ["**"]
 
 name: Continuous Integration
 
@@ -28,19 +28,19 @@ jobs:
     concurrency: release
 
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-    - name: Install Nix
-      uses: cachix/install-nix-action@v12
+      - name: Install Nix
+        uses: cachix/install-nix-action@v12
 
-    - name: Use the nix-community cachix cache
-      uses: cachix/cachix-action@v10
-      with:
-        name: nix-community
+      - name: Use the nix-community cachix cache
+        uses: cachix/cachix-action@v10
+        with:
+          name: nix-community
 
-    - name: Python Semantic Release
-      uses: relekang/python-semantic-release@master
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Python Semantic Release
+        uses: relekang/python-semantic-release@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
