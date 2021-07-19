@@ -6,16 +6,11 @@ let
       stupidb = ./stupidb;
     };
   };
-in {
-  buildShell = pkgs.mkShell {
-    name = "stupidb-build";
-    shellHook = ''
-      ${(import ./pre-commit.nix).pre-commit-check.shellHook}
-    '';
-    buildInputs = with pkgs; [ poetry graphviz gcc ];
-  };
-  devShell = pkgs.mkShell {
-    name = "stupidb-dev";
-    buildInputs = [ poetryEnv ];
-  };
+in
+pkgs.mkShell {
+  name = "stupidb";
+  shellHook = ''
+    ${(import ./pre-commit.nix).pre-commit-check.shellHook}
+  '';
+  buildInputs = (with pkgs; [ git poetry graphviz gcc ]) ++ [ poetryEnv ];
 }
