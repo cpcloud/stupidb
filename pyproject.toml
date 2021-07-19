@@ -13,11 +13,11 @@ maintainers = ["Phillip Cloud <cpcloud@gmail.com>"]
 license = "Apache-2.0"
 readme = "README.rst"
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
-    "Natural Language :: English",
-    "Programming Language :: Python :: 3.7",
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3.7",
 ]
 
 [tool.poetry.dependencies]
@@ -50,7 +50,7 @@ python-semantic-release = "7.16.2"
 version_toml = "pyproject.toml:tool.poetry.version"
 branch = "nix-env"
 upload_to_pypi = false
-build_command = "nix-shell --pure -p poetry --run 'poetry build'"
+build_command = "pip install poetry && poetry build"
 
 [tool.conda-lock]
 channels = ["conda-forge", "defaults"]
@@ -58,9 +58,9 @@ channels = ["conda-forge", "defaults"]
 [tool.pytest]
 xfail_strict = true
 addopts = [
-    "--ignore=site-packages",
-    "--ignore=dist-packages",
-    "--strict-markers"
+  "--ignore=site-packages",
+  "--ignore=dist-packages",
+  "--strict-markers"
 ]
 norecursedirs = ["site-packages", "dist-packages"]
 
