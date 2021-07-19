@@ -9,14 +9,14 @@ in
     hooks = {
       black = {
         enable = true;
-        entry = pkgs.lib.mkForce "black";
+        entry = pkgs.lib.mkForce "black --check";
       };
 
       isort = {
         enable = true;
         name = "isort";
         language = "python";
-        entry = "isort";
+        entry = pkgs.lib.mkForce "isort --check";
         types_or = [ "cython" "pyi" "python" ];
       };
 
@@ -27,6 +27,8 @@ in
         entry = "flake8";
         types = [ "python" ];
       };
+
+      nix-linter.enable = true;
     };
   };
 }
