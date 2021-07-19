@@ -33,16 +33,20 @@ animation = ["networkx", "pydot", "imageio"]
 [tool.poetry.dev-dependencies]
 black = "20.8b1"
 bump2version = "1.0.1"
+conda-lock = "0.11.0"
 coverage = "5.5"
 flake8 = "3.9.2"
 ipython = "7.25.0"
 isort = "5.7.0"
 mypy = "0.812"
-mypy-extensions = "0.4.3"
+mypy_extensions = "0.4.3"
 pydocstyle = "6.1.1"
 pytest = "6.2.2"
 sphinx = "4.1.1"
 sphinx-autodoc-typehints = "1.12.0"
+
+[tool.conda-lock]
+channels = ["conda-forge", "defaults"]
 
 [tool.pytest]
 xfail_strict = true
