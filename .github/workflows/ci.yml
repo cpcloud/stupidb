@@ -49,6 +49,11 @@ jobs:
         with:
           name: nix-community
 
+      - name: Use the nix-community cachix cache
+        uses: cachix/cachix-action@v10
+        with:
+          name: stupidb
+
       - name: Python Semantic Release
         uses: relekang/python-semantic-release@master
         with:
