@@ -41,7 +41,7 @@ class SegmentTreeAnimator:
                 if parent != node:
                     graph.add_edge(parent, node, dir="back")
                 queue.append(parent)
-                nx_node = graph.node[node]
+                nx_node = graph.nodes[node]
                 if node in tree.leaves:
                     nx_node["label"] = segment_tree.nodes[node].finalize()
                 else:
@@ -75,11 +75,11 @@ class SegmentTreeAnimator:
                 parent_agg.combine(node_agg)
                 parent_count[parent] += 1
 
-                nx_node = graph.node[node]
+                nx_node = graph.nodes[node]
                 nx_node["fillcolor"] = "blue"
                 nx_node["fontcolor"] = "white"
 
-                nx_parent_node = graph.node[parent]
+                nx_parent_node = graph.nodes[parent]
                 nx_parent_node["label"] = parent_agg.finalize()
 
                 pydot_graph = nx.nx_pydot.to_pydot(graph)
