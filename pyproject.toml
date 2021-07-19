@@ -44,6 +44,13 @@ pydocstyle = "6.1.1"
 pytest = "6.2.2"
 sphinx = "4.1.1"
 sphinx-autodoc-typehints = "1.12.0"
+python-semantic-release = "7.16.2"
+
+[tool.semantic_release]
+version_toml = "pyproject.toml:tool.poetry.version"
+branch = "nix-env"
+upload_to_pypi = false
+build_command = "nix-shell --pure -p poetry --run 'poetry build'"
 
 [tool.conda-lock]
 channels = ["conda-forge", "defaults"]
