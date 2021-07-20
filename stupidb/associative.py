@@ -274,6 +274,9 @@ class UnaryAssociativeAggregate(
     def step(self, input1: Optional[Input1]) -> None:
         """Perform a single step of the aggregation."""
 
+    def combine(self: UA, other: UA) -> None:
+        ...
+
 
 class BinaryAssociativeAggregate(
     AbstractAssociativeAggregate[Output], Generic[Input1, Input2, Output]
@@ -285,6 +288,9 @@ class BinaryAssociativeAggregate(
     @abc.abstractmethod
     def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
         """Perform a single step of the aggregation."""
+
+    def combine(self: BA, other: BA) -> None:
+        ...
 
 
 class Count(UnaryAssociativeAggregate[Input1, int]):
