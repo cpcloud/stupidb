@@ -104,7 +104,7 @@ def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     ... ]
     >>> t = table(rows)
     >>> t  # doctest: +ELLIPSIS
-    <stupidb.stupidb.Relation object at 0x...>
+    <stupidb.core.Relation object at 0x...>
 
     """
     return Relation.from_iterable(rows)
@@ -134,7 +134,7 @@ def cross_join(right: Relation, left: Relation) -> Join:
     >>> s = table(rows)
     >>> crossed = cross_join(t, s)
     >>> crossed  # doctest: +ELLIPSIS
-    <stupidb.stupidb.CrossJoin object at 0x...>
+    <stupidb.core.CrossJoin object at 0x...>
 
     """
     return CrossJoin(left, right)
@@ -166,7 +166,7 @@ def inner_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Joi
     >>> s = table(rows)
     >>> crossed = cross_join(t, s)
     >>> crossed  # doctest: +ELLIPSIS
-    <stupidb.stupidb.CrossJoin object at 0x...>
+    <stupidb.core.CrossJoin object at 0x...>
 
     """
     return Join(left, right, predicate)
@@ -435,7 +435,7 @@ def over(
     Notes
     -----
     This is one of the few user-facing functions that does **not** return a
-    :class:`~stupidb.stupidb.Relation`. The behavior of materializing the rows
+    :class:`~stupidb.core.Relation`. The behavior of materializing the rows
     of the result of calling this function is undefined.
 
     Examples
@@ -491,7 +491,7 @@ def group_by(**group_by: PartitionBy) -> GroupBy:
     Notes
     -----
     Iterating over the rows of the result of this function is not very useful,
-    since its :meth:`~stupidb.stupidb.GroupBy.__iter__` method just yields
+    since its :meth:`~stupidb.core.GroupBy.__iter__` method just yields
     the rows of its child. A call to this function is best followed by a call
     to :func:`~stupidb.api.aggregate`.
 
