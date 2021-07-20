@@ -1,5 +1,5 @@
-.PHONY: help clean clean-build clean-pyc clean-test format-imports format \
-    check lint test coverage docs servedocs release dist install develop
+.PHONY: help clean clean-build clean-pyc clean-test clean-mypy clean-direnv \
+  	format check test coverage docs servedocs
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -30,35 +30,39 @@ BROWSER := python -c "$$BROWSER_PYSCRIPT"
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
-
 clean-build: ## remove build artifacts
-	rm -fr build/ dist/ .eggs/
-	find . -name '*.egg-info' -or -name '*.egg' -exec rm -fr {} +
+	rm -rf build dist .eggs
+	find . -name '*.egg-info' -or -name '*.egg' -exec rm -rf {} +
 
-clean-pyc: ## remove Python file artifacts
+clean-pyc: ## remove Python artifacts
 	find . -name '*.py[co]' -or -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -fr {} +
+	find . -name '__pycache__' -exec rm -rf {} +
 
 clean-test: ## remove test and coverage artifacts
-	rm -fr .tox/ .coverage htmlcov/ .pytest_cache
+	rm -rf .coverage htmlcov .pytest_cache .mypy_cache
 
-format-imports:
-	isort --apply --recursive
+clean-mypy:
+	rm -rf .mypy_cache
 
-format: format-imports
+clean-direnv:
+	rm -rf .direnv
+
+clean: clean-build clean-pyc clean-test clean-mypy clean-direnv
+	@touch .envrc
+
+format:
+	isort . --profile=black
 	black .
 
 check:
+	isort . --profile=black --check
 	black --check .
-
-lint: check ## check style with flake8
 	flake8 .
 
-test: ## run tests quickly with the default Python
+test:
 	pytest
 
-coverage: ## check code coverage quickly with the default Python
+coverage: ## check code coverage
 	coverage run --source stupidb -m pytest
 	coverage report -m
 	@coverage html
@@ -68,7 +72,7 @@ SPHINX_APIDOC_OPTIONS := members,show-inheritance
 
 docs:  ## generate Sphinx HTML documentation, including API docs
 	SPHINX_APIDOC_OPTIONS=${SPHINX_APIDOC_OPTIONS} \
-	    sphinx-apidoc --separate --force -o docs/ stupidb \
+	    sphinx-apidoc --separate --force -o docs/ stupidb stupidb/tests \
 	    -H "StupiDB Modules" --ext-doctest --ext-autodoc \
 	    --ext-intersphinx --ext-mathjax
 	$(MAKE) -C docs clean
@@ -77,17 +81,3 @@ docs:  ## generate Sphinx HTML documentation, including API docs
 
 servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
-
-release: dist ## package and upload a release
-	twine upload dist/*
-
-dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
-	ls -ltr dist
-
-install: clean ## install the package to the active Python's site-packages
-	python setup.py install
-
-develop: clean  ## install the package in development mode
-	python setup.py develop
