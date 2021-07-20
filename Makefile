@@ -1,5 +1,5 @@
 .PHONY: help clean clean-build clean-pyc clean-test clean-mypy clean-direnv \
-  	format check test coverage docs servedocs
+  	format check test coverage docs
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -83,6 +83,3 @@ docs:  ## generate Sphinx HTML documentation, including API docs
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs doctest
 	$(MAKE) -C docs html
-
-servedocs: docs ## compile the docs watching for changes
-	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .

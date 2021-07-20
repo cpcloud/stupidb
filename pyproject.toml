@@ -38,7 +38,6 @@ pydocstyle = "^6.1.1"
 pytest = "^6.2.2"
 sphinx = "^4.1.1"
 sphinx-autodoc-typehints = "^1.12.0"
-watchdog = { version = "^2.1.3", extras = ["watchmedo"], platform = "linux" }
 
 [tool.poetry.extras]
 animation = ["imageio", "pydot"]
