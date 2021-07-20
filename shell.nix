@@ -46,6 +46,7 @@ in
         git
         gnumake
         graphviz
+        niv
         nix-linter
         poetry
       ]
