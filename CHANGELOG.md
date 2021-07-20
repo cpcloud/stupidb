@@ -2,6 +2,19 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.0 (2021-07-20)
+### Feature
+* **python-version:** Support python3.7 ([`e52b95f`](https://github.com/cpcloud/stupidb/commit/e52b95fb91e288fcc2f7156433c609a6e39928bb))
+
+### Fix
+* **protocols.py:** Fix type vars in protocols.py ([`8693913`](https://github.com/cpcloud/stupidb/commit/8693913daf3426afc943a97048764a5aaf7fb1fe))
+* **associative.py:** Fix combine location in AssociativeAggregate subclasses ([`2b1da5d`](https://github.com/cpcloud/stupidb/commit/2b1da5d866df850aac1d00bcb18919954babc190))
+* **tests:** Fix typehints in test ([`5253a8d`](https://github.com/cpcloud/stupidb/commit/5253a8dd441dcab69a3aea34401eba69fac8deac))
+* **dev:** Add niv to nix-shell ([`26b78b4`](https://github.com/cpcloud/stupidb/commit/26b78b4a93b314ed81b0b0ed9563d42ced6b765b))
+
+### Breaking
+* Animation users will break  ([`c0f81c8`](https://github.com/cpcloud/stupidb/commit/c0f81c838278f2cddc873cf6fe5266205233b6d9))
+
 ## v2.0.0 (2021-07-20)
 ### Breaking
 * Code wasn't broken, but this is considered breaking because the process by which a person installs the code breaks  ([`dbc67f7`](https://github.com/cpcloud/stupidb/commit/dbc67f7324585c7f0e61c6ffb4467297f57f8f32))
