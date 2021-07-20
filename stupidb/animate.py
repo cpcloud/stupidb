@@ -198,7 +198,7 @@ def main(
 ) -> None:
     """Animate the construction of a SegmentTree."""
     if not leaf:
-        leaves = [(lf,) for lf in range(8)]
+        leaves = [(lf,) for lf in range(1, 9)]
     else:
         leaves = [(lf,) for lf in leaf]
     segment_tree: SegmentTree = SegmentTree(leaves, Sum, fanout=fanout)
