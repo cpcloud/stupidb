@@ -5,8 +5,8 @@ StupiDB
 .. image:: https://img.shields.io/pypi/v/stupidb.svg
         :target: https://pypi.python.org/pypi/stupidb
 
-.. image:: https://img.shields.io/travis/cpcloud/stupidb.svg
-        :target: https://travis-ci.org/cpcloud/stupidb
+.. image:: https://github.com/cpcloud/stupidb/actions/workflows/ci.yml/badge.svg?branch=master
+        :target: https://github.com/cpcloud/stupidb/actions/workflows/ci.yml
 
 .. image:: https://readthedocs.org/projects/stupidb/badge/?version=latest
         :target: https://stupidb.readthedocs.io/en/latest/?badge=latest
