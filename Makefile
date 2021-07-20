@@ -32,11 +32,11 @@ help:
 
 clean-build: ## remove build artifacts
 	rm -rf build dist .eggs
-	find . -name '*.egg-info' -or -name '*.egg' -exec rm -rf {} +
+	fd --no-ignore '.*\.egg(-info)?' --exec rm -rf
 
 clean-pyc: ## remove Python artifacts
-	find . -name '*.py[co]' -or -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -rf {} +
+	fd --no-ignore '.*\.py[co]' --exec rm -f
+	fd --no-ignore '__pycache__' --exec rm -rf
 
 clean-test: ## remove test and coverage artifacts
 	rm -rf .coverage htmlcov .pytest_cache .mypy_cache
@@ -53,11 +53,16 @@ clean: clean-build clean-pyc clean-test clean-mypy clean-direnv
 format:
 	isort . --profile=black
 	black .
+	nixpkgs-fmt .
+	prettier --write $$(fd '\.(toml|ya?ml|json)$$' --hidden)
 
 check:
+	poetry check
 	isort . --profile=black --check
 	black --check .
+	nix-linter $$(fd --exclude nix/sources.nix '\.nix$$')
 	flake8 .
+	prettier --check $$(fd '\.(toml|ya?ml|json)$$' --hidden)
 
 test:
 	pytest
