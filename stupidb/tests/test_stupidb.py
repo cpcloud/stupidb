@@ -512,7 +512,7 @@ T = TypeVar("T")
 U = TypeVar("U")
 
 
-def cumagg(seq: Iterable[T], combine: Callable[[T, U], U]) -> Iterator[U]:
+def cumagg(seq: Iterable[T], combine: Callable[[T, T], T]) -> Iterator[T]:
     """Cumulative aggregation."""
     it = iter(seq)
     result = next(it)
