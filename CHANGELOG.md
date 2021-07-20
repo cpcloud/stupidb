@@ -2,6 +2,24 @@
 
 <!--next-version-placeholder-->
 
+## v2.0.0 (2021-07-20)
+### Breaking
+* Code wasn't broken, but this is considered breaking because the process by which a person installs the code breaks  ([`dbc67f7`](https://github.com/cpcloud/stupidb/commit/dbc67f7324585c7f0e61c6ffb4467297f57f8f32))
+
+### Documentation
+* **dev:** Rewrite docs on installation and setup ([`dbc67f7`](https://github.com/cpcloud/stupidb/commit/dbc67f7324585c7f0e61c6ffb4467297f57f8f32))
+* **servedocs:** Install dev dependencies for running make servedocs ([`5c21042`](https://github.com/cpcloud/stupidb/commit/5c210427a13a8acb68f92d1ab16bb336eca1c2b4))
+* **build:** Update generated docs ([`50b0b3c`](https://github.com/cpcloud/stupidb/commit/50b0b3c9496859b143d2ca5a670f71f54a16f209))
+* **api.py:** Fix doctests in api.py ([`9189bc5`](https://github.com/cpcloud/stupidb/commit/9189bc531f5bf96ff204a5d0521d1634017c78f0))
+* **build:** Use semantic-release to set versions in docs/conf.py ([`54f7f84`](https://github.com/cpcloud/stupidb/commit/54f7f84929739274a7166c7db7bb42d0249c50cd))
+* Remove history.rst ([`7cfd641`](https://github.com/cpcloud/stupidb/commit/7cfd6412ab9d07a9ce58b43c6cff95932519f8a9))
+* Replace stupidb.stupidb.rst with stupidb.core.rst ([`9b2c4d0`](https://github.com/cpcloud/stupidb/commit/9b2c4d047757934c89f486ccad056bd96153f05f))
+* Use pip for docs install ([`7f07b21`](https://github.com/cpcloud/stupidb/commit/7f07b2176fa0648547a14fa994efa4fdde7177ee))
+* **build:** Don't use hashes ([`3e72389`](https://github.com/cpcloud/stupidb/commit/3e7238909f6176bb1cb16925e70c064de061eace))
+* Remove history section ([`5dbf64f`](https://github.com/cpcloud/stupidb/commit/5dbf64f1abadfc49b89df6462f686e8fbd34007d))
+* Use requirements.txt for readthedocs ([`3ecd05c`](https://github.com/cpcloud/stupidb/commit/3ecd05cc900e308c5876533c12b84ec043579bd4))
+* Better release notes header ([`7ff5707`](https://github.com/cpcloud/stupidb/commit/7ff5707c46e0cd1fac1b49bb0d8ba9fa31838f5b))
+
 ## v1.0.1 (2021-07-19)
 ### Performance
 * Use faster to run but slower to build because we now have caching ([`f2d71ac`](https://github.com/cpcloud/stupidb/commit/f2d71acb4011295b02e4229618c5f7c2a7a937a1))
