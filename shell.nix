@@ -1,6 +1,7 @@
 let
   pkgs = import ./nix;
   poetryEnv = pkgs.poetry2nix.mkPoetryEnv {
+    python = pkgs.python37;
     projectDir = ./.;
     editablePackageSources = {
       stupidb = ./stupidb;
