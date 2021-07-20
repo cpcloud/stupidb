@@ -1,6 +1,8 @@
 import os
+import subprocess
+import sys
 
-from stupidb.animate import SegmentTreeAnimator, main
+from stupidb.animate import SegmentTreeAnimator
 from stupidb.associative import SegmentTree, Sum
 
 
@@ -12,8 +14,32 @@ def test_to_gif():
 
 
 def test_main_default_args():
-    main(["-o", os.devnull])
+    try:
+        subprocess.check_call(
+            [f"{sys.executable}", "-m", "stupidb.animate", "-o", os.devnull]
+        )
+    except subprocess.CalledProcessError as e:
+        print(e.stderr, file=sys.stderr)
+        raise
 
 
 def test_main_custom_leaves():
-    main(["-o", os.devnull, "-l", "1", "-l", "2", "-f", "2"])
+    try:
+        subprocess.check_call(
+            [
+                f"{sys.executable}",
+                "-m",
+                "stupidb.animate",
+                "-o",
+                os.devnull,
+                "-l",
+                "1",
+                "-l",
+                "2",
+                "-f",
+                "2",
+            ]
+        )
+    except subprocess.CalledProcessError as e:
+        print(e.stderr, file=sys.stderr)
+        raise

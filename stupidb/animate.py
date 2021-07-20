@@ -1,14 +1,15 @@
 """Animate construction of segment trees."""
 
+import argparse
 import collections
 import sys
 from typing import BinaryIO, Iterator, MutableMapping, Sequence
 
 import imageio
-import networkx as nx
+import pydot
 
 from stupidb import indextree
-from stupidb.associative import SegmentTree
+from stupidb.associative import SegmentTree, Sum
 from stupidb.bitset import BitSet
 
 
@@ -21,17 +22,18 @@ class SegmentTreeAnimator:
         """Construct a :class:`~stupidb.animate.SegmentTreeAnimator`."""
         self.segment_tree = segment_tree
 
-    @property
-    def graph(self) -> nx.DiGraph:
-        """Return a NetworkX graph created from self.nodes."""
+    def make_graph(self, *, font: str) -> pydot.Dot:
+        """Return a graph created from ``self.nodes``."""
         segment_tree = self.segment_tree
         tree = indextree.IndexTree(
             height=segment_tree.height, fanout=segment_tree.fanout
         )
         seen = BitSet()
         queue = collections.deque(tree.leaves)
-        graph = nx.DiGraph()
-        graph.add_nodes_from(tree.nodes)
+
+        graph = pydot.Dot(graph_type="digraph")
+        for node in tree.nodes:
+            graph.add_node(pydot.Node(node))
 
         while queue:
             node = queue.popleft()
@@ -39,25 +41,40 @@ class SegmentTreeAnimator:
                 seen.add(node)
                 parent = tree.parent(node)
                 if parent != node:
-                    graph.add_edge(parent, node, dir="back")
+                    graph.add_edge(pydot.Edge(parent, node, dir="back"))
                 queue.append(parent)
-                nx_node = graph.nodes[node]
                 if node in tree.leaves:
-                    nx_node["label"] = segment_tree.nodes[node].finalize()
+                    result = segment_tree.nodes[node].finalize()
+                    label = "" if result is None else str(result)
                 else:
-                    nx_node["label"] = ""
-                nx_node["fontcolor"] = "black"
-                nx_node["fillcolor"] = "white"
-                nx_node["style"] = "filled"
+                    label = ""
+                (pydot_node,) = graph.get_node(str(node))
+                pydot_node.set_label(label or "")
+                pydot_node.set_fontcolor("black")
+                pydot_node.set_fontname(f"{font} bold")
+                pydot_node.set_fillcolor("white")
+                pydot_node.set_style("filled")
+
         return graph
 
-    @property
-    def iterframes(self) -> Iterator[imageio.core.Array]:
+    def iterframes(self, *, font: str) -> Iterator[imageio.core.Array]:
         """Produce the frames of an animated construction of the tree."""
-        graph = self.graph
+        graph = self.make_graph(font=font)
         segment_tree = self.segment_tree
+
+        adj_list = {int(node.get_name()): BitSet() for node in graph.get_nodes()}
+
+        for edge in graph.get_edges():
+            adj_list[edge.get_source()].add(edge.get_destination())
+
+        predecessors: MutableMapping[int, int] = {}
+
+        for parent, children in adj_list.items():
+            for child in children:
+                predecessors[child] = parent
+
         queue = collections.deque(
-            u for u, out_edge_count in graph.out_degree if not out_edge_count
+            source for source, nodes in adj_list.items() if not nodes
         )
         parent_count: MutableMapping[int, int] = collections.Counter()
         nodes = [segment_tree.aggregate_type() for _ in range(len(segment_tree.nodes))]
@@ -69,21 +86,23 @@ class SegmentTreeAnimator:
             node = queue.popleft()
             if node not in seen:
                 seen.add(node)
-                (parent,) = graph.predecessors(node)
+                parent = predecessors[node]
                 node_agg = nodes[node]
                 parent_agg = nodes[parent]
                 parent_agg.combine(node_agg)
                 parent_count[parent] += 1
 
-                nx_node = graph.nodes[node]
-                nx_node["fillcolor"] = "blue"
-                nx_node["fontcolor"] = "white"
+                (pydot_node,) = graph.get_node(str(node))
+                pydot_node.set_fillcolor("blue")
+                pydot_node.set_fontcolor("white")
+                pydot_node.set_fontname(f"{font} bold")
 
-                nx_parent_node = graph.nodes[parent]
-                nx_parent_node["label"] = parent_agg.finalize()
+                result = parent_agg.finalize()
 
-                pydot_graph = nx.nx_pydot.to_pydot(graph)
-                png_bytes = pydot_graph.create_png()
+                (pydot_parent_node,) = graph.get_node(str(parent))
+                pydot_parent_node.set_label("" if result is None else str(result))
+
+                png_bytes = graph.create_png()
                 yield imageio.imread(png_bytes)
 
                 # don't traverse the root, since it will already contain its
@@ -92,11 +111,13 @@ class SegmentTreeAnimator:
                     queue.append(parent)
 
                 if parent_count[parent] == segment_tree.fanout - 1:
-                    nx_parent_node["fillcolor"] = "red"
-                    nx_parent_node["fontcolor"] = "white"
-                    nx_parent_node["label"] = parent_agg.finalize()
+                    pydot_parent_node.set_fillcolor("red")
+                    pydot_parent_node.set_fontcolor("white")
+                    pydot_parent_node.set_fontname(f"{font} bold")
+                    result = parent_agg.finalize()
+                    pydot_parent_node.set_label("" if result is None else str(result))
 
-    def animate(self, io: BinaryIO, fps: float = 1.5) -> None:
+    def animate(self, io: BinaryIO, font: str = "Helvetica", fps: float = 1.5) -> None:
         """Convert this segment tree's construction into an animated gif.
 
         Parameters
@@ -117,45 +138,80 @@ class SegmentTreeAnimator:
         ...     animator.animate(devnull)
 
         """
-        imageio.mimsave(io, list(self.iterframes), fps=fps, format="gif")
+        imageio.mimsave(io, ims=self.iterframes(font=font), fps=fps, format="gif")
 
 
-def main(argv: Sequence[str]) -> None:
-    """Animate the construction of a SegmentTree."""
-    import argparse
-
-    from stupidb.associative import Sum
-
-    parser = argparse.ArgumentParser(
+def parse_args():
+    p = argparse.ArgumentParser(
         description=(
-            "Animate the construction of a segment tree using the Sum " "aggregation."
-        )
+            "Animate the construction of a segment tree build "
+            "with the Sum aggregation."
+        ),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument(
+    p.add_argument(
         "-o",
-        "--outfile",
+        "--output-file",
         type=argparse.FileType("wb"),
         default=sys.stdout.buffer,
         help="Where to write the animated GIF. Defaults to stdout.",
     )
-    parser.add_argument("-f", "--fanout", type=int, default=2, help="The tree fanout.")
-    parser.add_argument(
+    p.add_argument(
+        "-f",
+        "--fanout",
+        type=int,
+        default=2,
+        help="Segment tree fanout.",
+    )
+    p.add_argument(
         "-l",
         "--leaf",
         type=int,
-        default=[],
         action="append",
-        help="The leaves of the tree.",
+        default=[],
+        help="The leaves of the segment tree.",
     )
-    args = parser.parse_args(argv)
-    if not args.leaf:
-        leaves = [(i,) for i in range(1, 9)]
+    p.add_argument(
+        "-r",
+        "--frame-rate",
+        type=float,
+        default=1.5,
+        help="Frames per second of the resulting animation.",
+    )
+    p.add_argument(
+        "-F",
+        "--font",
+        type=str,
+        default="Helvetica",
+        help="Node font.",
+    )
+    return p.parse_args()
+
+
+def main(
+    *,
+    output_file: BinaryIO,
+    fanout: int,
+    leaf: Sequence[int],
+    frame_rate: float,
+    font: str,
+) -> None:
+    """Animate the construction of a SegmentTree."""
+    if not leaf:
+        leaves = [(lf,) for lf in range(8)]
     else:
-        leaves = [(leaf,) for leaf in args.leaf]
-    segment_tree: SegmentTree = SegmentTree(leaves, Sum, fanout=args.fanout)
+        leaves = [(lf,) for lf in leaf]
+    segment_tree: SegmentTree = SegmentTree(leaves, Sum, fanout=fanout)
     animator = SegmentTreeAnimator(segment_tree)
-    animator.animate(args.outfile)
+    animator.animate(output_file, font=font, fps=frame_rate)
 
 
 if __name__ == "__main__":  # pragma: no cover
-    main(sys.argv)
+    args = parse_args()
+    main(
+        output_file=args.output_file,
+        fanout=args.fanout,
+        leaf=args.leaf,
+        frame_rate=args.frame_rate,
+        font=args.font,
+    )
