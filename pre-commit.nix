@@ -31,6 +31,7 @@ in
 
       nix-linter = {
         enable = true;
+        entry = lib.mkForce "nix-linter";
         excludes = [
           "nix/sources.nix"
         ];
