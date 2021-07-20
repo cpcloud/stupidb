@@ -92,7 +92,7 @@ def test_group_by(rows):
     gb = (
         table(rows)
         >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
-        >> sift(lambda r: True)
+        >> sift(lambda _: True)
         >> group_by(c=lambda r: r["c"], z=lambda r: r["z"])
         >> aggregate(total=sum(lambda r: r["d"]), mean=mean(lambda r: r["d"]))
     )
