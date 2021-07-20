@@ -10,6 +10,7 @@ in
       black = {
         enable = true;
         entry = lib.mkForce "black --check";
+        types = [ "python" ];
       };
 
       isort = {
