@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.1 (2021-07-20)
+### Documentation
+* **build:** Make docs deps extras ([`c11679a`](https://github.com/cpcloud/stupidb/commit/c11679a95bfdc11f351e173540d8106a18898b22))
+* **readme:** Update CI badge ([`8b77999`](https://github.com/cpcloud/stupidb/commit/8b779999839d5a0b8c6d31cb789a15f381ef5484))
+
+### Performance
+* **core:** Actually use cytoolz ([`8d67203`](https://github.com/cpcloud/stupidb/commit/8d67203a23436b2320aecf1d375c5e5b1efcf74d))
+
 ## v3.0.0 (2021-07-20)
 ### Feature
 * **python-version:** Support python3.7 ([`e52b95f`](https://github.com/cpcloud/stupidb/commit/e52b95fb91e288fcc2f7156433c609a6e39928bb))
