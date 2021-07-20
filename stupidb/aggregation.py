@@ -15,6 +15,7 @@ from typing import (
     Iterator,
     List,
     MutableMapping,
+    NamedTuple,
     Optional,
     Sequence,
     Tuple,
@@ -34,7 +35,12 @@ from .ranking import RankingAggregate
 from .row import AbstractRow
 from .typehints import Following, OrderBy, OrderingKey, PartitionBy, Preceding, T
 
-StartStop = typing.NamedTuple("StartStop", [("start", int), ("stop", int)])
+
+class StartStop(NamedTuple):
+    start: int
+    stop: int
+
+
 Ranges = Tuple[StartStop, StartStop, StartStop]
 
 
