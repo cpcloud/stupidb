@@ -9,6 +9,12 @@ let
   condaShellRun = pkgs.writeShellScriptBin "conda-shell-run" ''
     ${pkgs.conda}/bin/conda-shell -c "$@"
   '';
+
+  prettier = with pkgs; writeShellScriptBin "prettier" ''
+    ${nodePackages.prettier}/bin/prettier \
+    --plugin-search-dir "${nodePackages.prettier-plugin-toml}/lib" \
+    "$@"
+  '';
 in
 {
   conda = pkgs.mkShell {
@@ -42,6 +48,7 @@ in
       ]
     ) ++ [
       poetryEnv
+      prettier
     ];
   };
 }

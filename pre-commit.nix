@@ -36,21 +36,12 @@ in
       };
       nixpkgs-fmt.enable = true;
 
-      prettier =
-        let
-          prettier-toml = pkgs.writeShellScriptBin "prettier-toml" ''
-            ${pkgs.nodePackages.prettier}/bin/prettier \
-            --plugin-search-dir "${pkgs.nodePackages.prettier-plugin-toml}/lib" \
-            --check \
-            "$@"
-          '';
-        in
-        {
-          enable = true;
-          entry = lib.mkForce "${prettier-toml}/bin/prettier-toml";
-          types_or = lib.mkForce [ "toml" ];
-          types = [ "toml" ];
-        };
+      prettier = {
+        enable = true;
+        entry = lib.mkForce "prettier --check";
+        types_or = lib.mkForce [ "toml" "yaml" "json" ];
+        types = [ "toml" "yaml" "json" ];
+      };
     };
   };
 }
