@@ -672,7 +672,7 @@ animation = ["imageio", "pydot"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "33453e5d9bbf23001a1242d4ea59191bbba86328fcf4d3f8d209a34a0996c749"
+content-hash = "0fc2608567fac4c9b195bdefb1d05a0103465437cbdf7a45da470c87c69c23d0"
 
 [metadata.files]
 alabaster = [
