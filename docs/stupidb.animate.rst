@@ -2,5 +2,5 @@ stupidb.animate module
 ======================
 
 .. automodule:: stupidb.animate
-    :members:
-    :show-inheritance:
+   :members:
+   :show-inheritance:

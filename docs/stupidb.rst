@@ -5,6 +5,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 4
 
    stupidb.aggregatetypes
    stupidb.aggregation
@@ -13,18 +14,18 @@ Submodules
    stupidb.api
    stupidb.associative
    stupidb.bitset
+   stupidb.core
    stupidb.indextree
    stupidb.navigation
    stupidb.protocols
    stupidb.ranking
    stupidb.reversed
    stupidb.row
-   stupidb.stupidb
    stupidb.typehints
 
 Module contents
 ---------------
 
 .. automodule:: stupidb
-    :members:
-    :show-inheritance:
+   :members:
+   :show-inheritance:

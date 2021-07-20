@@ -2,5 +2,5 @@ stupidb.ranking module
 ======================
 
 .. automodule:: stupidb.ranking
-    :members:
-    :show-inheritance:
+   :members:
+   :show-inheritance:

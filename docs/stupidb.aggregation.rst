@@ -2,5 +2,5 @@ stupidb.aggregation module
 ==========================
 
 .. automodule:: stupidb.aggregation
-    :members:
-    :show-inheritance:
+   :members:
+   :show-inheritance:

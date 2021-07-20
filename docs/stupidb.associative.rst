@@ -2,5 +2,5 @@ stupidb.associative module
 ==========================
 
 .. automodule:: stupidb.associative
-    :members:
-    :show-inheritance:
+   :members:
+   :show-inheritance:
