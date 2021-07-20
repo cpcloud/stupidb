@@ -65,34 +65,50 @@ Ready to contribute? Here's how to set up `stupidb` for local development.
 
     $ git clone git@github.com:your_name_here/stupidb.git
 
-3. Install your local copy into a virtualenv. Assuming you have
-   virtualenvwrapper installed, this is how you set up your fork for local
-   development::
+3. `Install nix <https://nixos.org/guides/install-nix.html>`_
 
-    $ mkvirtualenv stupidb
+4. Enable the ``stupidb`` `cachix`_ cache::
+
+    $ nix run nixpkgs.cachix -c cachix use stupidb
+
+   .. note::
+
+      This step is optional but **highly recommended**. Without the ``stupidb``
+      cache, most dependencies, will be built from source.
+
+      The ``stupidb`` cache is **only** populated from CI, using `nix-shell --pure`
+      which greatly decreases the likelihood that something unintentional makes
+      its way into the cache.
+
+5. Enter a `nix-shell`::
+
     $ cd stupidb/
-    $ python setup.py develop
+    $ nix-shell
 
-4. Create a branch for local development::
+   This will take a bit of time, but should be relatively quick if you
+   enabled the ``stupidb`` cachix cache.
+
+6. Create a branch for local development::
 
     $ git checkout -b name-of-your-bugfix-or-feature
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 and the
-   tests, including testing other Python versions with tox::
+7. When you're done making changes, check that your changes pass formatting
+   checks and tests::
 
     $ make format
-    $ make lint
-    $ pytest
+    $ make check
+    $ make test
 
-6. Commit your changes and push your branch to GitHub::
+8. Commit your changes and push your branch to GitHub::
 
     $ git add .
-    $ git commit -m "A detailed description of your changes."
+    $ git commit
     $ git push origin name-of-your-bugfix-or-feature
 
-7. Submit a pull request through the GitHub website.
+9. Submit a pull request using the `gh <https://cli.github.com>`_ CLI tool or
+   through the GitHub web UI.
 
 Pull Request Guidelines
 -----------------------
@@ -100,30 +116,31 @@ Pull Request Guidelines
 Before you submit a pull request, check that it meets these guidelines:
 
 1. The pull request should include tests.
-2. If the pull request adds functionality, the docs should be updated. Put
-   your new functionality into a function with a docstring, and add the
-   feature to the list in README.rst.
-3. The pull request should work for Python 2.7, 3.4, 3.5 and 3.6, and for PyPy. Check
-   https://travis-ci.org/cpcloud/stupidb/pull_requests
-   and make sure that the tests pass for all supported Python versions.
+2. If the pull request adds functionality, the docs should be updated. Put your
+   new functionality into a function with a docstring, and add the feature to
+   the list in README.rst.
+3. The pull request should work for Python 3.8. Check
+   https://github.com/cpcloud/stupidb/actions and make sure that the tests
+   pass.
 
-Tips
-----
-
-To run a subset of tests::
-
-$ py.test tests.test_stupidb
-
-
-Deploying
+Releasing
 ---------
 
-A reminder for the maintainers on how to deploy.
-Make sure all your changes are committed (including an entry in HISTORY.rst).
-Then run::
+Releases are entirely automated using `semantic release`_ conventions.
 
-$ bumpversion patch # possible: major / minor / patch
-$ git push
-$ git push --tags
+.. warning::
 
-Travis will then deploy to PyPI if tests pass.
+   Releasing by hand is intentionally not documented. Do **not** release
+   anything by hand.
+
+1. Releases are cut for every commit as determined by `python-semantic-release`_.
+2. `CHANGELOG.md` is automatically updated with new changes by the
+   `python-semantic-release GitHub action`_.
+3. Versions are bumped in the necessary places automatically.
+4. Docs are updated at https://readthedocs.org/projects/stupidb on every commit
+   regardless of whether a release is cut or not.
+
+.. _python-semantic-release: https://python-semantic-release.readthedocs.io
+.. _python-semantic-release GitHub Action: https://python-semantic-release.readthedocs.io/en/latest/automatic-releases/github-actions.html
+.. _semantic release: https://semantic-release.gitbook.io/semantic-release
+.. _cachix: https://cachix.org
