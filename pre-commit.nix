@@ -1,6 +1,5 @@
 let
-  pkgs = import ./nix;
-  inherit (pkgs) lib;
+  inherit (import ./nix) lib;
   sources = import ./nix/sources.nix;
   pre-commit-hooks = import sources.pre-commit-hooks;
 in
