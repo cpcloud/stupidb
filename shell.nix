@@ -1,60 +1,45 @@
 let
   pkgs = import ./nix;
-  poetryEnv = pkgs.poetry2nix.mkPoetryEnv {
-    python = pkgs.python37;
+  inherit (pkgs) lib;
+  prettier = with pkgs; writeShellScriptBin "prettier" ''
+    ${nodePackages.prettier}/bin/prettier \
+    --plugin-search-dir "${nodePackages.prettier-plugin-toml}/lib" \
+    "$@"
+  '';
+  mkPoetryEnv = python: pkgs.poetry2nix.mkPoetryEnv {
+    inherit python;
     pyproject = ./pyproject.toml;
     poetrylock = ./poetry.lock;
     editablePackageSources = {
       stupidb = ./stupidb;
     };
   };
-  condaShellRun = pkgs.writeShellScriptBin "conda-shell-run" ''
-    ${pkgs.conda}/bin/conda-shell -c "$@"
-  '';
-
-  prettier = with pkgs; writeShellScriptBin "prettier" ''
-    ${nodePackages.prettier}/bin/prettier \
-    --plugin-search-dir "${nodePackages.prettier-plugin-toml}/lib" \
-    "$@"
-  '';
+  versions = [ "python37" "python38" "python39" ];
 in
-{
-  conda = pkgs.mkShell {
-    name = "stupidb-conda";
-    shellHook = ''
-      ${(import ./pre-commit.nix).pre-commit-check.shellHook}
-      ${pkgs.conda}/bin/conda-shell -c 'conda-install 2> /dev/null || true'
-    '';
-    buildInputs = (
-      with pkgs; [
-        conda
-        git
-        poetry
-      ]
-    ) ++ [
-      condaShellRun
-    ];
-  };
-
-  dev = pkgs.mkShell {
-    name = "stupidb-dev";
-    shellHook = ''
-      ${(import ./pre-commit.nix).pre-commit-check.shellHook}
-    '';
-    buildInputs = (
-      with pkgs; [
-        fd
-        gcc
-        git
-        gnumake
-        graphviz
-        niv
-        nix-linter
-        poetry
-      ]
-    ) ++ [
-      poetryEnv
-      prettier
-    ];
-  };
-}
+lib.listToAttrs
+  (map
+    (name: {
+      inherit name;
+      value = pkgs.mkShell {
+        name = "stupidb-dev-${name}";
+        shellHook = ''
+          ${(import ./pre-commit.nix).pre-commit-check.shellHook}
+        '';
+        buildInputs = (
+          with pkgs; [
+            fd
+            gcc
+            git
+            gnumake
+            graphviz
+            niv
+            nix-linter
+            poetry
+          ]
+        ) ++ [
+          (mkPoetryEnv pkgs.${name})
+          prettier
+        ];
+      };
+    })
+    versions)
