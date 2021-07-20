@@ -58,8 +58,8 @@ master_doc = "index"
 
 # General information about the project.
 project = "stupidb"
-copyright = "{:d}, Phillip Cloud".format(datetime.date.today().year)
 author = "Phillip Cloud"
+copyright = f"{datetime.date.today().year:d}, {author}"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
