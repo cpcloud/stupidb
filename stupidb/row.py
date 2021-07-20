@@ -3,7 +3,7 @@
 import abc
 from typing import Any, Hashable, Iterator, Mapping
 
-import toolz
+import cytoolz as toolz
 
 
 class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):

@@ -9,8 +9,8 @@ import statistics
 from datetime import date, timedelta
 from typing import Callable, Iterable, Iterator, TypeVar
 
+import cytoolz as toolz
 import pytest
-import toolz
 
 from stupidb.aggregation import Window
 from stupidb.api import (

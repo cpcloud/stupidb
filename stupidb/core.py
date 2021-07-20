@@ -32,7 +32,7 @@ from typing import (
 )
 from typing import Union as Union_
 
-import toolz as toolz
+import cytoolz as toolz
 
 from stupidb.aggregation import (
     AggregateSpecification,
@@ -217,10 +217,11 @@ class Aggregation(Generic[AssociativeAggregate], Relation):
                 agg.step(*inputs)
 
         for id, (grouping_key, aggs) in enumerate(grouped_aggs.items()):
+            data = dict(grouping_key)
             finalized_aggregations = {
                 name: agg.finalize() for name, agg in aggs.items()
             }
-            data = toolz.merge(grouping_key, finalized_aggregations)
+            data.update(finalized_aggregations)
             yield Row(data, _id=id)
 
 
