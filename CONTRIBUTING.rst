@@ -74,11 +74,12 @@ Ready to contribute? Here's how to set up `stupidb` for local development.
    .. note::
 
       This step is optional but **highly recommended**. Without the ``stupidb``
-      cache, most dependencies, will be built from source.
+      cache, most dependencies will be built from source and it will take a
+      very long time to setup your development environment.
 
-      The ``stupidb`` cache is **only** populated from CI, using `nix-shell --pure`
-      which greatly decreases the likelihood that something unintentional makes
-      its way into the cache.
+      The ``stupidb`` cache is **only** populated from CI, using ``nix-shell
+      --pure``. This greatly decreases the likelihood that something
+      unintentional makes its way into the cache.
 
 5. Enter a `nix-shell`::
 
