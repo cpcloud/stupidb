@@ -77,8 +77,7 @@ class Relation(Partitionable):
 
     def __iter__(self) -> Iterator[AbstractRow]:
         """Iterate over the rows of a :class:`~stupidb.stupidb.Relation`."""
-        for id, row in enumerate(filter(None, self.child)):
-            yield row.renew_id(id)
+        return (row.renew_id(id) for id, row in enumerate(filter(None, self.child)))
 
     @classmethod
     def from_iterable(cls, iterable: Iterable[Mapping[str, Any]]) -> "Relation":
@@ -153,10 +152,12 @@ class Projection(Relation):
 
         # Use zip_longest here, because either of aggrows or projrows can be
         # empty
-        for i, (aggrow, projrow) in enumerate(
-            itertools.zip_longest(aggrows, projrows, fillvalue={})
-        ):
-            yield Row(toolz.merge(projrow, aggrow), _id=i)
+        return (
+            Row(toolz.merge(projrow, aggrow), _id=i)
+            for i, (aggrow, projrow) in enumerate(
+                itertools.zip_longest(aggrows, projrows, fillvalue={})
+            )
+        )
 
 
 class Mutate(Projection):
@@ -172,8 +173,10 @@ class Mutate(Projection):
         child, self.child = typing.cast(
             Tuple[Partitionable, Partitionable], itertools.tee(self.child)
         )
-        for i, row in enumerate(map(toolz.merge, child, super().__iter__())):
-            yield Row.from_mapping(row, _id=i)
+        return (
+            Row.from_mapping(row, _id=i)
+            for i, row in enumerate(map(toolz.merge, child, super().__iter__()))
+        )
 
 
 class Aggregation(Generic[AssociativeAggregate], Relation):
@@ -243,8 +246,10 @@ class Selection(Relation):
         self.predicate = predicate
 
     def __iter__(self) -> Iterator[AbstractRow]:
-        for id, row in enumerate(filter(self.predicate, self.child)):
-            yield row.renew_id(id)
+        return (
+            row.renew_id(id)
+            for id, row in enumerate(filter(self.predicate, self.child))
+        )
 
 
 class GroupBy(Relation):
@@ -312,11 +317,9 @@ class Join(Relation):
         self.predicate = predicate
         super().__init__(
             Partitionable(
-                (
-                    JoinedRow(left_row, right_row, _id=i)
-                    for i, (left_row, right_row) in enumerate(
-                        itertools.product(left_, right_)
-                    )
+                JoinedRow(left_row, right_row, _id=i)
+                for i, (left_row, right_row) in enumerate(
+                    itertools.product(left_, right_)
                 )
             )
         )
@@ -444,8 +447,10 @@ class UnionAll(SetOperation):
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
-        for id, row in enumerate(itertools.chain(self.left, self.right)):
-            yield Row.from_mapping(row, _id=id)
+        return (
+            Row.from_mapping(row, _id=id)
+            for id, row in enumerate(itertools.chain(self.left, self.right))
+        )
 
 
 class IntersectAll(SetOperation):
@@ -466,8 +471,10 @@ class IntersectAll(SetOperation):
             for row_items in (tuple(row.items()) for row in right_rows)
             if row_items in left_set
         )
-        for id, row in enumerate(itertools.chain(left_filtered, right_filtered)):
-            yield Row.from_mapping(row, _id=id)
+        return (
+            Row.from_mapping(row, _id=id)
+            for id, row in enumerate(itertools.chain(left_filtered, right_filtered))
+        )
 
 
 class Difference(SetOperation):
@@ -480,8 +487,9 @@ class Difference(SetOperation):
             for row_items in (tuple(row.items()) for row in self.left)
             if row_items not in right_set
         )
-        rows = (Row.from_mapping(row, _id=id) for id, row in enumerate(filtered))
-        return toolz.unique(rows)
+        return toolz.unique(
+            Row.from_mapping(row, _id=id) for id, row in enumerate(filtered)
+        )
 
 
 class DifferenceAll(SetOperation):
@@ -494,8 +502,7 @@ class DifferenceAll(SetOperation):
             for row_items in (tuple(row.items()) for row in self.left)
             if row_items not in right_set
         )
-        for id, row in enumerate(filtered):
-            yield Row.from_mapping(row, _id=id)
+        return (Row.from_mapping(row, _id=id) for id, row in enumerate(filtered))
 
 
 class Intersect(SetOperation):
