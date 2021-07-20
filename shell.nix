@@ -41,6 +41,7 @@ in
     '';
     buildInputs = (
       with pkgs; [
+        fd
         gcc
         git
         graphviz
