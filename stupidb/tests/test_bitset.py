@@ -5,9 +5,11 @@ from stupidb.bitset import BitSet
 
 def test_construction():
     bs = BitSet()
-    assert bs.bitset == 0
+    assert not bs
+    assert len(bs) == 0
 
     bs = BitSet({1, 2})
+    assert len(bs) == 2
     assert list(bs) == [1, 2]
 
     with pytest.raises(ValueError):
@@ -16,7 +18,7 @@ def test_construction():
 
 def test_repr():
     bs = BitSet()
-    assert repr(bs) == "BitSet(set())"
+    assert repr(bs) == "BitSet()"
 
     bs = BitSet([1, 2])
     assert repr(bs) == "BitSet({1, 2})"
