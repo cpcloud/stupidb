@@ -44,6 +44,7 @@ in
         fd
         gcc
         git
+        gnumake
         graphviz
         poetry
       ]
