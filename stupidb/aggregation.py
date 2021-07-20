@@ -468,7 +468,7 @@ def row_key_compare(
 
 def make_key_func(
     order_by: Sequence[OrderBy], nulls: Nulls
-) -> Callable[[Tuple[int, AbstractRow]], OrderingKey]:
+) -> Callable[[Tuple[int, AbstractRow]], OrderingKey[T]]:
     """Make a function usable with the key argument to sorting functions.
 
     This return value of this function can be passed to
