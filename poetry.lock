@@ -109,40 +109,12 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 
 [[package]]
-name = "click-default-group"
-version = "1.2.2"
-description = "Extends click.Group to invoke a command without explicit subcommand name"
-category = "dev"
-optional = true
-python-versions = "*"
-
-[package.dependencies]
-click = "*"
-
-[[package]]
 name = "colorama"
 version = "0.4.4"
 description = "Cross-platform colored terminal text."
 category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-
-[[package]]
-name = "conda-lock"
-version = "0.11.0"
-description = "Lockfiles for conda"
-category = "dev"
-optional = true
-python-versions = ">=3.6"
-
-[package.dependencies]
-click = "*"
-click-default-group = "*"
-ensureconda = ">=1.1"
-Jinja2 = "*"
-PyYaml = ">=5.1"
-requests = ">=2"
-toml = "*"
 
 [[package]]
 name = "coverage"
@@ -176,28 +148,6 @@ description = "Docutils -- Python Documentation Utilities"
 category = "dev"
 optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-
-[[package]]
-name = "ensureconda"
-version = "1.4.1"
-description = "Lightweight bootstrapper for a conda executable"
-category = "dev"
-optional = true
-python-versions = ">=3.6"
-
-[package.dependencies]
-appdirs = "*"
-click = ">=5.1"
-filelock = "*"
-requests = ">=2"
-
-[[package]]
-name = "filelock"
-version = "3.0.12"
-description = "A platform independent file lock."
-category = "dev"
-optional = true
-python-versions = "*"
 
 [[package]]
 name = "flake8"
@@ -718,13 +668,12 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 
 [extras]
 animation = ["imageio", "pydot"]
-conda = []
 docs = []
 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "401fee4ec23e3f37d1c78123c7a7d258885dba16efbc01b09d8ecea015545559"
+content-hash = "db1ecdd695c943274401266d126a8ff92ee428f8857e6ecd9fd5d5a5567fe09d"
 
 [metadata.files]
 alabaster = [
@@ -766,16 +715,9 @@ click = [
     {file = "click-8.0.1-py3-none-any.whl", hash = "sha256:fba402a4a47334742d782209a7c79bc448911afe1149d07bdabdf480b3e2f4b6"},
     {file = "click-8.0.1.tar.gz", hash = "sha256:8c04c11192119b1ef78ea049e0a6f0463e4c48ef00a30160c704337586f3ad7a"},
 ]
-click-default-group = [
-    {file = "click-default-group-1.2.2.tar.gz", hash = "sha256:d9560e8e8dfa44b3562fbc9425042a0fd6d21956fcc2db0077f63f34253ab904"},
-]
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
-]
-conda-lock = [
-    {file = "conda_lock-0.11.0-py3-none-any.whl", hash = "sha256:2fb7da84162a67dd4f609669815d3ae33f11205b0b9241a23cfab720d7342379"},
-    {file = "conda_lock-0.11.0.tar.gz", hash = "sha256:61c149d939599010eb414d30ea4b276660a50a0b6ced3a72b3461ea8fed73689"},
 ]
 coverage = [
     {file = "coverage-5.5-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:b6d534e4b2ab35c9f93f46229363e17f63c53ad01330df9f2d6bd1187e5eaacf"},
@@ -837,14 +779,6 @@ cytoolz = [
 docutils = [
     {file = "docutils-0.17.1-py2.py3-none-any.whl", hash = "sha256:cf316c8370a737a022b72b56874f6602acf974a37a9fba42ec2876387549fc61"},
     {file = "docutils-0.17.1.tar.gz", hash = "sha256:686577d2e4c32380bb50cbb22f575ed742d58168cee37e99117a854bcd88f125"},
-]
-ensureconda = [
-    {file = "ensureconda-1.4.1-py3-none-any.whl", hash = "sha256:fa370ea24da8e073f612538f67480c15071851f773ee813f5ecda9e136352b1a"},
-    {file = "ensureconda-1.4.1.tar.gz", hash = "sha256:0c52ad9ab8b72b90ffdad0622894e2bd5f80abfc1d06cc3868ba2dfb4eed62ab"},
-]
-filelock = [
-    {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},
-    {file = "filelock-3.0.12.tar.gz", hash = "sha256:18d82244ee114f543149c66a6e0c14e9c4f8a1044b5cdaadd0f82159d6a6ff59"},
 ]
 flake8 = [
     {file = "flake8-3.9.2-py2.py3-none-any.whl", hash = "sha256:bf8fd333346d844f616e8d47905ef3a3384edae6b4e9beb0c5101e25e3110907"},
