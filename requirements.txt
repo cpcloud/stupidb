@@ -13,7 +13,6 @@ cytoolz==0.11.0
 docutils==0.17.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 flake8==3.9.2; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 idna==3.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
-imageio==2.9.0; python_version >= "3.5"
 imagesize==1.2.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 importlib-metadata==4.6.1; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "3.8" or python_full_version >= "3.5.0" and python_version < "3.8" and python_version >= "3.6" or python_version < "3.8"
 iniconfig==1.1.1; python_version >= "3.6"
@@ -23,10 +22,8 @@ markupsafe==2.0.1; python_version >= "3.6"
 mccabe==0.6.1; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0"
 mypy-extensions==0.4.3
 mypy==0.812; python_version >= "3.5"
-numpy==1.21.1; python_version >= "3.7"
 packaging==21.0; python_version >= "3.6"
 pathspec==0.9.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
-pillow==8.3.1; python_version >= "3.6"
 pluggy==0.13.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 py==1.10.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 pycodestyle==2.7.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0"

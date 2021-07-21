@@ -4,17 +4,18 @@ let
   drv =
     { poetry2nix
     , python
-    , graphviz
+    , graphviz-nox
     , lib
     , stdenv
+    , imagemagick_light
     }:
 
     poetry2nix.mkPoetryApplication {
       inherit python;
 
       projectDir = ./.;
-      propagatedBuildInputs = [ graphviz ];
-      checkInputs = [ graphviz ];
+      propagatedBuildInputs = [ graphviz-nox imagemagick_light ];
+      checkInputs = [ graphviz-nox imagemagick_light ];
       checkPhase = ''
         runHook preCheck
         pytest ${lib.optionalString stdenv.isDarwin "-k 'not animate'"}

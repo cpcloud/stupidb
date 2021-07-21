@@ -31,7 +31,8 @@ lib.listToAttrs
             gcc
             git
             gnumake
-            graphviz
+            graphviz-nox
+            imagemagick_light
             niv
             nix-linter
             poetry

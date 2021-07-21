@@ -2,14 +2,17 @@
 
 import argparse
 import collections
+import os
+import subprocess
 import sys
-from typing import BinaryIO, Iterator, MutableMapping, Sequence
+import tempfile
+from typing import BinaryIO, Iterator, MutableMapping, MutableSequence, Sequence
 
-import imageio
 import pydot
 
 from stupidb import indextree
 from stupidb.associative import SegmentTree, Sum
+from stupidb.bitgraph import BitGraph
 from stupidb.bitset import BitSet
 
 
@@ -28,8 +31,9 @@ class SegmentTreeAnimator:
         tree = indextree.IndexTree(
             height=segment_tree.height, fanout=segment_tree.fanout
         )
+        leaves = tree.leaves
         seen = BitSet()
-        queue = collections.deque(tree.leaves)
+        queue = collections.deque(leaves)
 
         graph = pydot.Dot(graph_type="digraph")
         for node in tree.nodes:
@@ -43,13 +47,13 @@ class SegmentTreeAnimator:
                 if parent != node:
                     graph.add_edge(pydot.Edge(parent, node, dir="back"))
                 queue.append(parent)
-                if node in tree.leaves:
+                if node in leaves:
                     result = segment_tree.nodes[node].finalize()
                     label = "" if result is None else str(result)
                 else:
                     label = ""
                 (pydot_node,) = graph.get_node(str(node))
-                pydot_node.set_label(label or "")
+                pydot_node.set_label(label)
                 pydot_node.set_fontcolor("black")
                 pydot_node.set_fontname(f"{font} bold")
                 pydot_node.set_fillcolor("white")
@@ -57,25 +61,20 @@ class SegmentTreeAnimator:
 
         return graph
 
-    def iterframes(self, *, font: str) -> Iterator[imageio.core.Array]:
+    def iterframes(self, *, font: str) -> Iterator[bytes]:
         """Produce the frames of an animated construction of the tree."""
         graph = self.make_graph(font=font)
         segment_tree = self.segment_tree
 
-        adj_list = {int(node.get_name()): BitSet() for node in graph.get_nodes()}
-
-        for edge in graph.get_edges():
-            adj_list[edge.get_source()].add(edge.get_destination())
-
-        predecessors: MutableMapping[int, int] = {}
-
-        for parent, children in adj_list.items():
-            for child in children:
-                predecessors[child] = parent
-
-        queue = collections.deque(
-            source for source, nodes in adj_list.items() if not nodes
+        bit_graph = BitGraph.from_vertices_and_edges(
+            vertices=(int(node.get_name()) for node in graph.get_nodes()),
+            edges=(
+                (edge.get_source(), edge.get_destination())
+                for edge in graph.get_edges()
+            ),
         )
+
+        queue = collections.deque(bit_graph.in_edges)
         parent_count: MutableMapping[int, int] = collections.Counter()
         nodes = [segment_tree.aggregate_type() for _ in range(len(segment_tree.nodes))]
         for leaf in queue:
@@ -86,7 +85,7 @@ class SegmentTreeAnimator:
             node = queue.popleft()
             if node not in seen:
                 seen.add(node)
-                parent = predecessors[node]
+                parent = bit_graph.predecessors[node]
                 node_agg = nodes[node]
                 parent_agg = nodes[parent]
                 parent_agg.combine(node_agg)
@@ -102,8 +101,7 @@ class SegmentTreeAnimator:
                 (pydot_parent_node,) = graph.get_node(str(parent))
                 pydot_parent_node.set_label("" if result is None else str(result))
 
-                png_bytes = graph.create_png()
-                yield imageio.imread(png_bytes)
+                yield graph.create_gif()
 
                 # don't traverse the root, since it will already contain its
                 # full aggregate value due to the way we traverse
@@ -117,13 +115,17 @@ class SegmentTreeAnimator:
                     result = parent_agg.finalize()
                     pydot_parent_node.set_label("" if result is None else str(result))
 
-    def animate(self, io: BinaryIO, font: str = "Helvetica", fps: float = 1.5) -> None:
+    def animate(
+        self, output: BinaryIO, font: str = "Helvetica", fps: float = 1.5
+    ) -> None:
         """Convert this segment tree's construction into an animated gif.
 
         Parameters
         ----------
-        io
-            A writable binary input/output stream.
+        output
+            A writable binary output stream.
+        font
+            The font to use for text in the resulting animation.
         fps
             Frames per second.
 
@@ -138,7 +140,31 @@ class SegmentTreeAnimator:
         ...     animator.animate(devnull)
 
         """
-        imageio.mimsave(io, ims=self.iterframes(font=font), fps=fps, format="gif")
+        # NB: imagemagick units are 1/100th of a second
+        centis_per_frame = 100.0 / fps
+        assert centis_per_frame > 0, "frame duration is <= 0"
+
+        with tempfile.TemporaryDirectory() as d:
+            paths: MutableSequence[str] = []
+
+            for i, frame in enumerate(self.iterframes(font=font)):
+                path = os.path.join(d, str(i))
+                with open(path, mode="wb") as f:
+                    f.write(frame)
+                paths.append(path)
+
+            subprocess.run(
+                [
+                    "convert",
+                    "-delay",
+                    str(centis_per_frame),
+                    "-loop",
+                    "0",
+                    *paths,
+                    "gif:-",
+                ],
+                stdout=output,
+            )
 
 
 def parse_args():
