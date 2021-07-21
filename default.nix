@@ -5,8 +5,6 @@ let
     { poetry2nix
     , python
     , graphviz-nox
-    , lib
-    , stdenv
     , imagemagick_light
     }:
 
@@ -18,7 +16,7 @@ let
       checkInputs = [ graphviz-nox imagemagick_light ];
       checkPhase = ''
         runHook preCheck
-        pytest ${lib.optionalString stdenv.isDarwin "-k 'not animate'"}
+        pytest
         runHook postCheck
       '';
       pythonImportsCheck = [ "stupidb" ];
