@@ -167,7 +167,7 @@ class SegmentTreeAnimator:
             )
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=(
             "Animate the construction of a segment tree build "
