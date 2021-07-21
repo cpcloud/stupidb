@@ -205,7 +205,7 @@ class Aggregation(Generic[AssociativeAggregate], Relation):
 
         for id, (grouping_key, aggs) in enumerate(grouped_aggs.items()):
             data = dict(grouping_key)
-            data.update({name: agg.finalize() for name, agg in aggs.items()})
+            data.update((name, agg.finalize()) for name, agg in aggs.items())
             yield Row(data, _id=id)
 
 
