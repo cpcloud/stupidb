@@ -1,4 +1,4 @@
-{ python ? "python37" }:
+{ python ? "python3.7" }:
 let
   pkgs = import ./nix;
   drv =
@@ -23,5 +23,5 @@ let
     };
 in
 pkgs.callPackage drv {
-  python = pkgs.${python};
+  python = pkgs.${builtins.replaceStrings [ "." ] [ "" ] python};
 }
