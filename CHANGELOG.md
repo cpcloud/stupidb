@@ -2,6 +2,16 @@
 
 <!--next-version-placeholder-->
 
+## v4.0.0 (2021-07-21)
+### Fix
+* **core:** Privatize renew_id ([`2b05734`](https://github.com/cpcloud/stupidb/commit/2b057344110ae437f27362b7ccb4a1576947d971))
+
+### Breaking
+* renew_id has been change to _renew_id  ([`2b05734`](https://github.com/cpcloud/stupidb/commit/2b057344110ae437f27362b7ccb4a1576947d971))
+
+### Performance
+* **row:** Only compute hashes for each row once since their data are immutable ([`778105f`](https://github.com/cpcloud/stupidb/commit/778105f50d6f56f56c4c5985fee53f5dc8e889f0))
+
 ## v3.2.0 (2021-07-21)
 ### Feature
 * **animate:** Add bitgraph implementation ([`9500085`](https://github.com/cpcloud/stupidb/commit/9500085bfa6e09fbb1bd264b908ac6afd4f4487d))
