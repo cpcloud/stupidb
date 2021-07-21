@@ -2,6 +2,19 @@
 
 <!--next-version-placeholder-->
 
+## v3.1.0 (2021-07-21)
+### Feature
+* **nixpkgs:** Bump ([`26e49c6`](https://github.com/cpcloud/stupidb/commit/26e49c64e12af79c916bc4ec8fea9f174164c191))
+
+### Documentation
+* **build:** Remove watchdog functionality for now ([`3f2de29`](https://github.com/cpcloud/stupidb/commit/3f2de29bd6436eff1d01630bf819344019e3e8c0))
+* **typo:** Fix typo ([`0d0129f`](https://github.com/cpcloud/stupidb/commit/0d0129f576341d861b0e45c12ab8a0b089453028))
+* **example:** Fix animation to match prose ([`2e91685`](https://github.com/cpcloud/stupidb/commit/2e91685634b5c9c38e983a6ad1202d625c460060))
+* **contributing:** Fix some typos ([`4304348`](https://github.com/cpcloud/stupidb/commit/43043480d922f89299ac3158c3f83ccafafd57ee))
+* **animation:** Add animation feature to docs build requirements.txt ([`3c21a96`](https://github.com/cpcloud/stupidb/commit/3c21a969d56d27fba91889ac73626566e0594d30))
+* **animate:** Update animation with new font ([`9f2e6da`](https://github.com/cpcloud/stupidb/commit/9f2e6da147821d4331dbde79850e971051f0ffe7))
+* **build:** Fix doc builds ([`a339b63`](https://github.com/cpcloud/stupidb/commit/a339b636af670ed00fca2a96b79e935d6ad43a0d))
+
 ## v3.0.1 (2021-07-20)
 ### Documentation
 * **build:** Make docs deps extras ([`c11679a`](https://github.com/cpcloud/stupidb/commit/c11679a95bfdc11f351e173540d8106a18898b22))
