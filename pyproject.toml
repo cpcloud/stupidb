@@ -49,13 +49,14 @@ branch = "master"
 upload_to_pypi = true
 build_command = "pip install poetry && poetry build"
 
-[tool.pytest]
+[tool.pytest.ini_options]
 xfail_strict = true
 addopts = [
   "--ignore=site-packages",
   "--ignore=dist-packages",
   "--strict-markers"
 ]
+markers = ["animate"]
 norecursedirs = ["site-packages", "dist-packages"]
 
 [tool.black]
