@@ -102,3 +102,4 @@ ENV/
 .mypy_cache/
 .direnv
 .pre-commit-config.yaml
+result
