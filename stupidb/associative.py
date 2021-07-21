@@ -113,8 +113,10 @@ def make_segment_tree(
 
     """
     number_of_leaves = len(leaf_arguments)
-    height = int(math.ceil(math.log(number_of_leaves, fanout))) + 1
-    index_tree = indextree.IndexTree(height=height, fanout=fanout)
+    index_tree = indextree.IndexTree(
+        height=int(math.ceil(math.log(number_of_leaves, fanout))) + 1,
+        fanout=fanout,
+    )
     num_nodes = len(index_tree)
     segment_tree_nodes: MutableSequence[AssociativeAggregate] = [
         aggregate_type() for _ in range(num_nodes)
@@ -123,8 +125,7 @@ def make_segment_tree(
 
     # seed the leaves
     for leaf_index, args in zip(queue, leaf_arguments):
-        leaf = segment_tree_nodes[leaf_index]
-        leaf.step(*args)
+        segment_tree_nodes[leaf_index].step(*args)
 
     seen = BitSet()
 
