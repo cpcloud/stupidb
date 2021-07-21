@@ -15,9 +15,9 @@ def reprtree(nodes: Sequence[T], *, fanout: int, indent: str = 4 * " ") -> str:
     nodes
         A sequence of nodes in a tree.
     fanout
-        Number of children per node.
+        The number of children per node.
     indent
-        The prefix to print at each level.
+        The prefix number of spaces to print at each level.
 
     """
     # track the current level of the tree and the index of the current node
@@ -91,10 +91,11 @@ class IndexTree:
     def parent(self, node: int) -> int:
         """Return the index of the parent node of `node`."""
         if not node:
-            # the parent's parent is itself
             parent_node_index = 0
         else:
             parent_node_index = (node - 1) // self.fanout
         # parent should never be negative
-        assert parent_node_index >= 0, f"parent_node_index == {parent_node_index}"
+        assert (
+            parent_node_index >= 0
+        ), f"parent_node_index < 0: parent_node_index == {parent_node_index}"
         return parent_node_index
