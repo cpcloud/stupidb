@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v4.1.0 (2021-07-21)
+### Feature
+* **nixpkgs:** Bump ([`4dbafbf`](https://github.com/cpcloud/stupidb/commit/4dbafbf1eda9005d095c385fa3267dd28e1e5840))
+
+### Documentation
+* **all:** Add a sprinkling of doc strings ([`d61b03f`](https://github.com/cpcloud/stupidb/commit/d61b03fd5d45741bb1b26730b089e6c020d75481))
+* **conf:** Remove intersphinx mappings from unused dependencies ([`5fe1beb`](https://github.com/cpcloud/stupidb/commit/5fe1bebde22819ad85b3680f773aaf0c822560c0))
+
 ## v4.0.0 (2021-07-21)
 ### Fix
 * **core:** Privatize renew_id ([`2b05734`](https://github.com/cpcloud/stupidb/commit/2b057344110ae437f27362b7ccb4a1576947d971))
