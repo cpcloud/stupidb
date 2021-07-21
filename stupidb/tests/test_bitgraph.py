@@ -1,7 +1,7 @@
 import pytest
-from bitset import BitSet
 
 from stupidb.bitgraph import BitGraph
+from stupidb.bitset import BitSet
 
 
 @pytest.fixture
