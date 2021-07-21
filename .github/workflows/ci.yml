@@ -44,11 +44,8 @@ jobs:
           python-version: ${{ matrix.python_version }}
           architecture: x64
 
-      - name: Install graphviz
-        run: choco install graphviz
-
-      - name: Install imagemagick
-        run: choco install imagemagick
+      - name: Install graphviz and imagemagick
+        run: choco install graphviz imagemagick
 
       - name: Install poetry
         run: pip install poetry
