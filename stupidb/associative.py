@@ -219,14 +219,14 @@ class SegmentTree(
         """
         fanout = self.fanout
         aggregate: AssociativeAggregate = self.aggregate_type()
+
         for level in reversed(self.levels):
             parent_begin = begin // fanout
             parent_end = end // fanout
             if parent_begin == parent_end:
                 for item in level[begin:end]:
                     aggregate.combine(item)
-                result = aggregate.finalize()
-                return result
+                return aggregate.finalize()
             group_begin = parent_begin * fanout
             if begin != group_begin:
                 limit = group_begin + fanout
@@ -386,7 +386,7 @@ class MinMax(UnaryAssociativeAggregate[Comparable, Comparable]):
     def finalize(self) -> Optional[Comparable]:
         return self.current_value
 
-    def combine(self, other: "MinMax") -> None:
+    def combine(self, other: MinMax) -> None:
         assert self.comparator == other.comparator, (
             f"self.comparator == {self.comparator!r}, "
             f"other.comparator == {other.comparator!r}"
@@ -446,7 +446,7 @@ class Covariance(BinaryAssociativeAggregate[R1, R2, float]):
         denom = self.count - self.ddof
         return self.cov / denom if denom > 0 else None
 
-    def combine(self, other: "Covariance[R1, R2]") -> None:
+    def combine(self, other: Covariance[R1, R2]) -> None:
         new_count = self.count + other.count
         self.cov += (
             other.cov
@@ -486,7 +486,7 @@ class Variance(UnaryAssociativeAggregate[R, float]):
     def finalize(self) -> Optional[float]:
         return self.aggregator.finalize()
 
-    def combine(self, other: "Variance[R]") -> None:
+    def combine(self, other: Variance[R]) -> None:
         self.aggregator.combine(other.aggregator)
 
 
