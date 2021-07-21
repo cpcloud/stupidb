@@ -54,9 +54,7 @@ jobs:
         run: pip install poetry
 
       - name: Install package into poetry environment
-        run: |
-          dir
-          poetry install
+        run: poetry install
 
       - name: Run tests on windows
         run: poetry run pytest -m 'not animate'
