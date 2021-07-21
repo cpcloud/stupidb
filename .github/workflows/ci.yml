@@ -33,7 +33,7 @@ jobs:
         if: ${{ matrix.os != 'windows-latest' }}
 
       - name: Test windows
-      - uses: actions/setup-python@v2
+        uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python_version }}
           architecture: x64
