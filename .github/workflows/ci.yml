@@ -41,6 +41,14 @@ jobs:
           python-version: ${{ matrix.python_version }}
           architecture: x64
 
+      - name: Setup nuget
+        uses: actions/setup-nuget@v1
+        with:
+          nuget-version: latest
+
+      - name: Install graphviz
+        run: dotnet add package Graphviz
+
       - name: Install poetry
         run: pip install poetry
 
