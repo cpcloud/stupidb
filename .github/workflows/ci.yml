@@ -19,24 +19,15 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v12
 
-      - name: Use nix-community cache
-        uses: cachix/cachix-action@v10
-        with:
-          name: nix-community
-          skipPush: true
-
-      - name: Setup stupidb cache
+      - name: Setup stupidb push/pull and nix-community pull caches
         uses: cachix/cachix-action@v10
         with:
           name: stupidb
-          skipPush: false
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community
 
-      - name: Run checks
-        run: nix-shell --pure shell.nix -A ${{ matrix.python_version }} --run 'make check'
-
-      - name: Run tests
-        run: nix-shell --pure shell.nix -A ${{ matrix.python_version }} --run 'make test'
+      - name: Build package and run tests
+        run: nix build -L --argstr python ${{ matrix.python_version }}
 
   release:
     needs: [ci]
