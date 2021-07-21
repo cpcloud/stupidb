@@ -25,15 +25,13 @@ def reprtree(nodes: Sequence[T], *, fanout: int, indent: str = 4 * " ") -> str:
 
     # store the nodes that we've seen
     seen = BitSet()
-    template = "{indent}|-- {node}"
     node_repr_pieces: MutableSequence[str] = []
 
     while level_index_stack:
         level, node_index = level_index_stack.pop()
         if node_index not in seen:
             node = nodes[node_index]
-            node_repr_piece = template.format(indent=level * indent, node=node)
-            node_repr_pieces.append(node_repr_piece)
+            node_repr_pieces.append(f"{level * indent}|-- {node}")
             node_indices = (
                 fanout * node_index + i + 1 for i in reversed(range(fanout))
             )
@@ -94,6 +92,7 @@ class IndexTree:
             parent_node_index = 0
         else:
             parent_node_index = (node - 1) // self.fanout
+
         # parent should never be negative
         assert (
             parent_node_index >= 0
