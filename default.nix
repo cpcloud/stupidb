@@ -5,6 +5,8 @@ let
     { poetry2nix
     , python
     , graphviz
+    , lib
+    , stdenv
     }:
 
     poetry2nix.mkPoetryApplication {
@@ -15,9 +17,10 @@ let
       checkInputs = [ graphviz ];
       checkPhase = ''
         runHook preCheck
-        pytest
+        pytest ${lib.optionalString stdenv.isDarwin "--ignore=stupidb/tests/test_animate.py"}
         runHook postCheck
       '';
+      pythonImportsCheck = [ "stupidb" ];
     };
 in
 pkgs.callPackage drv {
