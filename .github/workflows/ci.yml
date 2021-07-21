@@ -54,7 +54,7 @@ jobs:
         run: pip install poetry
 
       - name: Install package into poetry environment
-        run: poetry install
+        run: poetry install --extras animation
 
       - name: Run tests on windows
         run: poetry run pytest
