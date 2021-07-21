@@ -260,8 +260,8 @@ class AbstractAssociativeAggregate(Aggregate[Output]):
         """Compute the value of the aggregation from its current state."""
 
 
-UA = TypeVar("UA", bound="UnaryAssociativeAggregate")
-BA = TypeVar("BA", bound="BinaryAssociativeAggregate")
+UA = TypeVar("UA", bound="UnaryAssociativeAggregate", covariant=True)
+BA = TypeVar("BA", bound="BinaryAssociativeAggregate", covariant=True)
 
 
 class UnaryAssociativeAggregate(
