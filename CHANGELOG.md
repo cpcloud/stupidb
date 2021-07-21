@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v3.2.0 (2021-07-21)
+### Feature
+* **animate:** Add bitgraph implementation ([`9500085`](https://github.com/cpcloud/stupidb/commit/9500085bfa6e09fbb1bd264b908ac6afd4f4487d))
+
+### Documentation
+* **indextree.py:** Clean up some docs style and add more assertion error info ([`c92e3ba`](https://github.com/cpcloud/stupidb/commit/c92e3bad67e38b48756b1cfc7de90bbbc829cb3f))
+
 ## v3.1.0 (2021-07-21)
 ### Feature
 * **nixpkgs:** Bump ([`26e49c6`](https://github.com/cpcloud/stupidb/commit/26e49c64e12af79c916bc4ec8fea9f174164c191))

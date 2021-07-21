@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "stupidb"
-version = "3.1.0"
+version = "3.2.0"
 packages = [{ include = "stupidb" }]
 # don't ship tests with the install
 exclude = ["stupidb/tests"]
