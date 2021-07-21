@@ -1,6 +1,6 @@
 """Module implementing an abstraction for navigation of array-backed trees."""
 
-from typing import Iterable, MutableSequence, Sequence, TypeVar
+from typing import MutableSequence, Sequence, TypeVar
 
 from stupidb.bitset import BitSet
 
@@ -66,7 +66,7 @@ class IndexTree:
         self.nodes = range((fanout ** height - 1) // (fanout - 1))
 
     @property
-    def leaves(self) -> Iterable[int]:
+    def leaves(self) -> range:
         """Return the indices of the leaves of the tree."""
         height = self.height - 1
         first = self.first_node(height)
