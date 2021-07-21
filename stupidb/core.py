@@ -54,27 +54,12 @@ from stupidb.typehints import (
 )
 
 
-class Partitionable(abc.ABC):
-    """An abstraction for a set of rows that can be partitioned by a key."""
-
-    __slots__ = ("rows",)
-
-    def __init__(self, rows: Iterable[AbstractRow]) -> None:
-        self.rows = rows
-
-    def partition_key(self, row: AbstractRow) -> PartitionKey:
-        return ()
-
-    def __iter__(self) -> Iterator[AbstractRow]:
-        return iter(self.rows)
-
-
-class Relation(Partitionable):
+class Relation(abc.ABC):
     """A relation."""
 
     __slots__ = ("child",)
 
-    def __init__(self, child: Partitionable) -> None:
+    def __init__(self, child: Iterable[AbstractRow]) -> None:
         self.child = child
 
     def __iter__(self) -> Iterator[AbstractRow]:
@@ -83,11 +68,7 @@ class Relation(Partitionable):
 
     @classmethod
     def from_iterable(cls, iterable: Iterable[Mapping[str, Any]]) -> Relation:
-        return cls(
-            Partitionable(
-                Row.from_mapping(row, _id=i) for i, row in enumerate(iterable)
-            )
-        )
+        return cls(Row.from_mapping(row, _id=i) for i, row in enumerate(iterable))
 
 
 FullProjector = Union_[Projector, WindowAggregateSpecification]
@@ -173,7 +154,7 @@ class Mutate(Projection):
         # used during the iteration of super().__iter__() and once for the
         # original relation (child)
         child, self.child = typing.cast(
-            Tuple[Partitionable, Partitionable], itertools.tee(self.child)
+            Tuple[Relation, Relation], itertools.tee(self.child)
         )
         return (
             Row.from_mapping(row, _id=i)
@@ -215,7 +196,7 @@ class Aggregation(Generic[AssociativeAggregate], Relation):
         )
         child = self.child
         for row in child:
-            key = child.partition_key(row)
+            key = partition_key(child, row)
             aggs: Mapping[str, AssociativeAggregate] = grouped_aggs[key]
             for name, agg in aggs.items():
                 inputs = [getter(row) for getter in aggregations[name].getters]
@@ -271,8 +252,15 @@ class GroupBy(Relation):
         super().__init__(child)
         self.group_by = group_by
 
-    def partition_key(self, row: AbstractRow) -> PartitionKey:
-        return tuple((name, keyfunc(row)) for name, keyfunc in self.group_by.items())
+
+@functools.singledispatch
+def partition_key(iterable: Relation, row: AbstractRow) -> PartitionKey:
+    return ()
+
+
+@partition_key.register
+def _(group_by: GroupBy, row: AbstractRow) -> PartitionKey:
+    return tuple((name, keyfunc(row)) for name, keyfunc in group_by.group_by.items())
 
 
 class SortBy(Relation):
@@ -318,12 +306,8 @@ class Join(Relation):
         self.right, right_ = itertools.tee(right)
         self.predicate = predicate
         super().__init__(
-            Partitionable(
-                JoinedRow(left_row, right_row, _id=i)
-                for i, (left_row, right_row) in enumerate(
-                    itertools.product(left_, right_)
-                )
-            )
+            JoinedRow(left_row, right_row, _id=i)
+            for i, (left_row, right_row) in enumerate(itertools.product(left_, right_))
         )
 
     def __iter__(self) -> Iterator[AbstractRow]:
