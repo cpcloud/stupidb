@@ -1,5 +1,7 @@
 """Module containing classes for representing rows."""
 
+from __future__ import annotations
+
 import abc
 from typing import Any, Hashable, Iterator, Mapping, Optional
 
@@ -82,7 +84,7 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
     def __getitem__(self, column: str) -> Any:
         return self.data[column]
 
-    def _renew_id(self, id: int) -> "AbstractRow":
+    def _renew_id(self, id: int) -> AbstractRow:
         """Reify this row with a new id `_id`.
 
         Parameters
@@ -97,7 +99,7 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
 class Row(AbstractRow):
     """A concrete :class:`AbstractRow` subclass for single child relations."""
 
-    def merge(self, other: Mapping[str, Any]) -> "Row":
+    def merge(self, other: Mapping[str, Any]) -> Row:
         """Combine the :class:`typing.Mapping` `other` with this one.
 
         Parameters
@@ -116,7 +118,7 @@ class Row(AbstractRow):
         return self.pieces[0]
 
     @classmethod
-    def from_mapping(cls, mapping: Mapping[str, Any], *, _id: int) -> "Row":
+    def from_mapping(cls, mapping: Mapping[str, Any], *, _id: int) -> Row:
         """Construct a Row instance from any mapping with string keys.
 
         Parameters
@@ -188,7 +190,7 @@ class JoinedRow(AbstractRow):
         return self._data
 
     @classmethod
-    def from_mapping(cls, *args: Any, **kwargs: Any) -> "JoinedRow":
+    def from_mapping(cls, *args: Any, **kwargs: Any) -> JoinedRow:
         """Raise an error.
 
         A :class:`JoinedRow` cannot be constructed from an arbitrary

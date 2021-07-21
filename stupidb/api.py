@@ -12,6 +12,8 @@
 
 """
 
+from __future__ import annotations
+
 import inspect
 from typing import Any, Callable, Iterable, Mapping, Optional
 
@@ -80,7 +82,7 @@ class _shiftable(curry):
     def __signature__(self) -> inspect.Signature:
         return inspect.signature(self.func)  # pragma: no cover
 
-    def __rrshift__(self, other: Relation) -> "_shiftable":
+    def __rrshift__(self, other: Relation) -> _shiftable:
         return self(other)
 
 

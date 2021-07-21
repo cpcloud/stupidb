@@ -12,6 +12,8 @@ features up to rule-based query optimization.
 
 """
 
+from __future__ import annotations
+
 import abc
 import collections
 import functools
@@ -80,7 +82,7 @@ class Relation(Partitionable):
         return (row._renew_id(id) for id, row in enumerate(filter(None, self.child)))
 
     @classmethod
-    def from_iterable(cls, iterable: Iterable[Mapping[str, Any]]) -> "Relation":
+    def from_iterable(cls, iterable: Iterable[Mapping[str, Any]]) -> Relation:
         return cls(
             Partitionable(
                 Row.from_mapping(row, _id=i) for i, row in enumerate(iterable)
