@@ -32,16 +32,19 @@ jobs:
         run: nix build -L --argstr python python${{ matrix.python_version }}
         if: ${{ matrix.os != 'windows-latest' }}
 
-      - name: Test windows
+      - name: Setup python on windows
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python_version }}
           architecture: x64
         if: ${{ matrix.os == 'windows-latest' }}
+
+      - name: Test windows
         run: |
           pip install poetry
           poetry install
           poetry run pytest -m 'not animate'
+        if: ${{ matrix.os == 'windows-latest' }}
 
   release:
     needs: [ci]
