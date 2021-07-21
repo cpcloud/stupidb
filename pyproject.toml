@@ -68,6 +68,7 @@ profile = "black"
 [tool.pydocstyle]
 convention = "numpy"
 add_ignore = ["D105", "D213", "D203"]
+match-dir = "stupidb"
 
 [build-system]
 requires = ["poetry>=0.12"]

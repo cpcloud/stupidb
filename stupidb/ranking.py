@@ -38,6 +38,8 @@ class RankingAggregator(Aggregator["RankingAggregate", Result]):
 
 
 class RankingAggregate(Aggregate[Output]):
+    """Base ranking aggregation class."""
+
     __slots__ = ("order_by_values",)
     aggregator_class: ClassVar[Callable[..., RankingAggregator]] = RankingAggregator
 
@@ -66,6 +68,8 @@ class RankingAggregate(Aggregate[Output]):
 
 
 class RowNumber(RankingAggregate[int]):
+    """Row number analytic function."""
+
     __slots__ = ("row_number",)
 
     def __init__(
@@ -128,6 +132,8 @@ class AbstractRank(RowNumber):
 
 
 class Rank(AbstractRank):
+    """Non-dense ranking computation."""
+
     __slots__ = ("previous_rank",)
 
     def __init__(
@@ -146,6 +152,8 @@ class Rank(AbstractRank):
 
 
 class DenseRank(AbstractRank):
+    """Dense ranking computation."""
+
     __slots__ = ("current_rank",)
 
     def __init__(
@@ -155,13 +163,6 @@ class DenseRank(AbstractRank):
         self.current_rank = -1
 
     def rank(self, current_order_by_value: Comparable, current_row_number: int) -> int:
+        """Compute the current rank, densely."""
         self.current_rank += current_order_by_value != self.previous_value
         return self.current_rank
-
-
-class PercentRank(RankingAggregate[float]):
-    __slots__ = ()
-
-
-class CumeDist(RankingAggregate[float]):
-    __slots__ = ()

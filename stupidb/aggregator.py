@@ -1,3 +1,5 @@
+"""Base aggregator interface."""
+
 import abc
 from typing import Generic, Optional, Sequence, TypeVar
 

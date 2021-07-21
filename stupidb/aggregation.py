@@ -37,6 +37,8 @@ from .typehints import Following, OrderBy, OrderingKey, PartitionBy, Preceding, 
 
 
 class StartStop(NamedTuple):
+    """A class to hold start and stop values for a range."""
+
     start: int
     stop: int
 
@@ -223,7 +225,7 @@ class RowsMode(FrameClause):
         row_id_in_partition: int,
         current_row_order_by_value: Optional[OrderingKey],
         order_by_values: Sequence[OrderingKey],
-    ) -> int:
+    ) -> int:  # noqa: D102
         preceding = self.preceding
         assert preceding is not None, "preceding is None"
         return row_id_in_partition - typing.cast(int, preceding(current_row))
@@ -234,7 +236,7 @@ class RowsMode(FrameClause):
         row_id_in_partition: int,
         current_row_order_by_value: Optional[OrderingKey],
         order_by_values: Sequence[OrderingKey],
-    ) -> int:
+    ) -> int:  # noqa: D102
         following = self.following
         assert following is not None, "following is None"
         return row_id_in_partition + typing.cast(int, following(current_row)) + 1
@@ -244,7 +246,7 @@ class RowsMode(FrameClause):
         possible_peers: Sequence[Tuple[int, AbstractRow]],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
-    ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:
+    ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:  # noqa: D102
         cols = [
             tuple(map(peer.__getitem__, order_by_columns)) for _, peer in possible_peers
         ]
@@ -286,7 +288,7 @@ class RangeMode(FrameClause):
         possible_peers: Sequence[Tuple[int, AbstractRow]],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
-    ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:
+    ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:  # noqa: D102
         # range mode allows no order by
         if not order_by_columns:
             return (), [()]
@@ -304,7 +306,7 @@ class RangeMode(FrameClause):
         row_id_in_partition: int,
         current_row_order_by_values: Optional[OrderingKey],
         order_by_values: Sequence[OrderingKey],
-    ) -> int:
+    ) -> int:  # noqa: D102
         assert (
             current_row_order_by_values is not None
         ), "current_row_order_by_value is None"
@@ -326,7 +328,7 @@ class RangeMode(FrameClause):
         row_id_in_partition: int,
         current_row_order_by_values: Optional[OrderingKey],
         order_by_values: Sequence[OrderingKey],
-    ) -> int:
+    ) -> int:  # noqa: D102
         assert (
             current_row_order_by_values is not None
         ), "current_row_order_by_values is None"
@@ -452,6 +454,13 @@ def row_key_compare(
     left_row: AbstractRow,
     right_row: AbstractRow,
 ) -> int:
+    """Compare `left_row` and `right_row` using `order_by`.
+
+    Notes
+    -----
+    ``NULL`` ordering is handled using `null_ordering`.
+
+    """
     left_keys = [order_func(left_row) for order_func in order_by]
     right_keys = [order_func(right_row) for order_func in order_by]
 
