@@ -57,7 +57,7 @@ jobs:
         run: poetry install
 
       - name: Run tests on windows
-        run: poetry run pytest -m 'not animate'
+        run: poetry run pytest
 
   release:
     needs: [linux_macos, windows]
