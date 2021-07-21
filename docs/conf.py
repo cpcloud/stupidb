@@ -90,8 +90,6 @@ todo_include_todos = False
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "networkx": ("https://networkx.github.io/documentation/stable", None),
-    "imageio": ("https://imageio.readthedocs.io/en/stable", None),
 }
 
 
