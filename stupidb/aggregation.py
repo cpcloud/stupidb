@@ -493,7 +493,7 @@ def make_key_func(
         _, right_row = rights
         return row_key_compare(order_by, nulls, left_row, right_row)
 
-    return functools.cmp_to_key(cmp)
+    return functools.cmp_to_key(cmp)  # type: ignore
 
 
 class WindowAggregateSpecification(Generic[ConcreteAggregate]):
