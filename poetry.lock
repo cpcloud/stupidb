@@ -606,7 +606,7 @@ animation = ["pydot"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "8055d3fa8f7efa06c029af47648576bc74f93fa5eec934c0b66857c669ba5342"
+content-hash = "d1c01816dcbbbad265b63959ecd28e5551d78083aa8178f2827c4a5203badbb4"
 
 [metadata.files]
 alabaster = [
