@@ -55,12 +55,13 @@ from stupidb.typehints import (
 
 
 class Relation(abc.ABC):
-    """A relation."""
+    """An abstract relation."""
 
-    __slots__ = ("child",)
+    __slots__ = "child", "partitioners"
 
     def __init__(self, child: Iterable[AbstractRow]) -> None:
         self.child = child
+        self.partitioners: Mapping[str, PartitionBy] = {}
 
     def __iter__(self) -> Iterator[AbstractRow]:
         """Iterate over the rows of a :class:`~stupidb.stupidb.Relation`."""
@@ -153,9 +154,7 @@ class Mutate(Projection):
         # we need to use it twice: once for the computed columns (self.child)
         # used during the iteration of super().__iter__() and once for the
         # original relation (child)
-        child, self.child = typing.cast(
-            Tuple[Relation, Relation], itertools.tee(self.child)
-        )
+        child, self.child = itertools.tee(self.child)
         return (
             Row.from_mapping(row, _id=i)
             for i, row in enumerate(map(toolz.merge, child, super().__iter__()))
@@ -194,20 +193,19 @@ class Aggregation(Generic[AssociativeAggregate], Relation):
                 name: aggspec.aggregate_type() for name, aggspec in aggregations.items()
             }
         )
-        child = self.child
+
+        child = typing.cast(Relation, self.child)
         for row in child:
-            key = partition_key(child, row)
-            aggs: Mapping[str, AssociativeAggregate] = grouped_aggs[key]
-            for name, agg in aggs.items():
-                inputs = [getter(row) for getter in aggregations[name].getters]
+            key = tuple(
+                (name, keyfunc(row)) for name, keyfunc in child.partitioners.items()
+            )
+            for name, agg in grouped_aggs[key].items():
+                inputs = (getter(row) for getter in aggregations[name].getters)
                 agg.step(*inputs)
 
         for id, (grouping_key, aggs) in enumerate(grouped_aggs.items()):
             data = dict(grouping_key)
-            finalized_aggregations = {
-                name: agg.finalize() for name, agg in aggs.items()
-            }
-            data.update(finalized_aggregations)
+            data.update({name: agg.finalize() for name, agg in aggs.items()})
             yield Row(data, _id=id)
 
 
@@ -246,21 +244,11 @@ class GroupBy(Relation):
 
     """
 
-    __slots__ = ("group_by",)
+    __slots__ = "group_by", "partitioners"
 
     def __init__(self, child: Relation, group_by: Mapping[str, PartitionBy]) -> None:
         super().__init__(child)
-        self.group_by = group_by
-
-
-@functools.singledispatch
-def partition_key(iterable: Relation, row: AbstractRow) -> PartitionKey:
-    return ()
-
-
-@partition_key.register
-def _(group_by: GroupBy, row: AbstractRow) -> PartitionKey:
-    return tuple((name, keyfunc(row)) for name, keyfunc in group_by.group_by.items())
+        self.partitioners = group_by
 
 
 class SortBy(Relation):
@@ -286,12 +274,15 @@ class SortBy(Relation):
         self.nulls = nulls
 
     def __iter__(self) -> Iterator[AbstractRow]:
-        return iter(
-            sorted(
-                self.child,
-                key=functools.cmp_to_key(
-                    functools.partial(row_key_compare, self.order_by, self.nulls)
-                ),
+        return (
+            row._renew_id(id)
+            for id, row in enumerate(
+                sorted(
+                    self.child,
+                    key=functools.cmp_to_key(
+                        functools.partial(row_key_compare, self.order_by, self.nulls)
+                    ),
+                )
             )
         )
 
@@ -397,9 +388,6 @@ class RightJoin(AsymmetricJoin):
         return row.left.keys()
 
 
-SetOperand = FrozenSet[Tuple[Tuple[str, Any], ...]]
-
-
 class SetOperation(Relation):
     """A generic set operation."""
 
@@ -410,7 +398,9 @@ class SetOperation(Relation):
         self.right = right
 
     @staticmethod
-    def itemize(mappings: Iterable[AbstractRow]) -> SetOperand:
+    def itemize(
+        mappings: Iterable[AbstractRow],
+    ) -> FrozenSet[Tuple[Tuple[str, Any], ...]]:
         return frozenset(tuple(mapping.items()) for mapping in mappings)
 
 
