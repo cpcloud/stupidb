@@ -77,7 +77,7 @@ class Relation(Partitionable):
 
     def __iter__(self) -> Iterator[AbstractRow]:
         """Iterate over the rows of a :class:`~stupidb.stupidb.Relation`."""
-        return (row.renew_id(id) for id, row in enumerate(filter(None, self.child)))
+        return (row._renew_id(id) for id, row in enumerate(filter(None, self.child)))
 
     @classmethod
     def from_iterable(cls, iterable: Iterable[Mapping[str, Any]]) -> "Relation":
@@ -247,7 +247,7 @@ class Selection(Relation):
 
     def __iter__(self) -> Iterator[AbstractRow]:
         return (
-            row.renew_id(id)
+            row._renew_id(id)
             for id, row in enumerate(filter(self.predicate, self.child))
         )
 
@@ -369,7 +369,7 @@ class AsymmetricJoin(Join):
         filtered = (row for row in self.child if self.predicate(row.left, row.right))
         for row in filtered:
             matches.add(self.match_provider(row))
-            yield row.renew_id(k)
+            yield row._renew_id(k)
             k += 1
         else:
             keys = self.mismatch_keys(row)

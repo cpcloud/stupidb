@@ -73,16 +73,16 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
     def __getitem__(self, column: str) -> Any:
         return self.data[column]
 
-    def renew_id(self, _id: int) -> "AbstractRow":
+    def _renew_id(self, id: int) -> "AbstractRow":
         """Reify this row with a new id `_id`.
 
         Parameters
         ----------
-        _id
+        id
             The return value's new `_id`.
 
         """
-        return type(self)(*self.pieces, _id=_id)
+        return type(self)(*self.pieces, _id=id)
 
 
 class Row(AbstractRow):
