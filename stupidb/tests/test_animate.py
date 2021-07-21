@@ -2,11 +2,16 @@ import os
 import subprocess
 import sys
 
-from stupidb.animate import SegmentTreeAnimator
+import pytest
+
 from stupidb.associative import SegmentTree, Sum
+
+pytestmark = pytest.mark.animate
 
 
 def test_to_gif():
+    from stupidb.animate import SegmentTreeAnimator
+
     seg = SegmentTree([(i,) for i in range(1, 5)], Sum, fanout=2)
     anim = SegmentTreeAnimator(seg)
     with open(os.devnull, "wb") as io:

@@ -17,7 +17,7 @@ let
       checkInputs = [ graphviz ];
       checkPhase = ''
         runHook preCheck
-        pytest ${lib.optionalString stdenv.isDarwin "--ignore=stupidb/tests/test_animate.py"}
+        pytest ${lib.optionalString stdenv.isDarwin "-k 'not animate'"}
         runHook postCheck
       '';
       pythonImportsCheck = [ "stupidb" ];
