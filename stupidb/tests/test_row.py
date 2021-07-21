@@ -33,6 +33,13 @@ def test_joined_row_hash():
     assert hash(row)
 
 
+def test_hash_after_renew_id():
+    row1 = JoinedRow({"a": 1}, {"b": 2}, _id=0)
+    row2 = row1._renew_id(id=1)
+    assert row1._id != row2._id
+    assert hash(row1) == hash(row2)
+
+
 def test_joined_row_data():
     row = JoinedRow({"a": 1}, {"b": 2}, _id=0)
     assert row.data == {"a": 1, "b": 2}

@@ -1,7 +1,7 @@
 """Module containing classes for representing rows."""
 
 import abc
-from typing import Any, Hashable, Iterator, Mapping
+from typing import Any, Hashable, Iterator, Mapping, Optional
 
 import cytoolz as toolz
 
@@ -25,10 +25,14 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
 
     """
 
-    __slots__ = "pieces", "_id"
+    __slots__ = "pieces", "_id", "_hash"
 
     def __init__(
-        self, piece: Mapping[str, Any], *pieces: Mapping[str, Any], _id: int
+        self,
+        piece: Mapping[str, Any],
+        *pieces: Mapping[str, Any],
+        _id: int,
+        _hash: Optional[int] = None,
     ) -> None:
         """Construct an :class:`AbstractRow`.
 
@@ -40,11 +44,16 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
             A tuple of mappings from :class:`str` to :class:`typing.Any`.
 
         """
-        self.pieces = (piece,) + pieces
+        self.pieces = piece, *pieces
         self._id = _id
+        self._hash = _hash
 
     def __hash__(self) -> int:
-        return hash(tuple(tuple(item) for item in self.data.items()))
+        if self._hash is None:
+            self._hash = hash(
+                tuple(tuple(item) for piece in self.pieces for item in piece.items())
+            )
+        return self._hash
 
     def __eq__(self, other: Any) -> bool:
         return self.data == getattr(other, "data", other)
@@ -82,7 +91,7 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
             The return value's new `_id`.
 
         """
-        return type(self)(*self.pieces, _id=id)
+        return type(self)(*self.pieces, _id=id, _hash=self._hash)
 
 
 class Row(AbstractRow):
@@ -148,7 +157,12 @@ class JoinedRow(AbstractRow):
     """
 
     def __init__(
-        self, left: Mapping[str, Any], right: Mapping[str, Any], *, _id: int
+        self,
+        left: Mapping[str, Any],
+        right: Mapping[str, Any],
+        *,
+        _id: int,
+        _hash: Optional[None] = None,
     ) -> None:
         """Construct a :class:`JoinedRow` instance.
 
@@ -166,10 +180,7 @@ class JoinedRow(AbstractRow):
         self.right = Row.from_mapping(right, _id=_id)
         self._overlapping_keys = left.keys() & right.keys()
         self._data = toolz.merge(left, right)
-        super().__init__(left, right, _id=_id)
-
-    def __hash__(self) -> int:
-        return hash((self.left, self.right))
+        super().__init__(left, right, _id=_id, _hash=_hash)
 
     @property
     def data(self) -> Mapping[str, Any]:
