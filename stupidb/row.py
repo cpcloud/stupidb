@@ -195,13 +195,14 @@ class JoinedRow(AbstractRow):
         :class:`typing.Mapping`.
 
         """
-        raise TypeError(f"from_mapping not supported for {cls.__name__!r}")
+        raise TypeError(f"`from_mapping` not supported for {cls.__name__!r}")
 
     def __getitem__(self, key: str) -> Any:
-        if self._overlapping_keys:
+        overlap = self._overlapping_keys
+        if overlap:
             raise ValueError(
-                "Joined rows have overlapping. Use .left or .right to choose "
-                "the appropriate key"
+                f"Joined rows have overlapping columns: {overlap!r}. "
+                "Use `row.left` or `row.right` to choose the appropriate key."
             )
         return super().__getitem__(key)
 
