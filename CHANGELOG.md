@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v4.3.0 (2021-07-26)
+### Feature
+* **nixpkgs:** Bump ([`ef95630`](https://github.com/cpcloud/stupidb/commit/ef95630e49d66b997805b406913432e32676c1d7))
+
 ## v4.2.0 (2021-07-24)
 ### Feature
 * **nixpkgs:** Bump ([`94509cb`](https://github.com/cpcloud/stupidb/commit/94509cbce4774c4b17dc42536064a081caeaa8de))
