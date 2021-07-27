@@ -1,3 +1,5 @@
+"""Various stupidb related protocol classes."""
+
 import abc
 from typing import Any, TypeVar
 

@@ -382,14 +382,16 @@ class RightJoin(AsymmetricJoin):
 
     @property
     def matching_relation(self) -> Iterator[AbstractRow]:
+        """Return the relation that should be used for matching."""
         return self.right
 
     def mismatch_keys(self, row: AbstractRow) -> Set[str]:
+        """Return the keys that should be used for mismatch detection."""
         return row.left.keys()
 
 
 class SetOperation(Relation):
-    """A generic set operation."""
+    """An abstract set operation."""
 
     __slots__ = "left", "right"
 
@@ -401,10 +403,13 @@ class SetOperation(Relation):
     def itemize(
         mappings: Iterable[AbstractRow],
     ) -> FrozenSet[Tuple[Tuple[str, Any], ...]]:
+        """Return a hashable version of `mappings`."""
         return frozenset(tuple(mapping.items()) for mapping in mappings)
 
 
 class Union(SetOperation):
+    """Union between two relations."""
+
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
@@ -420,6 +425,8 @@ class Union(SetOperation):
 
 
 class UnionAll(SetOperation):
+    """Non-unique union between two relations."""
+
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
@@ -430,6 +437,8 @@ class UnionAll(SetOperation):
 
 
 class IntersectAll(SetOperation):
+    """Non-unique intersection between two relations."""
+
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
@@ -454,6 +463,8 @@ class IntersectAll(SetOperation):
 
 
 class Difference(SetOperation):
+    """Unique difference between two relations."""
+
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
@@ -469,6 +480,8 @@ class Difference(SetOperation):
 
 
 class DifferenceAll(SetOperation):
+    """Non-unique difference between two relations."""
+
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
@@ -482,6 +495,8 @@ class DifferenceAll(SetOperation):
 
 
 class Intersect(SetOperation):
+    """Intersection of two relations."""
+
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:

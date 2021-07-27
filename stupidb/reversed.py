@@ -6,6 +6,8 @@ T = TypeVar("T", covariant=True)
 
 
 class Reversed(Sequence[T]):
+    """A sequence that iterates backwards over its input."""
+
     __slots__ = ("values",)
 
     def __init__(self, values: Sequence[T] = ()) -> None:
@@ -23,4 +25,4 @@ class Reversed(Sequence[T]):
         if -nvalues <= index < nvalues:
             offset = nvalues * (index >= 0) - index - 1
             return self.values[offset]
-        raise IndexError()
+        raise IndexError(index)

@@ -34,6 +34,7 @@ class RankingAggregator(Aggregator["RankingAggregate", Result]):
         self.aggregate: "RankingAggregate" = aggregate_type(order_by_values)
 
     def query(self, begin: int, end: int) -> Optional[Result]:
+        """Compute the aggregation over the range of rows between `begin` and `end`."""
         return self.aggregate.execute(begin, end)
 
 
@@ -51,7 +52,7 @@ class RankingAggregate(Aggregate[Output]):
 
     @abc.abstractmethod
     def execute(self, begin: int, end: int) -> Optional[Output]:
-        """Executing the ranking function from `begin` to `end`."""
+        """Compute an abstract row rank value for rows between `begin` and `end`."""
 
     @classmethod
     def prepare(
@@ -60,6 +61,7 @@ class RankingAggregate(Aggregate[Output]):
         getters: Tuple[Getter, ...],
         order_by_columns: Sequence[str],
     ) -> RankingAggregator[Output]:
+        """Construct the aggregator for ranking."""
         order_by_values = [
             tuple(peer[column] for column in order_by_columns)
             for _, peer in possible_peers
@@ -79,6 +81,7 @@ class RowNumber(RankingAggregate[int]):
         self.row_number = 0
 
     def execute(self, begin: int, end: int) -> int:
+        """Compute an abstract row rank value for rows between `begin` and `end`."""
         row_number = self.row_number
         self.row_number += 1
         return row_number
@@ -107,6 +110,8 @@ Either = Union[Sentinel, T]
 
 
 class AbstractRank(RowNumber):
+    """A class represnting a numerical ordering of rows."""
+
     __slots__ = ("previous_value",)
 
     def __init__(
@@ -120,6 +125,7 @@ class AbstractRank(RowNumber):
         """Compute the rank of the current row."""
 
     def execute(self, begin: int, end: int) -> int:
+        """Compute an abstract row rank value for rows between `begin` and `end`."""
         current_row_number = super().execute(begin, end)
         current_order_by_value = self.order_by_values[current_row_number]
         rank = self.rank(current_order_by_value, current_row_number)
@@ -143,6 +149,7 @@ class Rank(AbstractRank):
         self.previous_rank = -1
 
     def rank(self, current_order_by_value: Comparable, current_row_number: int) -> int:
+        """Rank the current row according to `current_order_by_value`."""
         if current_order_by_value != self.previous_value:
             rank = current_row_number
         else:

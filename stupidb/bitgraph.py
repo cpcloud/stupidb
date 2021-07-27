@@ -29,6 +29,7 @@ class BitGraph:
         vertices: Iterable[int],
         edges: Iterable[Tuple[int, int]],
     ) -> BitGraph:
+        """Construct a `BitGraph` from `vertices` and `edges`."""
         nodes = {vertex: BitSet() for vertex in vertices}
         for source, dest in edges:
             nodes[source].add(dest)
@@ -36,14 +37,17 @@ class BitGraph:
 
     @property
     def nodes(self) -> Mapping[int, AbstractSet[int]]:
+        """Return a mapping from node to connected nodes."""
         return self._nodes
 
     @property
     def predecessors(self) -> Mapping[int, int]:
+        """Return a mapping of predecessors."""
         return self._predecessors
 
     @property
     def in_edges(self) -> Iterator[int]:
+        """Return the nodes with indegree zero."""
         return (source for source, nodes in self._nodes.items() if not nodes)
 
     def __eq__(self, other: Any) -> bool:

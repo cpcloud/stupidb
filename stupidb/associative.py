@@ -277,7 +277,7 @@ class UnaryAssociativeAggregate(
 
     @abc.abstractmethod
     def combine(self: UA, other: UA) -> None:
-        ...
+        """Combine two UnaryAssociativeAggregate instances."""
 
 
 class BinaryAssociativeAggregate(
@@ -293,7 +293,7 @@ class BinaryAssociativeAggregate(
 
     @abc.abstractmethod
     def combine(self: BA, other: BA) -> None:
-        ...
+        """Combine two BinaryAssociativeAggregate instances."""
 
 
 class Count(UnaryAssociativeAggregate[Input1, int]):
@@ -319,6 +319,8 @@ class Count(UnaryAssociativeAggregate[Input1, int]):
 
 
 class Sum(UnaryAssociativeAggregate[R1, R2]):
+    """A sum aggregate."""
+
     __slots__ = ("total",)
 
     def __init__(self) -> None:
