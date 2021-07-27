@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v4.4.0 (2021-07-27)
+### Feature
+* **nixpkgs:** Bump ([`b7c5581`](https://github.com/cpcloud/stupidb/commit/b7c558138b10178d871d388a5c5d6e3e8ca9db35))
+
+### Documentation
+* Add more docs ([`c2625dc`](https://github.com/cpcloud/stupidb/commit/c2625dc4f3c33f0eb597ff400b0b9527dfce3b67))
+* **pyproject:** Add 3.8 and 3.9 metadata ([`da8365c`](https://github.com/cpcloud/stupidb/commit/da8365c983635cf00b78433730ea3845e4d1897f))
+
 ## v4.3.0 (2021-07-26)
 ### Feature
 * **nixpkgs:** Bump ([`ef95630`](https://github.com/cpcloud/stupidb/commit/ef95630e49d66b997805b406913432e32676c1d7))
