@@ -1,0 +1,69 @@
+name: Update Dependencies
+on:
+  schedule:
+    - cron: "* */6 * * *"
+  workflow_dispatch:
+jobs:
+  niv-update:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dep:
+          - home-manager
+          - nixos-hardware
+          - nixpkgs
+          - nixus
+          - sops-nix
+          - pre-commit-hooks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v13
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: nix-community
+          extraPullNames: cpcloud-nix-config
+
+      - name: Get current commit
+        id: get_current_commit
+        uses: cpcloud/niv-dep-info-action@v1.0.0
+        with:
+          dependency: ${{ matrix.dep }}
+
+      - name: Update ${{ matrix.dep }}
+        run: nix run nixpkgs.niv -c niv update ${{ matrix.dep }}
+
+      - name: Get new commit
+        id: get_new_commit
+        uses: cpcloud/niv-dep-info-action@v1.0.0
+        with:
+          dependency: ${{ matrix.dep }}
+
+      - name: Get commit details for ${{ matrix.dep }} changes
+        uses: cpcloud/compare-commits-action@v3.0.1
+        id: compare_commits
+        if: ${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}
+        with:
+          owner: ${{ steps.get_current_commit.outputs.owner }}
+          repo: ${{ steps.get_current_commit.outputs.repo }}
+          basehead: ${{ steps.get_current_commit.outputs.rev }}...${{ steps.get_new_commit.outputs.rev }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          include-merge-commits: false
+
+      - name: Create a pull request to update ${{ matrix.dep }}
+        if: ${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}
+        uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: "chore(deps): update ${{ matrix.dep }}"
+          branch: "create-pull-request/update-${{ matrix.dep }}"
+          delete-branch: true
+          author: "cpcloudbot <cpcloudbot@gmail.com>"
+          title: "chore(deps): update ${{ matrix.dep }}"
+          token: ${{ secrets.PAT }}
+          body: ${{ steps.compare_commits.outputs.differences }}
