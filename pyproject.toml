@@ -36,7 +36,7 @@ isort = "^5.9.3"
 mypy = "^0.812"
 mypy_extensions = "^0.4.3"
 pydocstyle = "^6.1.1"
-pytest = "^6.2.2"
+pytest = "^6.2.5"
 sphinx = "^4.1.2"
 sphinx-autodoc-typehints = "^1.12.0"
 
