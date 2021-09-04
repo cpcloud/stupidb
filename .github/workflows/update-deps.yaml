@@ -9,11 +9,7 @@ jobs:
     strategy:
       matrix:
         dep:
-          - home-manager
-          - nixos-hardware
           - nixpkgs
-          - nixus
-          - sops-nix
           - pre-commit-hooks
     steps:
       - name: Checkout
