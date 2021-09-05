@@ -14,7 +14,8 @@ let
       stupidb = ./stupidb;
     };
   };
-  versions = [ "python37" "python38" "python39" ];
+
+  pythonVersions = [ "3.7" "3.8" "3.9" ];
 in
 lib.listToAttrs
   (map
@@ -43,4 +44,6 @@ lib.listToAttrs
         ];
       };
     })
-    versions)
+    (map
+      (version: "python${builtins.replaceStrings [ "." ] [ "" ] version}")
+      pythonVersions))
