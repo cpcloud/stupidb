@@ -36,6 +36,7 @@ in
           "nix/sources.nix"
         ];
       };
+
       nixpkgs-fmt.enable = true;
 
       prettier = {
