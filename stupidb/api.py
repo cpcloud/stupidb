@@ -52,6 +52,7 @@ from .core import (
     Join,
     JoinPredicate,
     LeftJoin,
+    Limit,
     Mutate,
     PartitionBy,
     Predicate,
@@ -628,6 +629,23 @@ def difference_all(right: Relation, left: Relation) -> DifferenceAll:
 
     """
     return DifferenceAll(left, right)
+
+
+@_shiftable
+def limit(relation: Relation, limit: int, offset: int = 0) -> Limit:
+    """Return the rows in `relation` starting from `offset` up to `limit`.
+
+    Parameters
+    ----------
+    relation
+        Relation whose rows to limit
+    limit
+        The number of rows starting from offset to produce
+    offset
+        The number of rows to skip before yielding
+
+    """
+    return Limit(relation, offset=offset, limit=limit)
 
 
 # Aggregate functions
