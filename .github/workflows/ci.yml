@@ -71,17 +71,19 @@ jobs:
         run: poetry run pytest
 
   release:
-    needs: [linux_macos, windows]
+    needs:
+      - linux_macos
+      - windows
     runs-on: ubuntu-latest
     concurrency: release
-
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+          token: ${{ secrets.SEMREL }}
 
       - name: Python Semantic Release
         uses: relekang/python-semantic-release@v7.19.2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.SEMREL }}
           pypi_token: ${{ secrets.PYPI_TOKEN }}
