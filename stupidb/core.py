@@ -287,6 +287,18 @@ class SortBy(Relation):
         )
 
 
+class Limit(Relation):
+    __slots__ = "offset", "limit"
+
+    def __init__(self, child: Relation, *, offset: int, limit: int) -> None:
+        super().__init__(child)
+        self.offset = offset
+        self.limit = limit
+
+    def __iter__(self) -> Iterator[AbstractRow]:
+        return itertools.islice(self.child, self.offset, self.offset + self.limit, None)
+
+
 class Join(Relation):
     __slots__ = "left", "right", "predicate"
 

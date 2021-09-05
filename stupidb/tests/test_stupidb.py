@@ -7,7 +7,7 @@ import itertools
 import operator
 import statistics
 from datetime import date, timedelta
-from typing import Callable, Iterable, Iterator, TypeVar
+from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence, TypeVar
 
 import cytoolz as toolz
 import pytest
@@ -23,6 +23,7 @@ from stupidb.api import (
     group_by,
     inner_join,
     left_join,
+    limit,
     max,
     mean,
     min,
@@ -247,6 +248,31 @@ def test_semi_join_not_all_rows_match():
     result = list(pipeline)
     expected = [row for row in rows if row["z"] == "b"]
     assert result == expected
+
+
+@pytest.mark.parametrize("offset", range(4))  # type: ignore[misc]
+@pytest.mark.parametrize("lim", range(4))  # type: ignore[misc]
+def test_valid_limit(rows: Sequence[Mapping[str, Any]], offset: int, lim: int) -> None:
+    pipeline = table(rows) >> limit(lim, offset=offset)
+    assert list(pipeline) == rows[offset : offset + lim]
+
+
+@pytest.mark.parametrize(  # type: ignore[misc]
+    ("offset", "lim"),
+    (
+        (offset, lim)
+        for lim in range(-2, 1)
+        for offset in range(-2, 1)
+        if offset and lim
+    ),
+)
+def test_invalid_limit(
+    rows: Sequence[Mapping[str, Any]],
+    offset: int,
+    lim: int,
+) -> None:
+    with pytest.raises(ValueError):
+        table(rows) >> limit(lim, offset=offset)
 
 
 def test_right_shiftable(rows):
