@@ -124,7 +124,7 @@ def test_cross_join(left, right):
     assert_rowset_equal(result, expected)
 
 
-def test_inner_join(left, right):
+def test_inner_join(left, right, con):
     join = (
         table(left)
         >> inner_join(
@@ -141,67 +141,58 @@ def test_inner_join(left, right):
         )
     )
     result = list(join)
+    query = """
+SELECT
+    t.a AS left_a,
+    s.a AS right_a,
+    s.z AS right_z,
+    t.z AS left_z
+FROM left t
+INNER JOIN right s
+ON t.z = 'a'
+  AND s.z = 'a'
+  AND t.a = s.a"""
     expected = [
-        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
-        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
-        {"left_a": 3, "left_z": "a", "right_a": 3, "right_z": "a"},
-        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
-        {"left_a": 1, "left_z": "a", "right_a": 1, "right_z": "a"},
+        dict(left_a=left_a, right_a=right_a, right_z=right_z, left_z=left_z)
+        for left_a, right_a, right_z, left_z in con.execute(query).fetchall()
     ]
     assert_rowset_equal(result, expected)
 
 
-def test_left_join(left, right):
+def test_left_join(left, right, con):
     join = (
         table(left)
         >> left_join(table(right), lambda left, right: left["z"] == right["z"])
         >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
     )
     result = list(join)
+    query = """
+SELECT t.z AS left_z, s.z AS right_z
+FROM left t
+LEFT OUTER JOIN right s
+ON t.z = s.z"""
     expected = [
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "b", "right_z": None},
-        {"left_z": "b", "right_z": None},
-        {"left_z": "b", "right_z": None},
+        dict(left_z=left_z, right_z=right_z)
+        for left_z, right_z in con.execute(query).fetchall()
     ]
     assert_rowset_equal(result, expected)
 
 
-def test_right_join(left, right):
+def test_right_join(left, right, con):
     join = (
         table(left)
         >> right_join(table(right), lambda left, right: left["z"] == right["z"])
         >> select(left_z=lambda r: r.left["z"], right_z=lambda r: r.right["z"])
     )
     result = list(join)
+    query = """
+SELECT t.z AS left_z, s.z AS right_z
+FROM right s
+LEFT OUTER JOIN left t
+ON t.z = s.z"""
     expected = [
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "a", "right_z": "a"},
-        {"left_z": "c", "right_z": None},
-        {"left_z": "c", "right_z": None},
-        {"left_z": "c", "right_z": None},
-        {"left_z": "c", "right_z": None},
+        dict(left_z=left_z, right_z=right_z)
+        for left_z, right_z in con.execute(query).fetchall()
     ]
     assert_rowset_equal(result, expected)
 
