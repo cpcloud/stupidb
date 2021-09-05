@@ -24,7 +24,6 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.7"
 cytoolz = "^0.11.0"
-importlib-metadata = { version = "^4.6.1", python = "<3.8" }
 pydot = { version = "^1.4.2", optional = true }
 
 [tool.poetry.dev-dependencies]
@@ -44,7 +43,7 @@ animation = ["pydot"]
 
 [tool.semantic_release]
 version_toml = "pyproject.toml:tool.poetry.version"
-version_variable = ["docs/conf.py:version", "docs/conf.py:release"]
+version_variable = ["stupidb/__init__.py:__version__", "docs/conf.py:version"]
 branch = "master"
 upload_to_pypi = true
 build_command = "pip install poetry && poetry build"
