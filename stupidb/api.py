@@ -47,6 +47,7 @@ from .core import (
     DifferenceAll,
     FullProjector,
     GroupBy,
+    InnerJoin,
     Intersect,
     IntersectAll,
     Join,
@@ -172,7 +173,7 @@ def inner_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Joi
     <stupidb.core.CrossJoin object at 0x...>
 
     """
-    return Join(left, right, predicate)
+    return InnerJoin(left, right, predicate)
 
 
 @_shiftable

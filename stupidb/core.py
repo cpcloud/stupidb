@@ -18,20 +18,8 @@ import abc
 import collections
 import functools
 import itertools
-import operator
 import typing
-from typing import (
-    Any,
-    Callable,
-    FrozenSet,
-    Generic,
-    Iterable,
-    Iterator,
-    Mapping,
-    NoReturn,
-    Set,
-    Tuple,
-)
+from typing import Any, FrozenSet, Generic, Iterable, Iterator, Mapping, NoReturn, Tuple
 from typing import Union as Union_
 
 import cytoolz as toolz
@@ -300,21 +288,19 @@ class Limit(Relation):
 
 
 class Join(Relation):
-    __slots__ = "left", "right", "predicate"
+    __slots__ = ("grouped",)
 
-    def __init__(
-        self, left: Relation, right: Relation, predicate: JoinPredicate
-    ) -> None:
-        self.left, left_ = itertools.tee(left)
-        self.right, right_ = itertools.tee(right)
-        self.predicate = predicate
-        super().__init__(
-            JoinedRow(left_row, right_row, _id=i)
-            for i, (left_row, right_row) in enumerate(itertools.product(left_, right_))
+    def __init__(self, left: Relation, right: Relation) -> None:
+        self.grouped = itertools.groupby(
+            (
+                JoinedRow(left_row, right_row, _id=i)
+                for i, (left_row, right_row) in enumerate(
+                    itertools.product(left, right)
+                )
+            ),
+            key=lambda row: row.left,
         )
-
-    def __iter__(self) -> Iterator[AbstractRow]:
-        return (row for row in self.child if self.predicate(row.left, row.right))
+        super().__init__(row for _, rows in self.grouped for row in rows)
 
     @classmethod
     def from_iterable(cls, *args: Any, **kwargs: Any) -> NoReturn:
@@ -324,82 +310,60 @@ class Join(Relation):
 class CrossJoin(Join):
     __slots__ = ()
 
-    def __init__(self, left: Relation, right: Relation) -> None:
-        super().__init__(left, right, lambda left, right: True)
-
 
 class InnerJoin(Join):
-    __slots__ = ()
+    __slots__ = ("predicate",)
 
-
-MatchProvider = Callable[[AbstractRow], AbstractRow]
-
-
-class AsymmetricJoin(Join):
-    __slots__ = ()
-
-    @property
-    @abc.abstractmethod
-    def match_provider(self) -> MatchProvider:
-        """Return a :data:`MatchProvider`."""
-
-    @property
-    @abc.abstractmethod
-    def matching_relation(self) -> Iterator[AbstractRow]:
-        """Return the relation to use for matching."""
-
-    @abc.abstractmethod
-    def mismatch_keys(self, row: AbstractRow) -> Set[str]:
-        """Return keys used for mismatched keys."""
+    def __init__(
+        self, left: Relation, right: Relation, predicate: JoinPredicate
+    ) -> None:
+        super().__init__(left, right)
+        self.predicate = predicate
 
     def __iter__(self) -> Iterator[AbstractRow]:
-        matches: Set[AbstractRow] = set()
-        k = 0
-        filtered = (row for row in self.child if self.predicate(row.left, row.right))
-        for row in filtered:
-            matches.add(self.match_provider(row))
-            yield row._renew_id(k)
-            k += 1
-        else:
-            keys = self.mismatch_keys(row)
-
-        non_matching_rows = (
-            row for row in self.matching_relation if row not in matches
+        return (
+            row._renew_id(id)
+            for id, row in enumerate(self.child)
+            if self.predicate(row.left, row.right)
         )
-        for i, row in enumerate(non_matching_rows, start=k):
-            yield JoinedRow(row, dict.fromkeys(keys), _id=i)
 
 
-class LeftJoin(AsymmetricJoin):
+class LeftJoin(Join):
+    __slots__ = ("predicate",)
+
+    def __init__(
+        self, left: Relation, right: Relation, predicate: JoinPredicate
+    ) -> None:
+        super().__init__(left, right)
+        self.predicate = predicate
+
+    def __iter__(self) -> Iterator[AbstractRow]:
+        k = 0
+        for left_row, joined_rows in self.grouped:
+            matched = False
+
+            for joined_row in joined_rows:
+                right_row = joined_row.right
+                if self.predicate(left_row, right_row):
+                    matched = True
+                    yield JoinedRow(left_row, right_row, _id=k)
+                    k += 1
+            if not matched:
+                yield JoinedRow(left_row, dict.fromkeys(left_row), _id=k)
+                k += 1
+
+
+class RightJoin(LeftJoin):
     __slots__ = ()
 
-    @property
-    def match_provider(self) -> MatchProvider:
-        return operator.attrgetter("left")
+    def __init__(
+        self, left: Relation, right: Relation, predicate: JoinPredicate
+    ) -> None:
+        super().__init__(right, left, predicate)
 
-    @property
-    def matching_relation(self) -> Iterator[AbstractRow]:
-        return self.left
-
-    def mismatch_keys(self, row: AbstractRow) -> Set[str]:
-        return row.right.keys()
-
-
-class RightJoin(AsymmetricJoin):
-    __slots__ = ()
-
-    @property
-    def match_provider(self) -> MatchProvider:
-        return operator.attrgetter("right")
-
-    @property
-    def matching_relation(self) -> Iterator[AbstractRow]:
-        """Return the relation that should be used for matching."""
-        return self.right
-
-    def mismatch_keys(self, row: AbstractRow) -> Set[str]:
-        """Return the keys that should be used for mismatch detection."""
-        return row.left.keys()
+    def __iter__(self) -> Iterator[AbstractRow]:
+        for id, joined_row in enumerate(super().__iter__()):
+            yield JoinedRow(joined_row.right, joined_row.left, _id=id)
 
 
 class SetOperation(Relation):
@@ -454,23 +418,29 @@ class IntersectAll(SetOperation):
     __slots__ = ()
 
     def __iter__(self) -> Iterator[AbstractRow]:
-        left_rows = list(self.left)
-        left_set = self.itemize(left_rows)
-        right_rows = list(self.right)
-        right_set = self.itemize(right_rows)
+        left_set = self.itemize(self.left)
+        right_set = self.itemize(self.right)
         left_filtered = (
-            dict(row_items)
-            for row_items in (tuple(row.items()) for row in left_rows)
-            if row_items in right_set
+            dict(row_items) for row_items in left_set if row_items in right_set
         )
         right_filtered = (
-            dict(row_items)
-            for row_items in (tuple(row.items()) for row in right_rows)
-            if row_items in left_set
+            dict(row_items) for row_items in right_set if row_items in left_set
         )
         return (
             Row.from_mapping(row, _id=id)
             for id, row in enumerate(itertools.chain(left_filtered, right_filtered))
+        )
+
+
+class Intersect(SetOperation):
+    """Intersection of two relations."""
+
+    __slots__ = ()
+
+    def __iter__(self) -> Iterator[AbstractRow]:
+        return (
+            Row.from_mapping(dict(row), _id=id)
+            for id, row in enumerate(self.itemize(self.left) & self.itemize(self.right))
         )
 
 
@@ -504,15 +474,3 @@ class DifferenceAll(SetOperation):
             if row_items not in right_set
         )
         return (Row.from_mapping(row, _id=id) for id, row in enumerate(filtered))
-
-
-class Intersect(SetOperation):
-    """Intersection of two relations."""
-
-    __slots__ = ()
-
-    def __iter__(self) -> Iterator[AbstractRow]:
-        return (
-            Row.from_mapping(dict(row), _id=id)
-            for id, row in enumerate(self.itemize(self.left) & self.itemize(self.right))
-        )
