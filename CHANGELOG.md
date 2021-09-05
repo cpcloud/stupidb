@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v4.5.0 (2021-09-05)
+### Feature
+* Add limit operator ([`e0e6146`](https://github.com/cpcloud/stupidb/commit/e0e6146bb2efe65fafa417089aa69d421930c00f))
+
 ## v4.4.0 (2021-07-27)
 ### Feature
 * **nixpkgs:** Bump ([`b7c5581`](https://github.com/cpcloud/stupidb/commit/b7c558138b10178d871d388a5c5d6e3e8ca9db35))
