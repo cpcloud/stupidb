@@ -632,19 +632,23 @@ def difference_all(right: Relation, left: Relation) -> DifferenceAll:
 
 
 @_shiftable
-def limit(relation: Relation, limit: int, offset: int = 0) -> Limit:
+def limit(limit: int, relation: Relation, *, offset: int = 0) -> Limit:
     """Return the rows in `relation` starting from `offset` up to `limit`.
 
     Parameters
     ----------
-    relation
-        Relation whose rows to limit
     limit
         The number of rows starting from offset to produce
+    relation
+        Relation whose rows to limit
     offset
         The number of rows to skip before yielding
 
     """
+    if offset < 0:
+        raise ValueError(f"invalid offset, must be non-negative: {offset}")
+    if limit < 0:
+        raise ValueError(f"invalid limit, must be non-negative: {limit}")
     return Limit(relation, offset=offset, limit=limit)
 
 
