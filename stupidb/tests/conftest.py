@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import date
 
 import pytest
@@ -5,7 +6,7 @@ import pytest
 from stupidb.api import table
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def rows():
     return [
         dict(z="a", a=1, b=2, e=1),
@@ -18,12 +19,12 @@ def rows():
     ]
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def left(rows):
     return rows
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def right(rows):
     return [
         dict(z="a", a=1, b=2, e=1),
@@ -44,7 +45,7 @@ def assert_rowset_equal(left, right):
     assert set(map(tupleize, left)) == set(map(tupleize, right))
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_table(rows):
     expected = rows[:]
     op = table(rows)
@@ -52,7 +53,7 @@ def test_table(rows):
     assert_rowset_equal(result, expected)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def t_rows():
     return [
         dict(name="alice", date=date(2018, 1, 1), balance=2),
@@ -65,6 +66,28 @@ def t_rows():
     ]
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def t_table(t_rows):
     return table(t_rows)
+
+
+@pytest.fixture(scope="session")
+def con(rows, left, right):
+    connection = sqlite3.connect(":memory:")
+
+    connection.execute("CREATE TABLE rows (z text, a integer, b integer, e integer)")
+    connection.executemany(
+        "INSERT INTO rows VALUES (?, ?, ?, ?)", (tuple(row.values()) for row in rows)
+    )
+
+    connection.execute("CREATE TABLE left (z text, a integer, b integer, e integer)")
+    connection.executemany(
+        "INSERT INTO left VALUES (?, ?, ?, ?)", (tuple(row.values()) for row in left)
+    )
+
+    connection.execute("CREATE TABLE right (z text, a integer, b integer, e integer)")
+    connection.executemany(
+        "INSERT INTO right VALUES (?, ?, ?, ?)", (tuple(row.values()) for row in right)
+    )
+
+    return connection
