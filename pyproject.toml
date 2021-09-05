@@ -3,7 +3,6 @@ name = "stupidb"
 version = "4.5.0"
 packages = [{ include = "stupidb" }]
 # don't ship tests with the install
-exclude = ["stupidb/tests"]
 homepage = "https://github.com/cpcloud/stupidb"
 repository = "https://github.com/cpcloud/stupidb"
 documentation = "https://stupidb.readthedocs.io"
