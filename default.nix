@@ -1,4 +1,4 @@
-{ python ? "python3.7" }:
+{ python ? "python3.9" }:
 let
   pkgs = import ./nix;
   drv =
