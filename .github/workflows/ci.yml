@@ -76,6 +76,7 @@ jobs:
       - windows
     runs-on: ubuntu-latest
     concurrency: release
+    if: ${{ github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v2
         with:
