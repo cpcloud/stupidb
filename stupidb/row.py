@@ -33,7 +33,7 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
         self,
         piece: Mapping[str, Any],
         *pieces: Mapping[str, Any],
-        _id: int,
+        _id: int = -1,
         _hash: Optional[int] = None,
     ) -> None:
         """Construct an :class:`AbstractRow`.
@@ -118,7 +118,7 @@ class Row(AbstractRow):
         return self.pieces[0]
 
     @classmethod
-    def from_mapping(cls, mapping: Mapping[str, Any], *, _id: int) -> Row:
+    def from_mapping(cls, mapping: Mapping[str, Any], *, _id: int = -1) -> Row:
         """Construct a Row instance from any mapping with string keys.
 
         Parameters
@@ -163,7 +163,7 @@ class JoinedRow(AbstractRow):
         left: Mapping[str, Any],
         right: Mapping[str, Any],
         *,
-        _id: int,
+        _id: int = -1,
         _hash: Optional[None] = None,
     ) -> None:
         """Construct a :class:`JoinedRow` instance.
