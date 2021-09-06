@@ -1,4 +1,4 @@
-poetry.lock linguist-generated=true
 nix/sources.json  linguist-generated=true
 nix/sources.nix linguist-generated=true
+poetry.lock linguist-generated=true
 requirements.txt linguist-generated=true
