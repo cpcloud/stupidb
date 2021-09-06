@@ -250,12 +250,7 @@ def test_valid_limit(rows: Sequence[Mapping[str, Any]], offset: int, lim: int) -
 
 @pytest.mark.parametrize(  # type: ignore[misc]
     ("offset", "lim"),
-    (
-        (offset, lim)
-        for lim in range(-2, 1)
-        for offset in range(-2, 1)
-        if offset and lim
-    ),
+    ((offset, lim) for lim in range(-2, 1) for offset in range(-2, 1) if offset or lim),
 )
 def test_invalid_limit(
     rows: Sequence[Mapping[str, Any]],
