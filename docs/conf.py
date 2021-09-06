@@ -66,7 +66,7 @@ copyright = f"{datetime.date.today().year:d}, {author}"
 # the built documents.
 #
 # The short X.Y version.
-version = "4.5.0"
+version = "5.0.0"
 # The full version, including alpha/beta/rc tags.
 release = version
 

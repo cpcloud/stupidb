@@ -2,6 +2,15 @@
 
 <!--next-version-placeholder-->
 
+## v5.0.0 (2021-09-06)
+### Breaking
+* Various objects that were previously accidentally public like Relation are no longer public  ([`ea73691`](https://github.com/cpcloud/stupidb/commit/ea7369170af0a688d7370a69fa1f3dccd5a895d8))
+
+### Documentation
+* Proper license ([`437abc0`](https://github.com/cpcloud/stupidb/commit/437abc0efea08da3effdec04a7c9c8fe4d79fa61))
+* Move to markdown for top-level docs ([`1f46655`](https://github.com/cpcloud/stupidb/commit/1f466555aeb945b2be6ede3a0ab75fb09053ed38))
+* Update requirements.txt ([`2c07ae8`](https://github.com/cpcloud/stupidb/commit/2c07ae8d39d647a6b4dc825074c491e7406868ff))
+
 ## v4.5.0 (2021-09-05)
 ### Feature
 * Add limit operator ([`e0e6146`](https://github.com/cpcloud/stupidb/commit/e0e6146bb2efe65fafa417089aa69d421930c00f))
