@@ -16,13 +16,16 @@ let
         import ./poetry-overrides.nix { }
       );
 
-      propagatedBuildInputs = [ graphviz-nox imagemagick_light ];
+      buildInputs = [ graphviz-nox imagemagick_light ];
+
       checkInputs = [ graphviz-nox imagemagick_light ];
+
       checkPhase = ''
         runHook preCheck
-        pytest
+        pytest --numprocesses auto
         runHook postCheck
       '';
+
       pythonImportsCheck = [ "stupidb" ];
     };
 in
