@@ -36,6 +36,7 @@ pydocstyle = "^6"
 pytest = "^6"
 pytest-cov = "^2"
 pytest-randomly = "^3"
+pytest-xdist = "^2"
 sphinx = "^4"
 sphinx-autodoc-typehints = "^1"
 
