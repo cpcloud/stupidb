@@ -10,7 +10,7 @@ description = "The stupidest of all the databases."
 authors = ["Phillip Cloud <cpcloud@gmail.com>"]
 maintainers = ["Phillip Cloud <cpcloud@gmail.com>"]
 license = "Apache-2.0"
-readme = "README.rst"
+readme = "README.md"
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Developers",
