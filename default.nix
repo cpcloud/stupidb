@@ -12,6 +12,10 @@ let
       inherit python;
 
       projectDir = ./.;
+      overrides = pkgs.poetry2nix.overrides.withDefaults (
+        import ./poetry-overrides.nix { }
+      );
+
       propagatedBuildInputs = [ graphviz-nox imagemagick_light ];
       checkInputs = [ graphviz-nox imagemagick_light ];
       checkPhase = ''
