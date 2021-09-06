@@ -10,10 +10,10 @@ from typing import BinaryIO, Iterator, MutableMapping, MutableSequence, Sequence
 
 import pydot
 
-from stupidb import indextree
-from stupidb.associative import SegmentTree, Sum
-from stupidb.bitgraph import BitGraph
-from stupidb.bitset import BitSet
+from . import indextree
+from .associative import SegmentTree, Sum
+from .bitgraph import BitGraph
+from .bitset import BitSet
 
 
 class SegmentTreeAnimator:

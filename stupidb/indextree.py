@@ -2,7 +2,7 @@
 
 from typing import MutableSequence, Sequence, TypeVar
 
-from stupidb.bitset import BitSet
+from .bitset import BitSet
 
 T = TypeVar("T", covariant=True)
 
