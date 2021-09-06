@@ -7,7 +7,17 @@ import itertools
 import operator
 import statistics
 from datetime import date, timedelta
-from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence, TypeVar
+from typing import (
+    Any,
+    Callable,
+    FrozenSet,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+    Type,
+    TypeVar,
+)
 
 import cytoolz as toolz
 import pytest
@@ -41,8 +51,8 @@ from stupidb.api import (
     var_pop,
     var_samp,
 )
-from stupidb.core import Join
-from stupidb.row import JoinedRow, Row
+from stupidb.core import Relation, Table
+from stupidb.row import Row
 
 from .conftest import assert_rowset_equal
 
@@ -101,11 +111,22 @@ def test_group_by(rows):
     assert_rowset_equal(result, expected)
 
 
-def test_join_from_iterable_is_invalid():
-    row = JoinedRow({"a": 1}, {"b": 1}, _id=1)
-    rows = [row]
-    with pytest.raises(TypeError):
-        Join.from_iterable(rows)
+def subclasses(cls: Type) -> FrozenSet[Type]:
+    classes = cls.__subclasses__()
+    return (
+        frozenset({cls})
+        | frozenset(classes)
+        | frozenset(itertools.chain.from_iterable(map(subclasses, classes)))
+    )
+
+
+@pytest.mark.parametrize(
+    "cls",
+    (cls for cls in subclasses(Relation) if cls is not Relation and cls is not Table),
+)
+def test_from_iterable_is_invalid(cls):
+    with pytest.raises(AttributeError):
+        cls.from_iterable([dict(a=1)])
 
 
 def test_cross_join(left, right):
