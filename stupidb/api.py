@@ -17,6 +17,7 @@ from __future__ import annotations
 import inspect
 from typing import Any, Callable, Iterable, Mapping, Optional
 
+from public import private, public
 from toolz import curry
 
 from .aggregation import Window  # noqa: F401
@@ -74,7 +75,8 @@ from .row import AbstractRow
 from .typehints import R1, R2, OrderBy, R, T
 
 
-class _shiftable(curry):
+@private  # type: ignore[misc]
+class shiftable(curry):
     """Shiftable curry."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -85,11 +87,12 @@ class _shiftable(curry):
     def __signature__(self) -> inspect.Signature:
         return inspect.signature(self.func)  # pragma: no cover
 
-    def __rrshift__(self, other: Relation) -> _shiftable:
+    def __rrshift__(self, other: Relation) -> shiftable:
         return self(other)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def table(rows: Iterable[Mapping[str, Any]]) -> Table:
     """Construct a relation from an iterable of mappings.
 
@@ -100,7 +103,7 @@ def table(rows: Iterable[Mapping[str, Any]]) -> Table:
 
     Examples
     --------
-    >>> from stupidb.api import table
+    >>> from stupidb import table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
     ...     dict(name="Bob", balance=-100),
@@ -115,7 +118,8 @@ def table(rows: Iterable[Mapping[str, Any]]) -> Table:
     return Table.from_iterable(rows)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def cross_join(right: Relation, left: Relation) -> Join:
     """Return the Cartesian product of tuples from `left` and `right`.
 
@@ -128,7 +132,7 @@ def cross_join(right: Relation, left: Relation) -> Join:
 
     Examples
     --------
-    >>> from stupidb.api import cross_join, table
+    >>> from stupidb import cross_join, table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
     ...     dict(name="Bob", balance=-100),
@@ -145,7 +149,8 @@ def cross_join(right: Relation, left: Relation) -> Join:
     return CrossJoin(left, right)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def inner_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Join:
     """Join `left` and `right` relations using `predicate`.
 
@@ -160,7 +165,7 @@ def inner_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Joi
 
     Examples
     --------
-    >>> from stupidb.api import cross_join, table
+    >>> from stupidb import cross_join, table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
     ...     dict(name="Bob", balance=-100),
@@ -177,7 +182,8 @@ def inner_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Joi
     return InnerJoin(left, right, predicate)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def left_join(right: Relation, predicate: JoinPredicate, left: Relation) -> LeftJoin:
     """Join `left` and `right` relations using `predicate`.
 
@@ -195,7 +201,8 @@ def left_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Left
     return LeftJoin(left, right, predicate)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def right_join(right: Relation, predicate: JoinPredicate, left: Relation) -> RightJoin:
     """Join `left` and `right` relations using `predicate`.
 
@@ -213,11 +220,13 @@ def right_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Rig
     return RightJoin(left, right, predicate)
 
 
-@_shiftable
+@private  # type: ignore[misc]
+@shiftable
 def _order_by(order_by: Tuple[OrderBy, ...], nulls: Nulls, child: Relation) -> SortBy:
     return SortBy(child, order_by, nulls)
 
 
+@public  # type: ignore[misc]
 def order_by(*order_by: OrderBy, nulls: Nulls = Nulls.FIRST) -> SortBy:
     """Order the rows of the child operator according to `order_by`.
 
@@ -234,7 +243,7 @@ def order_by(*order_by: OrderBy, nulls: Nulls = Nulls.FIRST) -> SortBy:
 
     Examples
     --------
-    >>> from stupidb.api import order_by, table
+    >>> from stupidb import order_by, table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
     ...     dict(name="Alice", balance=400),
@@ -250,11 +259,13 @@ def order_by(*order_by: OrderBy, nulls: Nulls = Nulls.FIRST) -> SortBy:
     return _order_by(order_by, nulls)
 
 
-@_shiftable
+@private  # type: ignore[misc]
+@shiftable
 def _select(projectors: Mapping[str, FullProjector], child: Relation) -> Projection:
     return Projection(child, projectors)
 
 
+@public  # type: ignore[misc]
 def select(**projectors: FullProjector) -> Projection:
     """Subset or compute new columns from `projectors`.
 
@@ -265,7 +276,7 @@ def select(**projectors: FullProjector) -> Projection:
 
     Examples
     --------
-    >>> from stupidb.api import select, table
+    >>> from stupidb import select, table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
     ...     dict(name="Alice", balance=400),
@@ -292,11 +303,13 @@ def select(**projectors: FullProjector) -> Projection:
     return _select(projectors)
 
 
-@_shiftable
+@private  # type: ignore[misc]
+@shiftable
 def _mutate(mutators: Mapping[str, FullProjector], child: Relation) -> Mutate:
     return Mutate(child, mutators)
 
 
+@public  # type: ignore[misc]
 def mutate(**mutators: FullProjector) -> Mutate:
     """Add new columns specified by `mutators`.
 
@@ -312,7 +325,7 @@ def mutate(**mutators: FullProjector) -> Mutate:
     Examples
     --------
     >>> from pprint import pprint
-    >>> from stupidb.api import mutate, table
+    >>> from stupidb import mutate, table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
     ...     dict(name="Alice", balance=400),
@@ -334,7 +347,8 @@ def mutate(**mutators: FullProjector) -> Mutate:
     return _mutate(mutators)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def sift(predicate: Predicate, child: Relation) -> Selection:
     """Filter rows in `child` according to `predicate`.
 
@@ -347,7 +361,7 @@ def sift(predicate: Predicate, child: Relation) -> Selection:
     Examples
     --------
     >>> from pprint import pprint
-    >>> from stupidb.api import sift, table
+    >>> from stupidb import sift, table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
     ...     dict(name="Alice", balance=400),
@@ -363,6 +377,7 @@ def sift(predicate: Predicate, child: Relation) -> Selection:
     return Selection(child, predicate)
 
 
+@public  # type: ignore[misc]
 def exists(relation: Relation) -> bool:
     """Compute whether any of the rows in `relation` are truthy.
 
@@ -372,13 +387,15 @@ def exists(relation: Relation) -> bool:
     return any(relation)
 
 
-@_shiftable
+@private  # type: ignore[misc]
+@shiftable
 def _aggregate(
     aggregations: Mapping[str, AggregateSpecification], child: Relation
 ) -> Aggregation:
     return Aggregation(child, aggregations)
 
 
+@public  # type: ignore[misc]
 def aggregate(**aggregations: AggregateSpecification) -> Aggregation:
     """Aggregate values from the child operator using `aggregations`.
 
@@ -393,7 +410,7 @@ def aggregate(**aggregations: AggregateSpecification) -> Aggregation:
     Compute the average of a column:
 
     >>> from pprint import pprint
-    >>> from stupidb.api import aggregate, group_by, mean, table
+    >>> from stupidb import aggregate, group_by, mean, table
     >>> rows = [
     ...     dict(name="Bob", age=30, timezone="America/New_York"),
     ...     dict(name="Susan", age=20, timezone="America/New_York"),
@@ -422,7 +439,8 @@ def aggregate(**aggregations: AggregateSpecification) -> Aggregation:
     return _aggregate(aggregations)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def over(
     window: FrameClause, child: AggregateSpecification
 ) -> WindowAggregateSpecification:
@@ -445,7 +463,7 @@ def over(
 
     Examples
     --------
-    >>> from stupidb.api import Window, over, mean, select, table
+    >>> from stupidb import Window, over, mean, select, table
     >>> from datetime import date, timedelta
     >>> today = date(2019, 2, 9)
     >>> days = timedelta(days=1)
@@ -479,11 +497,13 @@ def over(
     return WindowAggregateSpecification(child.aggregate_type, child.getters, window)
 
 
-@_shiftable
+@private  # type: ignore[misc]
+@shiftable
 def _group_by(group_by: Mapping[str, PartitionBy], child: Relation) -> GroupBy:
     return GroupBy(child, group_by)
 
 
+@public  # type: ignore[misc]
 def group_by(**group_by: PartitionBy) -> GroupBy:
     """Group the rows of the child operator according to `group_by`.
 
@@ -503,7 +523,7 @@ def group_by(**group_by: PartitionBy) -> GroupBy:
     Examples
     --------
     >>> from pprint import pprint
-    >>> from stupidb.api import aggregate, group_by, mean, table
+    >>> from stupidb import aggregate, group_by, mean, table
     >>> rows = [
     ...     dict(name="Bob", age=30, timezone="America/New_York"),
     ...     dict(name="Susan", age=20, timezone="America/New_York"),
@@ -526,8 +546,8 @@ def group_by(**group_by: PartitionBy) -> GroupBy:
     return _group_by(group_by)
 
 
-# Set operations
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def union(right: Relation, left: Relation) -> Union:
     """Compute the union of `left` and `right`, ignoring duplicate rows.
 
@@ -546,7 +566,8 @@ def union(right: Relation, left: Relation) -> Union:
     return Union(left, right)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def union_all(right: Relation, left: Relation) -> UnionAll:
     """Compute the union of `left` and `right`, preserving duplicate rows.
 
@@ -565,7 +586,8 @@ def union_all(right: Relation, left: Relation) -> UnionAll:
     return UnionAll(left, right)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def intersect(right: Relation, left: Relation) -> Intersect:
     """Compute the intersection of `left` and `right`, ignoring duplicate rows.
 
@@ -584,7 +606,8 @@ def intersect(right: Relation, left: Relation) -> Intersect:
     return Intersect(left, right)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def intersect_all(right: Relation, left: Relation) -> IntersectAll:
     """Compute the intersection of `left` and `right`, preserving duplicates.
 
@@ -603,7 +626,8 @@ def intersect_all(right: Relation, left: Relation) -> IntersectAll:
     return IntersectAll(left, right)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def difference(right: Relation, left: Relation) -> Difference:
     """Compute the set difference of `left` and `right`.
 
@@ -618,7 +642,8 @@ def difference(right: Relation, left: Relation) -> Difference:
     return Difference(left, right)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def difference_all(right: Relation, left: Relation) -> DifferenceAll:
     """Compute the set difference of `left` and `right`, preserving duplicates.
 
@@ -633,7 +658,8 @@ def difference_all(right: Relation, left: Relation) -> DifferenceAll:
     return DifferenceAll(left, right)
 
 
-@_shiftable
+@public  # type: ignore[misc]
+@shiftable
 def limit(limit: int, relation: Relation, *, offset: int = 0) -> Limit:
     """Return the rows in `relation` starting from `offset` up to `limit`.
 
@@ -654,7 +680,7 @@ def limit(limit: int, relation: Relation, *, offset: int = 0) -> Limit:
     return Limit(relation, offset=offset, limit=limit)
 
 
-# Aggregate functions
+@public  # type: ignore[misc]
 def count(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
     """Count the number of non-NULL values of `x`.
 
@@ -667,6 +693,7 @@ def count(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
     return AggregateSpecification(Count, (x,))
 
 
+@public  # type: ignore[misc]
 def sum(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Compute the sum of `x`, with an empty column summing to NULL.
 
@@ -679,6 +706,7 @@ def sum(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     return AggregateSpecification(Sum, (x,))
 
 
+@public  # type: ignore[misc]
 def total(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Compute the sum of `x`, with an empty column summing to zero.
 
@@ -691,6 +719,7 @@ def total(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     return AggregateSpecification(Total, (x,))
 
 
+@public  # type: ignore[misc]
 def first(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
     """Compute the first row of `x` over a window.
 
@@ -703,6 +732,7 @@ def first(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
     return AggregateSpecification(First, (x,))
 
 
+@public  # type: ignore[misc]
 def last(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
     """Compute the last row of `x` over a window.
 
@@ -715,11 +745,12 @@ def last(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
     return AggregateSpecification(Last, (x,))
 
 
+@public  # type: ignore[misc]
 def nth(
     x: Callable[[AbstractRow], Optional[T]],
     i: Callable[[AbstractRow], Optional[int]],
 ) -> AggregateSpecification:
-    """Compute the `i`th row of `x` over a window.
+    """Compute the `i`-th row of `x` over a window.
 
     Parameters
     ----------
@@ -732,21 +763,25 @@ def nth(
     return AggregateSpecification(Nth, (x, i))
 
 
+@public  # type: ignore[misc]
 def row_number() -> AggregateSpecification:
     """Compute the row number over a window."""
     return AggregateSpecification(RowNumber, ())
 
 
+@public  # type: ignore[misc]
 def rank() -> AggregateSpecification:
-    """Rank the rows of a relation based on the ordering key given in over."""
+    """Rank the rows of a relation based on the ordering key given in `over`."""
     return AggregateSpecification(Rank, ())
 
 
+@public  # type: ignore[misc]
 def dense_rank() -> AggregateSpecification:
-    """Rank the rows of a relation based on the ordering key given in over."""
+    """Rank the rows of a relation based on the ordering key given in `over`."""
     return AggregateSpecification(DenseRank, ())
 
 
+@public  # type: ignore[misc]
 def lead(
     x: Callable[[AbstractRow], Optional[T]],
     n: Callable[[AbstractRow], Optional[int]] = (lambda row: 1),
@@ -771,6 +806,7 @@ def lead(
     return AggregateSpecification(Lead, (x, n, default))
 
 
+@public  # type: ignore[misc]
 def lag(
     x: Callable[[AbstractRow], Optional[T]],
     n: Callable[[AbstractRow], Optional[int]] = (lambda row: 1),
@@ -795,6 +831,7 @@ def lag(
     return AggregateSpecification(Lag, (x, n, default))
 
 
+@public  # type: ignore[misc]
 def mean(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Compute the average of a column.
 
@@ -807,6 +844,7 @@ def mean(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     return AggregateSpecification(Mean, (x,))
 
 
+@public  # type: ignore[misc]
 def min(x: Callable[[AbstractRow], Optional[Comparable]]) -> AggregateSpecification:
     """Compute the minimum of a column.
 
@@ -819,6 +857,7 @@ def min(x: Callable[[AbstractRow], Optional[Comparable]]) -> AggregateSpecificat
     return AggregateSpecification(Min, (x,))
 
 
+@public  # type: ignore[misc]
 def max(x: Callable[[AbstractRow], Optional[Comparable]]) -> AggregateSpecification:
     """Compute the maximum of a column.
 
@@ -831,6 +870,7 @@ def max(x: Callable[[AbstractRow], Optional[Comparable]]) -> AggregateSpecificat
     return AggregateSpecification(Max, (x,))
 
 
+@public  # type: ignore[misc]
 def cov_samp(
     x: Callable[[AbstractRow], R1], y: Callable[[AbstractRow], R2]
 ) -> AggregateSpecification:
@@ -847,6 +887,7 @@ def cov_samp(
     return AggregateSpecification(SampleCovariance, (x, y))
 
 
+@public  # type: ignore[misc]
 def var_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Compute the sample variance of a column.
 
@@ -859,6 +900,7 @@ def var_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     return AggregateSpecification(SampleVariance, (x,))
 
 
+@public  # type: ignore[misc]
 def stdev_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Compute the sample standard deviation of a column.
 
@@ -871,6 +913,7 @@ def stdev_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     return AggregateSpecification(SampleStandardDeviation, (x,))
 
 
+@public  # type: ignore[misc]
 def cov_pop(
     x: Callable[[AbstractRow], R1], y: Callable[[AbstractRow], R2]
 ) -> AggregateSpecification:
@@ -887,6 +930,7 @@ def cov_pop(
     return AggregateSpecification(PopulationCovariance, (x, y))
 
 
+@public  # type: ignore[misc]
 def var_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Compute the population variance of a column.
 
@@ -899,6 +943,7 @@ def var_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     return AggregateSpecification(PopulationVariance, (x,))
 
 
+@public  # type: ignore[misc]
 def stdev_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
     """Compute the population standard deviation of a column.
 
