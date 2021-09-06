@@ -23,7 +23,7 @@ def test_main_default_args():
         subprocess.check_call(
             [f"{sys.executable}", "-m", "stupidb.animate", "-o", os.devnull]
         )
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:  # pragma: no cover
         print(e.stderr, file=sys.stderr)
         raise
 
@@ -45,6 +45,6 @@ def test_main_custom_leaves():
                 "2",
             ]
         )
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:  # pragma: no cover
         print(e.stderr, file=sys.stderr)
         raise
