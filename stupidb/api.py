@@ -62,6 +62,7 @@ from .core import (
     RightJoin,
     Selection,
     SortBy,
+    Table,
     Tuple,
     Union,
     UnionAll,
@@ -89,7 +90,7 @@ class _shiftable(curry):
 
 
 @_shiftable
-def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
+def table(rows: Iterable[Mapping[str, Any]]) -> Table:
     """Construct a relation from an iterable of mappings.
 
     Parameters
@@ -111,7 +112,7 @@ def table(rows: Iterable[Mapping[str, Any]]) -> Relation:
     <stupidb.core.Relation object at 0x...>
 
     """
-    return Relation.from_iterable(rows)
+    return Table.from_iterable(rows)
 
 
 @_shiftable
