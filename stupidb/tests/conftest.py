@@ -46,14 +46,6 @@ def assert_rowset_equal(left, right):
 
 
 @pytest.fixture(scope="session")
-def test_table(rows):
-    expected = rows[:]
-    op = table(rows)
-    result = list(op)
-    assert_rowset_equal(result, expected)
-
-
-@pytest.fixture(scope="session")
 def t_rows():
     return [
         dict(name="alice", date=date(2018, 1, 1), balance=2),
