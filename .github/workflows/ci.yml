@@ -39,14 +39,14 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v13
 
-      - name: Setup stupidb push/pull and nix-community pull caches
+      - name: Setup Cachix
         uses: cachix/cachix-action@v10
         with:
           name: stupidb
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community
 
-      - name: Build package and run tests
+      - name: Lint
         run: nix-shell -A python39 --pure --run 'pre-commit run --all-files'
 
   linux_macos:
@@ -69,7 +69,7 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v13
 
-      - name: Setup stupidb push/pull and nix-community pull caches
+      - name: Setup Cachix
         uses: cachix/cachix-action@v10
         with:
           name: stupidb
