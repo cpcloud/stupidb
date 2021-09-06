@@ -1,6 +1,6 @@
-* stupidb version:
-* Python version:
-* Operating System:
+- stupidb version:
+- Python version:
+- Operating System:
 
 ### Description
 

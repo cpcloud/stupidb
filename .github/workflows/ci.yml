@@ -28,9 +28,30 @@ jobs:
           poetry export --dev --without-hashes > /tmp/requirements.txt
           git diff --exit-code {/tmp/,}requirements.txt
 
-  linux_macos:
+  lint:
     needs:
       - check_reqs_up_to_date
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v13
+
+      - name: Setup stupidb push/pull and nix-community pull caches
+        uses: cachix/cachix-action@v10
+        with:
+          name: stupidb
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community
+
+      - name: Build package and run tests
+        run: nix-shell -A python39 --pure --run 'pre-commit run --all-files'
+
+  linux_macos:
+    needs:
+      - lint
     strategy:
       matrix:
         os:
@@ -60,7 +81,7 @@ jobs:
 
   windows:
     needs:
-      - check_reqs_up_to_date
+      - lint
     strategy:
       matrix:
         python-version:

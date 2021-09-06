@@ -42,7 +42,7 @@ in
       prettier = {
         enable = true;
         entry = lib.mkForce "prettier --check";
-        types_or = lib.mkForce [ "toml" "yaml" "json" ];
+        types_or = lib.mkForce [ "toml" "yaml" "json" "markdown" ];
       };
     };
   };
