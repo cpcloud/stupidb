@@ -9,11 +9,11 @@ import cytoolz as toolz
 
 
 class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
-    """The base row type of StupidDB.
+    """The base immutable row type of StupidDB.
 
-    This is the base type of the objects that are received in most user facing
-    APIs. They behave nearly identically to a standard :class:`typing.Mapping`,
-    with the exception that they are instances of :class:`typing.Hashable` and
+    This is the primitive immutable tuple type of the objects that are in
+    user facing APIs. They behave nearly identically to a standard
+    :class:`typing.Mapping`, with the exception that they are hashable and
     values can be accessed with square-bracket syntax as well as dot notation.
 
     Attributes
@@ -24,6 +24,10 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
     _id
         The index of this row in a table. This a private field whose details
         are subject to change without notice.
+    _hash
+        The hash of the row's data. This stored on the instance to avoid
+        recomputation in :class:`~stupidb.stupidb.SetOperation` instances, for
+        example.
 
     """
 
@@ -48,17 +52,21 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
         """
         self.pieces = piece, *pieces
         self._id = _id
-        self._hash = _hash
-
-    def __hash__(self) -> int:
-        if self._hash is None:
-            self._hash = hash(
+        self._hash = (
+            _hash
+            if _hash is not None
+            else hash(
                 tuple(tuple(item) for piece in self.pieces for item in piece.items())
             )
+        )
+
+    def __hash__(self) -> int:
         return self._hash
 
     def __eq__(self, other: Any) -> bool:
-        return self.data == getattr(other, "data", other)
+        if isinstance(self, AbstractRow) and isinstance(other, AbstractRow):
+            return hash(self) == hash(other)
+        return getattr(self, "data", self) == other
 
     def __ne__(self, other: Any) -> bool:
         return not (self == other)
@@ -93,6 +101,10 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
             The return value's new `_id`.
 
         """
+        if self._id == id:
+            # if the id is already the same as the requested id,
+            # don't make a new row
+            return self
         return type(self)(*self.pieces, _id=id, _hash=self._hash)
 
 
