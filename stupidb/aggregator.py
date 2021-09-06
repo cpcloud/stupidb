@@ -3,7 +3,7 @@
 import abc
 from typing import Generic, Optional, Sequence, TypeVar
 
-from stupidb.typehints import Result, T
+from .typehints import Result, T
 
 AggregateClass = TypeVar("AggregateClass", covariant=True)
 

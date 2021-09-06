@@ -3,11 +3,11 @@
 import abc
 from typing import Any, Callable, ClassVar, Optional, Sequence, Tuple, Type, Union
 
-from stupidb.aggregatetypes import Aggregate
-from stupidb.aggregator import Aggregator
-from stupidb.protocols import Comparable
-from stupidb.row import AbstractRow
-from stupidb.typehints import Getter, Output, Result, T
+from .aggregatetypes import Aggregate
+from .aggregator import Aggregator
+from .protocols import Comparable
+from .row import AbstractRow
+from .typehints import Getter, Output, Result, T
 
 
 class RankingAggregator(Aggregator["RankingAggregate", Result]):

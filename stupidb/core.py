@@ -24,15 +24,15 @@ from typing import Union as Union_
 
 import cytoolz as toolz
 
-from stupidb.aggregation import (
+from .aggregation import (
     AggregateSpecification,
     Nulls,
     WindowAggregateSpecification,
     row_key_compare,
 )
-from stupidb.associative import AssociativeAggregate
-from stupidb.row import AbstractRow, JoinedRow, Row
-from stupidb.typehints import (
+from .associative import AssociativeAggregate
+from .row import AbstractRow, JoinedRow, Row
+from .typehints import (
     JoinPredicate,
     OrderBy,
     PartitionBy,

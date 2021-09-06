@@ -13,10 +13,10 @@ from typing import (
     Type,
 )
 
-from stupidb.aggregatetypes import Aggregate
-from stupidb.aggregator import Aggregator
-from stupidb.reversed import Reversed
-from stupidb.typehints import Input1, Input2, Input3, Output, Result, T
+from .aggregatetypes import Aggregate
+from .aggregator import Aggregator
+from .reversed import Reversed
+from .typehints import Input1, Input2, Input3, Output, Result, T
 
 
 class NavigationAggregator(Aggregator["NavigationAggregate", Result]):

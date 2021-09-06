@@ -3,8 +3,8 @@
 from numbers import Real
 from typing import Any, Callable, Hashable, Optional, Tuple, TypeVar
 
-from stupidb.protocols import AdditiveWithInverse, Comparable
-from stupidb.row import AbstractRow
+from .protocols import AdditiveWithInverse, Comparable
+from .row import AbstractRow
 
 Input = TypeVar("Input")
 Input1 = TypeVar("Input1")
