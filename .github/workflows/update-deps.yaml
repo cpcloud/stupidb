@@ -42,7 +42,7 @@ jobs:
           dependency: ${{ matrix.dep }}
 
       - name: Get commit details for ${{ matrix.dep }} changes
-        uses: cpcloud/compare-commits-action@v3.0.1
+        uses: cpcloud/compare-commits-action@v4.0.1
         id: compare_commits
         if: ${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}
         with:
