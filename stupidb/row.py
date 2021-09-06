@@ -118,7 +118,7 @@ class Row(AbstractRow):
         return self.pieces[0]
 
     @classmethod
-    def from_mapping(cls, mapping: Mapping[str, Any], *, _id: int = -1) -> Row:
+    def from_mapping(cls, mapping: Mapping[str, Any], *, _id: int = -1) -> AbstractRow:
         """Construct a Row instance from any mapping with string keys.
 
         Parameters
@@ -129,7 +129,11 @@ class Row(AbstractRow):
             A new row id for the returned :class:`Row` instance.
 
         """
-        return cls(getattr(mapping, "data", mapping), _id=_id)
+        return (
+            mapping._renew_id(_id)
+            if isinstance(mapping, AbstractRow)
+            else cls(getattr(mapping, "data", mapping), _id=_id)
+        )
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.data})"
