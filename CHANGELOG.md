@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v5.0.1 (2021-09-06)
+### Performance
+* Reduce the amount of new object creation if rows' ids are the same as requested ([`3afad30`](https://github.com/cpcloud/stupidb/commit/3afad30cba4a49ed3b26e95347ce0e49a851a956))
+
 ## v5.0.0 (2021-09-06)
 ### Breaking
 * Various objects that were previously accidentally public like Relation are no longer public  ([`ea73691`](https://github.com/cpcloud/stupidb/commit/ea7369170af0a688d7370a69fa1f3dccd5a895d8))

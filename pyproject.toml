@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "stupidb"
-version = "5.0.0"
+version = "5.0.1"
 packages = [{ include = "stupidb" }]
 # don't ship tests with the install
 homepage = "https://github.com/cpcloud/stupidb"
