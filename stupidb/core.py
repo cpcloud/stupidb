@@ -55,9 +55,14 @@ class Relation(abc.ABC):
         """Iterate over the rows of a :class:`~stupidb.stupidb.Relation`."""
         return (row._renew_id(id) for id, row in enumerate(filter(None, self.child)))
 
+
+class Table(Relation):
+    __slots__ = ()
+
     @classmethod
     def from_iterable(cls, iterable: Iterable[Mapping[str, Any]]) -> Relation:
-        return cls(Row.from_mapping(row, _id=i) for i, row in enumerate(iterable))
+        """Construct a :class:`~stupidb.stupidb.Table` from an iterable."""
+        return cls(map(Row.from_mapping, iterable))
 
 
 FullProjector = Union_[Projector, WindowAggregateSpecification]
