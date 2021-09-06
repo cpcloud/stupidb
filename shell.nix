@@ -13,6 +13,9 @@ let
     editablePackageSources = {
       stupidb = ./stupidb;
     };
+    overrides = pkgs.poetry2nix.overrides.withDefaults (
+      import ./poetry-overrides.nix { }
+    );
   };
 
   pythonVersions = [ "3.7" "3.8" "3.9" ];

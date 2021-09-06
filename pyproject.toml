@@ -34,6 +34,8 @@ isort = "^5"
 mypy = "^0.812"
 pydocstyle = "^6"
 pytest = "^6"
+pytest-cov = "^2"
+pytest-randomly = "^3"
 sphinx = "^4"
 sphinx-autodoc-typehints = "^1"
 
