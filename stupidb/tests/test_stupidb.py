@@ -30,6 +30,7 @@ from stupidb.api import (
     cov_samp,
     cross_join,
     exists,
+    full_join,
     group_by,
     inner_join,
     left_join,
@@ -215,6 +216,58 @@ ON t.z = s.z"""
         dict(left_z=left_z, right_z=right_z)
         for left_z, right_z in con.execute(query).fetchall()
     ]
+    assert_rowset_equal(result, expected)
+
+
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason="full outer joins are not yet supported",
+)
+def test_full_join(employee, department, con):
+    join = (
+        table(employee)
+        >> full_join(
+            table(department), lambda e, d: e["department_id"] == d["department_id"]
+        )
+        >> select(
+            last_name=lambda row: row.left["last_name"],
+            e_dep_id=lambda row: row.left["department_id"],
+            department_name=lambda row: row.right["department_name"],
+            d_dep_id=lambda row: row.right["department_id"],
+        )
+    )
+    result = list(join)
+    query = """
+with
+left_outer as (
+    SELECT
+        e.last_name,
+        e.department_id as e_dep_id,
+        d.department_name,
+        d.department_id AS d_dep_id
+    FROM employee e
+    LEFT OUTER JOIN department d
+    USING (department_id)
+),
+right_outer as (
+    SELECT
+        e.last_name,
+        e.department_id as e_dep_id,
+        d.department_name,
+        d.department_id AS d_dep_id
+    FROM department d
+    LEFT OUTER JOIN employee e
+    USING (department_id)
+)
+SELECT * FROM left_outer
+UNION
+SELECT * FROM right_outer
+"""
+    expected = [
+        dict(zip(("last_name", "e_dep_id", "department_name", "d_dep_id"), row))
+        for row in con.execute(query).fetchall()
+    ]
+    breakpoint()
     assert_rowset_equal(result, expected)
 
 

@@ -220,6 +220,13 @@ def right_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Rig
     return RightJoin(left, right, predicate)
 
 
+@public  # type: ignore[misc]
+@shiftable
+def full_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Relation:
+    """Full outer join."""
+    raise NotImplementedError("full outer joins are not yet supported")
+
+
 @private  # type: ignore[misc]
 @shiftable
 def _order_by(order_by: Tuple[OrderBy, ...], nulls: Nulls, child: Relation) -> SortBy:

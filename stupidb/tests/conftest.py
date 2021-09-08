@@ -64,7 +64,29 @@ def t_table(t_rows):
 
 
 @pytest.fixture(scope="session")
-def con(rows, left, right):
+def employee():
+    return [
+        {"last_name": "Rafferty", "department_id": 31},
+        {"last_name": "Jones", "department_id": 33},
+        {"last_name": "Heisenberg", "department_id": 33},
+        {"last_name": "Robinson", "department_id": 34},
+        {"last_name": "Smith", "department_id": 34},
+        {"last_name": "Williams", "department_id": None},
+    ]
+
+
+@pytest.fixture(scope="session")
+def department():
+    return [
+        {"department_id": 31, "department_name": "Sales"},
+        {"department_id": 33, "department_name": "Engineering"},
+        {"department_id": 34, "department_name": "Clerical"},
+        {"department_id": 35, "department_name": "Marketing"},
+    ]
+
+
+@pytest.fixture(scope="session")
+def con(rows, left, right, employee, department):
     connection = sqlite3.connect(":memory:")
 
     connection.execute("CREATE TABLE rows (z text, a integer, b integer, e integer)")
@@ -80,6 +102,19 @@ def con(rows, left, right):
     connection.execute("CREATE TABLE right (z text, a integer, b integer, e integer)")
     connection.executemany(
         "INSERT INTO right VALUES (?, ?, ?, ?)", (tuple(row.values()) for row in right)
+    )
+
+    connection.execute("CREATE TABLE employee (last_name text, department_id integer)")
+    connection.executemany(
+        "INSERT INTO employee VALUES (?, ?)", (tuple(row.values()) for row in employee)
+    )
+
+    connection.execute(
+        "CREATE TABLE department (department_id integer, department_name text)"
+    )
+    connection.executemany(
+        "INSERT INTO department VALUES (?, ?)",
+        (tuple(row.values()) for row in department),
     )
 
     return connection
