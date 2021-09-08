@@ -45,10 +45,9 @@ from .typehints import (
 class Relation(abc.ABC):
     """An abstract relation."""
 
-    __slots__ = "child", "partitioners"
+    __slots__ = ("partitioners",)
 
-    def __init__(self, child: Iterable[AbstractRow]) -> None:
-        self.child = child
+    def __init__(self) -> None:
         self.partitioners: Mapping[str, PartitionBy] = {}
 
     def __iter__(self) -> Iterator[AbstractRow]:
@@ -74,15 +73,20 @@ class Relation(abc.ABC):
 
 
 class Table(Relation):
-    __slots__ = ()
+    __slots__ = ("rows",)
+
+    def __init__(self, rows: Iterable[AbstractRow]) -> None:
+        super().__init__()
+        self.rows = rows
 
     @classmethod
-    def from_iterable(cls, iterable: Iterable[Mapping[str, Any]]) -> Relation:
-        """Construct a :class:`~stupidb.stupidb.Table` from an iterable."""
-        return cls(map(Row.from_mapping, iterable))
+    def from_iterable(cls, iterable: Iterable[Mapping[str, Any]]) -> Table:
+        return cls(
+            Row.from_mapping(mapping, _id=i) for i, mapping in enumerate(iterable)
+        )
 
     def _produce(self) -> Iterator[AbstractRow]:
-        return iter(self.child)
+        return iter(self.rows)
 
 
 FullProjector = Union_[Projector, WindowAggregateSpecification]
@@ -93,17 +97,19 @@ class Projection(Relation):
 
     Attributes
     ----------
+    child
     aggregations
     projections
 
     """
 
-    __slots__ = "aggregations", "projections"
+    __slots__ = "child", "aggregations", "projections"
 
     def __init__(
         self, child: Relation, projections: Mapping[str, FullProjector]
     ) -> None:
-        super().__init__(child)
+        super().__init__()
+        self.child = child
         self.aggregations: Mapping[str, WindowAggregateSpecification] = {
             aggname: aggspec
             for aggname, aggspec in projections.items()
@@ -177,14 +183,15 @@ class Mutate(Projection):
 class Aggregation(Generic[AssociativeAggregate], Relation):
     """A relation representing aggregation of columns."""
 
-    __slots__ = ("metrics",)
+    __slots__ = "child", "metrics"
 
     def __init__(
         self,
         child: Relation,
         metrics: Mapping[str, AggregateSpecification[AssociativeAggregate]],
     ) -> None:
-        super().__init__(child)
+        super().__init__()
+        self.child = child
         self.metrics: Mapping[
             str, AggregateSpecification[AssociativeAggregate]
         ] = metrics
@@ -227,10 +234,11 @@ class Selection(Relation):
 
     """
 
-    __slots__ = ("predicate",)
+    __slots__ = "child", "predicate"
 
     def __init__(self, child: Relation, predicate: Predicate) -> None:
-        super().__init__(child)
+        super().__init__()
+        self.child = child
         self.predicate = predicate
 
     def _produce(self) -> Iterator[AbstractRow]:
@@ -248,10 +256,11 @@ class GroupBy(Relation):
 
     """
 
-    __slots__ = "group_by", "partitioners"
+    __slots__ = "child", "group_by", "partitioners"
 
     def __init__(self, child: Relation, group_by: Mapping[str, PartitionBy]) -> None:
-        super().__init__(child)
+        super().__init__()
+        self.child = child
         self.partitioners = group_by
 
     def _produce(self) -> Iterator[AbstractRow]:
@@ -271,12 +280,13 @@ class SortBy(Relation):
 
     """
 
-    __slots__ = "order_by", "null_ordering"
+    __slots__ = "child", "order_by", "null_ordering"
 
     def __init__(
         self, child: Relation, order_by: Tuple[OrderBy, ...], null_ordering: Nulls
     ) -> None:
-        super().__init__(child)
+        super().__init__()
+        self.child = child
         self.order_by = order_by
         self.null_ordering = null_ordering
 
@@ -294,10 +304,11 @@ class SortBy(Relation):
 
 
 class Limit(Relation):
-    __slots__ = "offset", "limit"
+    __slots__ = "child", "offset", "limit"
 
     def __init__(self, child: Relation, *, offset: int, limit: int) -> None:
-        super().__init__(child)
+        super().__init__()
+        self.child = child
         self.offset = offset
         self.limit = limit
 
@@ -306,9 +317,10 @@ class Limit(Relation):
 
 
 class Join(Relation):
-    __slots__ = ("grouped",)
+    __slots__ = "grouped", "rows"
 
     def __init__(self, left: Relation, right: Relation) -> None:
+        super().__init__()
         self.grouped = itertools.groupby(
             (
                 JoinedRow(left_row, right_row, _id=-1)
@@ -316,16 +328,14 @@ class Join(Relation):
             ),
             key=lambda row: row.left,
         )
-        super().__init__(
-            itertools.chain.from_iterable(rows for _, rows in self.grouped)
-        )
+        self.rows = itertools.chain.from_iterable(rows for _, rows in self.grouped)
 
 
 class CrossJoin(Join):
     __slots__ = ()
 
     def _produce(self) -> Iterator[AbstractRow]:
-        return iter(self.child)
+        return iter(self.rows)
 
 
 class InnerJoin(Join):
@@ -338,7 +348,7 @@ class InnerJoin(Join):
         self.predicate = predicate
 
     def _produce(self) -> Iterator[AbstractRow]:
-        return (row for row in self.child if self.predicate(row.left, row.right))
+        return (row for row in self.rows if self.predicate(row.left, row.right))
 
 
 class LeftJoin(Join):
@@ -360,7 +370,7 @@ class LeftJoin(Join):
                     matched = True
                     yield JoinedRow(left_row, right_row, _id=-1)
             if not matched:
-                yield JoinedRow(left_row, dict.fromkeys(left_row), _id=-1)
+                yield JoinedRow(left_row, dict.fromkeys(right_row), _id=-1)
 
 
 class RightJoin(LeftJoin):
@@ -382,6 +392,7 @@ class SetOperation(Relation):
     __slots__ = "left", "right"
 
     def __init__(self, left: Relation, right: Relation) -> None:
+        super().__init__()
         self.left = left
         self.right = right
 
