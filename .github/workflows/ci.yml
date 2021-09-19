@@ -6,7 +6,7 @@ on:
     branches:
       - master
 
-name: Continuous Integration
+name: CI
 
 jobs:
   check_reqs_up_to_date:
