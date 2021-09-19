@@ -1,3 +1,4 @@
+{ python ? "3.9" }:
 let
   pkgs = import ./nix;
   inherit (pkgs) lib;
@@ -17,36 +18,27 @@ let
       import ./poetry-overrides.nix { }
     );
   };
-
-  pythonVersions = [ "3.7" "3.8" "3.9" ];
+  name = "python${builtins.replaceStrings [ "." ] [ "" ] python}";
 in
-lib.listToAttrs
-  (map
-    (name: {
-      inherit name;
-      value = pkgs.mkShell {
-        name = "stupidb-dev-${name}";
-        shellHook = ''
-          ${(import ./pre-commit.nix).pre-commit-check.shellHook}
-        '';
-        buildInputs = (
-          with pkgs; [
-            fd
-            gcc
-            git
-            gnumake
-            graphviz-nox
-            imagemagick_light
-            niv
-            nix-linter
-            poetry
-          ]
-        ) ++ [
-          (mkPoetryEnv pkgs.${name})
-          prettier
-        ];
-      };
-    })
-    (map
-      (version: "python${builtins.replaceStrings [ "." ] [ "" ] version}")
-      pythonVersions))
+pkgs.mkShell {
+  name = "stupidb-dev-${name}";
+  shellHook = ''
+    ${(import ./pre-commit.nix).pre-commit-check.shellHook}
+  '';
+  buildInputs = (
+    with pkgs; [
+      fd
+      gcc
+      git
+      gnumake
+      graphviz-nox
+      imagemagick_light
+      niv
+      nix-linter
+      poetry
+    ]
+  ) ++ [
+    (mkPoetryEnv pkgs.${name})
+    prettier
+  ];
+}

@@ -1,4 +1,4 @@
-{ python ? "python3.9" }:
+{ python ? "3.9" }:
 let
   pkgs = import ./nix;
   drv =
@@ -30,5 +30,5 @@ let
     };
 in
 pkgs.callPackage drv {
-  python = pkgs.${builtins.replaceStrings [ "." ] [ "" ] python};
+  python = pkgs."python${builtins.replaceStrings [ "." ] [ "" ] python}";
 }
