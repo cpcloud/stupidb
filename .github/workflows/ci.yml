@@ -47,7 +47,7 @@ jobs:
           extraPullNames: nix-community
 
       - name: Lint
-        run: nix-shell -A python39 --pure --run 'pre-commit run --all-files'
+        run: nix-shell -A python39 --pure --run 'pre-commit run --all-files' --keep-going
 
   nix:
     needs:
@@ -77,7 +77,7 @@ jobs:
           extraPullNames: nix-community
 
       - name: Build package and run tests
-        run: nix build -L --argstr python python${{ matrix.python-version }}
+        run: nix build -L --argstr python python${{ matrix.python-version }} --keep-going
 
   windows:
     needs:
