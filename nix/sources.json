@@ -11,6 +11,18 @@
         "url": "https://github.com/NixOS/nixpkgs/archive/a54d2e72e282f2bc68c49f82c735cf664244ec75.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "poetry2nix": {
+        "branch": "fix-tomli-inputs",
+        "description": "Convert poetry projects to nix automagically [maintainer=@adisbladis] ",
+        "homepage": "",
+        "owner": "cpcloud",
+        "repo": "poetry2nix",
+        "rev": "3fb12decf1b8ec66c2d3ef0302d35e305dc60c03",
+        "sha256": "1my303adbjnwy8hna9s7xxp8pvwzkji5cki4c7w5zmcnw0gicvxm",
+        "type": "tarball",
+        "url": "https://github.com/cpcloud/poetry2nix/archive/3fb12decf1b8ec66c2d3ef0302d35e305dc60c03.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "pre-commit-hooks": {
         "branch": "master",
         "description": "Seamless integration of https://pre-commit.com git hooks with Nix.",

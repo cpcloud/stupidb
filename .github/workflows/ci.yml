@@ -46,10 +46,10 @@ jobs:
         with:
           name: stupidb
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          extraPullNames: nix-community
+          extraPullNames: nix-community,poetry2nix
 
       - name: Lint
-        run: nix-shell -A python39 --pure --run 'pre-commit run --all-files' --keep-going
+        run: nix-shell --pure --run 'pre-commit run --all-files' --keep-going
 
   nix:
     needs:
@@ -79,7 +79,7 @@ jobs:
           extraPullNames: nix-community,poetry2nix
 
       - name: Build package and run tests
-        run: nix build -L --argstr python python${{ matrix.python-version }} --keep-going
+        run: nix build -L --argstr python ${{ matrix.python-version }} --keep-going
 
   windows:
     needs:
@@ -99,7 +99,6 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-          architecture: x64
 
       - name: Install graphviz
         run: choco install graphviz
