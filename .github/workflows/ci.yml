@@ -49,7 +49,7 @@ jobs:
       - name: Lint
         run: nix-shell -A python39 --pure --run 'pre-commit run --all-files'
 
-  linux_macos:
+  nix:
     needs:
       - lint
     strategy:
@@ -116,7 +116,7 @@ jobs:
 
   release:
     needs:
-      - linux_macos
+      - nix
       - windows
     runs-on: ubuntu-latest
     concurrency: release
