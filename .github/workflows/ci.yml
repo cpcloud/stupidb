@@ -64,6 +64,8 @@ jobs:
           - "3.8"
           - "3.9"
     runs-on: ${{ matrix.os }}
+    concurrency:
+      group: nix-${{ matrix.os }}-${{ matrix.python-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
