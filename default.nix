@@ -13,7 +13,7 @@ let
 
       projectDir = ./.;
       overrides = pkgs.poetry2nix.overrides.withDefaults (
-        import ./poetry-overrides.nix { }
+        import ./poetry-overrides.nix { inherit pkgs; }
       );
 
       buildInputs = [ graphviz-nox imagemagick_light ];

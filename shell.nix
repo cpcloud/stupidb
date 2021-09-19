@@ -15,7 +15,7 @@ let
       stupidb = ./stupidb;
     };
     overrides = pkgs.poetry2nix.overrides.withDefaults (
-      import ./poetry-overrides.nix { }
+      import ./poetry-overrides.nix { inherit pkgs; }
     );
   };
   name = "python${builtins.replaceStrings [ "." ] [ "" ] python}";
@@ -27,8 +27,6 @@ pkgs.mkShell {
   '';
   buildInputs = (
     with pkgs; [
-      fd
-      gcc
       git
       gnumake
       graphviz-nox
