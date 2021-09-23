@@ -3,5 +3,5 @@
   "rangeStrategy": "auto",
   "extends": ["config:base"],
   "semanticCommits": "enabled",
-  "lockFileMaintenance": true
+  "lockFileMaintenance": { "enabled": true }
 }
