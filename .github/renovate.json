@@ -2,5 +2,6 @@
   "schedule": ["before 2am"],
   "rangeStrategy": "auto",
   "extends": ["config:base"],
-  "semanticCommits": "enabled"
+  "semanticCommits": "enabled",
+  "lockFileMaintenance": true
 }
