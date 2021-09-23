@@ -54,6 +54,7 @@ jobs:
 
       - name: Create a pull request to update ${{ matrix.dep }}
         if: ${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}
+        id: create_pr
         uses: peter-evans/create-pull-request@v3
         with:
           commit-message: "chore(deps): update ${{ matrix.dep }}"
@@ -63,3 +64,11 @@ jobs:
           title: "chore(deps): update ${{ matrix.dep }}"
           token: ${{ secrets.PAT }}
           body: ${{ steps.compare_commits.outputs.differences }}
+
+      - name: Set the PR to automerge
+        if: ${{ steps.create_pr.outputs.pull-request-operation == 'created' }}
+        uses: peter-evans/enable-pull-request-automerge@v1
+        with:
+          token: ${{ secrets.PAT }}
+          pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
+          merge-method: rebase
