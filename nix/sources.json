@@ -12,15 +12,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "poetry2nix": {
-        "branch": "fix-tomli-inputs",
+        "branch": "master",
         "description": "Convert poetry projects to nix automagically [maintainer=@adisbladis] ",
         "homepage": "",
-        "owner": "cpcloud",
+        "owner": "nix-community",
         "repo": "poetry2nix",
-        "rev": "3fb12decf1b8ec66c2d3ef0302d35e305dc60c03",
-        "sha256": "1my303adbjnwy8hna9s7xxp8pvwzkji5cki4c7w5zmcnw0gicvxm",
+        "rev": "44fb8d2a22eb00b935a9a83779d61569a29f5fd9",
+        "sha256": "0jsn79jv4z0galw9rifz47yzhbs3pxgiw51jjp1nr1wz0csd055s",
         "type": "tarball",
-        "url": "https://github.com/cpcloud/poetry2nix/archive/3fb12decf1b8ec66c2d3ef0302d35e305dc60c03.tar.gz",
+        "url": "https://github.com/nix-community/poetry2nix/archive/44fb8d2a22eb00b935a9a83779d61569a29f5fd9.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "pre-commit-hooks": {
