@@ -61,7 +61,7 @@ jobs:
           commit-message: "chore(deps): update ${{ matrix.dep }}"
           branch: "create-pull-request/update-${{ matrix.dep }}"
           delete-branch: true
-          author: "cpcloudbot <cpcloudbot@gmail.com>"
+          author: "Phillip Ground <cpcloudbot@gmail.com>"
           title: "chore(deps): update ${{ matrix.dep }}"
           token: ${{ secrets.PAT }}
           body: ${{ steps.compare_commits.outputs.differences }}
