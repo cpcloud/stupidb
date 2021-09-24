@@ -1,4 +1,5 @@
 .mypy_cache
+.pytest_cache
 .pre-commit-config.yaml
 nix/sources.json
 result
