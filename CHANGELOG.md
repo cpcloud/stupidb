@@ -2,6 +2,9 @@
 
 <!--next-version-placeholder-->
 
+## v5.0.2 (2021-09-24)
+
+
 ## v5.0.1 (2021-09-06)
 ### Performance
 * Reduce the amount of new object creation if rows' ids are the same as requested ([`3afad30`](https://github.com/cpcloud/stupidb/commit/3afad30cba4a49ed3b26e95347ce0e49a851a956))
