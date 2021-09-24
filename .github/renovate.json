@@ -3,5 +3,6 @@
   "rangeStrategy": "auto",
   "extends": ["config:base"],
   "semanticCommits": "enabled",
-  "lockFileMaintenance": { "enabled": true }
+  "lockFileMaintenance": { "enabled": true },
+  "automerge": true
 }
