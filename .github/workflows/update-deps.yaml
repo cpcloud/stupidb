@@ -1,7 +1,7 @@
 name: Update Dependencies
 on:
   schedule:
-    - cron: "* */4 * * *"
+    - cron: "15 */6 * * *"
   workflow_dispatch:
 jobs:
   niv-update:
