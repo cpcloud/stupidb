@@ -23,8 +23,7 @@ from typing import (
     TypeVar,
 )
 
-from .aggregatetypes import Aggregate
-from .aggregator import Aggregator
+from .aggregator import Aggregate, Aggregator
 from .associative import BinaryAssociativeAggregate, UnaryAssociativeAggregate
 from .navigation import (
     BinaryNavigationAggregate,

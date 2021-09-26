@@ -13,8 +13,7 @@ from typing import (
     Type,
 )
 
-from .aggregatetypes import Aggregate
-from .aggregator import Aggregator
+from .aggregator import Aggregate, Aggregator
 from .reversed import Reversed
 from .typehints import Input1, Input2, Input3, Output, Result, T
 

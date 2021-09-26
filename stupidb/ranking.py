@@ -3,8 +3,7 @@
 import abc
 from typing import Any, Callable, ClassVar, Optional, Sequence, Tuple, Type, Union
 
-from .aggregatetypes import Aggregate
-from .aggregator import Aggregator
+from .aggregator import Aggregate, Aggregator
 from .protocols import Comparable
 from .row import AbstractRow
 from .typehints import Getter, Output, Result, T

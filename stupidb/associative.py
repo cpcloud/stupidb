@@ -80,8 +80,7 @@ from typing import (
 )
 
 import stupidb.indextree as indextree
-from stupidb.aggregatetypes import Aggregate
-from stupidb.aggregator import Aggregator
+from stupidb.aggregator import Aggregate, Aggregator
 from stupidb.bitset import BitSet
 from stupidb.protocols import Comparable
 from stupidb.typehints import R1, R2, Input1, Input2, Output, R, Result, T
