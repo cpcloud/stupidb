@@ -316,10 +316,7 @@ class RangeMode(FrameClause):
         assert len(current_row_order_by_values) == 1
         (current_row_order_by_value,) = current_row_order_by_values
         value_to_find = current_row_order_by_value - preceding(current_row)
-        bisected_index = bisect.bisect_left(
-            [value for value, in order_by_values], value_to_find
-        )
-        return bisected_index
+        return bisect.bisect_left(order_by_values, (value_to_find,))
 
     def find_partition_end(
         self,
@@ -338,10 +335,7 @@ class RangeMode(FrameClause):
         assert len(current_row_order_by_values) == 1
         (current_row_order_by_value,) = current_row_order_by_values
         value_to_find = current_row_order_by_value + following(current_row)
-        bisected_index = bisect.bisect_right(
-            [value for value, in order_by_values], value_to_find
-        )
-        return bisected_index
+        return bisect.bisect_right(order_by_values, (value_to_find,))
 
 
 class Window:
