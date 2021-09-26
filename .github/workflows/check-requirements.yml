@@ -1,5 +1,7 @@
 on:
   push:
+    branches:
+      - master
     paths:
       - pyproject.toml
       - poetry.lock
