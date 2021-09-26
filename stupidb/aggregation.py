@@ -2,6 +2,7 @@
 
 import abc
 import bisect
+import collections
 import enum
 import functools
 import operator
@@ -131,7 +132,7 @@ class FrameClause(abc.ABC):
     @abc.abstractmethod
     def setup_window(
         self,
-        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        possible_peers: Sequence[AbstractRow],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
     ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:
@@ -139,7 +140,7 @@ class FrameClause(abc.ABC):
 
     def compute_window_frame(
         self,
-        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        possible_peers: Sequence[AbstractRow],
         current_row: AbstractRow,
         row_id_in_partition: int,
         order_by_columns: Sequence[str],
@@ -242,12 +243,12 @@ class RowsMode(FrameClause):
 
     def setup_window(
         self,
-        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        possible_peers: Sequence[AbstractRow],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
     ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:  # noqa: D102
         cols = [
-            tuple(map(peer.__getitem__, order_by_columns)) for _, peer in possible_peers
+            tuple(map(peer.__getitem__, order_by_columns)) for peer in possible_peers
         ]
         return tuple(map(current_row.__getitem__, order_by_columns)), cols
 
@@ -284,7 +285,7 @@ class RangeMode(FrameClause):
 
     def setup_window(
         self,
-        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        possible_peers: Sequence[AbstractRow],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
     ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:  # noqa: D102
@@ -295,7 +296,7 @@ class RangeMode(FrameClause):
         ncolumns = len(order_by_columns)
         assert ncolumns == 1, f"ncolumns == {ncolumns:d}"
         (order_by_column,) = order_by_columns
-        order_by_values = [(peer[order_by_column],) for _, peer in possible_peers]
+        order_by_values = [(peer[order_by_column],) for peer in possible_peers]
         current_row_order_by_value = (current_row[order_by_column],)
         return current_row_order_by_value, order_by_values
 
@@ -454,10 +455,8 @@ def row_key_compare(
     ``NULL`` ordering is handled using `null_ordering`.
 
     """
-    left_keys = [order_func(left_row) for order_func in order_by]
-    right_keys = [order_func(right_row) for order_func in order_by]
-
-    for left_key, right_key in zip(left_keys, right_keys):
+    keys = ((order_func(left_row), order_func(right_row)) for order_func in order_by)
+    for left_key, right_key in keys:
         if left_key is None and right_key is not None:
             return null_ordering.value
         if left_key is not None and right_key is None:
@@ -476,7 +475,7 @@ def row_key_compare(
 
 def make_key_func(
     order_by: Sequence[OrderBy], nulls: Nulls
-) -> Callable[[Tuple[int, AbstractRow]], OrderingKey[T]]:
+) -> Callable[[AbstractRow], OrderingKey[T]]:
     """Make a function usable with the key argument to sorting functions.
 
     This return value of this function can be passed to
@@ -489,13 +488,7 @@ def make_key_func(
         :class:`~stupidb.row.AbstractRow`.
 
     """
-
-    def cmp(lefts: Tuple[int, AbstractRow], rights: Tuple[int, AbstractRow]) -> int:
-        _, left_row = lefts
-        _, right_row = rights
-        return row_key_compare(order_by, nulls, left_row, right_row)
-
-    return functools.cmp_to_key(cmp)  # type: ignore
+    return functools.cmp_to_key(functools.partial(row_key_compare, order_by, nulls))
 
 
 class WindowAggregateSpecification(Generic[ConcreteAggregate]):
@@ -549,8 +542,8 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         # A mapping from each row's partition key to a list of rows in that
         # partition.
         partitions: MutableMapping[
-            Tuple[Hashable, ...], List[Tuple[int, AbstractRow]]
-        ] = {}
+            Tuple[Hashable, ...], List[AbstractRow]
+        ] = collections.defaultdict(list)
 
         # Generate names for temporary order by columns, users never see these.
         #
@@ -563,24 +556,20 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         # functions in range mode
         # TODO: check that if in range mode we only have single order by
         rows_for_partition = (
-            (
-                i,
-                row.merge(
-                    dict(
-                        zip(
-                            order_by_columns,
-                            (order_func(row) for order_func in order_by),
-                        )
+            row.merge(
+                dict(
+                    zip(
+                        order_by_columns,
+                        (order_func(row) for order_func in order_by),
                     )
-                ),
+                )
             )
-            for i, row in enumerate(rows)
+            for row in rows
         )
 
         # partition
-        for table_row_index, row in rows_for_partition:
-            partition_key = compute_partition_key(row, partition_by)
-            partitions.setdefault(partition_key, []).append((table_row_index, row))
+        for row in rows_for_partition:
+            partitions[compute_partition_key(row, partition_by)].append(row)
 
         # sort
         key = make_key_func(order_by, frame_clause.nulls)
@@ -614,16 +603,14 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             # For every row in the set of possible peers of the current row
             # compute the window frame, and query the aggregator for the value
             # of the aggregation within that frame.
-            for row_id_in_partition, (table_row_index, row) in enumerate(
-                possible_peers
-            ):
+            for row_id_in_partition, row in enumerate(possible_peers):
                 start, stop = frame_clause.compute_window_frame(
                     possible_peers, row, row_id_in_partition, order_by_columns
                 )
                 result = aggregator.query(start, stop)
-                results.append((table_row_index, result))
+                results.append((row._id, result))
 
         # Sort the results in order of the child relation, because we processed
         # them in partition order, which might not be the same. Pull out the
-        # second element of each element in results.
-        return (value for _, value in sorted(results, key=operator.itemgetter(0)))
+        # second element of each element in the result.
+        return map(operator.itemgetter(1), sorted(results, key=operator.itemgetter(0)))
