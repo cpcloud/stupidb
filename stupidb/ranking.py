@@ -56,14 +56,14 @@ class RankingAggregate(Aggregate[Output]):
     @classmethod
     def prepare(
         cls,
-        possible_peers: Sequence[Tuple[int, AbstractRow]],
+        possible_peers: Sequence[AbstractRow],
         getters: Tuple[Getter, ...],
         order_by_columns: Sequence[str],
     ) -> RankingAggregator[Output]:
         """Construct the aggregator for ranking."""
         order_by_values = [
             tuple(peer[column] for column in order_by_columns)
-            for _, peer in possible_peers
+            for peer in possible_peers
         ]
         return cls.aggregator_class(order_by_values, cls)
 
