@@ -1,0 +1,46 @@
+name: Lockfile maintenance
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+  workflow_dispatch:
+jobs:
+  niv-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install nix
+        uses: cachix/install-nix-action@v14
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: stupidb
+          extraPullNames: nix-community,poetry2nix
+
+      - name: update poetry.lock
+        run: nix-shell --pure --run 'poetry update' --keep-going
+
+      - name: update requirements.txt
+        run: nix-shell --pure --run 'poetry export --dev --without-hashes' --keep-going > requirements.txt
+
+      - name: create pull request
+        uses: peter-evans/create-pull-request@v3
+        id: create_pr
+        with:
+          commit-message: "chore(deps): lockfile maintenance"
+          branch: "create-pull-request/lockfile-maintenance"
+          delete-branch: true
+          author: "Phillip Ground <cpcloudbot@gmail.com>"
+          title: "chore(deps): lockfile maintenance"
+          token: ${{ secrets.PAT }}
+          body: bump poetry.lock and requirements.txt
+
+      - name: Set the PR to automerge
+        if: ${{ steps.create_pr.outputs.pull-request-operation == 'created' }}
+        uses: peter-evans/enable-pull-request-automerge@v1
+        with:
+          token: ${{ secrets.PAT }}
+          pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
+          merge-method: rebase
