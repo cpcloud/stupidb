@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Hashable, Iterator, Mapping, Optional
+from typing import Any, Hashable, Iterator, Mapping
 
 import cytoolz as toolz
 
@@ -38,7 +38,7 @@ class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):
         piece: Mapping[str, Any],
         *pieces: Mapping[str, Any],
         _id: int = -1,
-        _hash: Optional[int] = None,
+        _hash: int | None = None,
     ) -> None:
         """Construct an :class:`AbstractRow`.
 
@@ -180,7 +180,7 @@ class JoinedRow(AbstractRow):
         right: Mapping[str, Any],
         *,
         _id: int = -1,
-        _hash: Optional[None] = None,
+        _hash: None | None = None,
     ) -> None:
         """Construct a :class:`JoinedRow` instance.
 

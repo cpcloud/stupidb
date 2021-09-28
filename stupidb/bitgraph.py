@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import AbstractSet, Any, Iterable, Iterator, Mapping, MutableMapping, Tuple
+from typing import AbstractSet, Any, Iterable, Iterator, Mapping, MutableMapping
 
 import cytoolz as toolz
 
@@ -27,7 +27,7 @@ class BitGraph:
         cls,
         *,
         vertices: Iterable[int],
-        edges: Iterable[Tuple[int, int]],
+        edges: Iterable[tuple[int, int]],
     ) -> BitGraph:
         """Construct a `BitGraph` from `vertices` and `edges`."""
         nodes = {vertex: BitSet() for vertex in vertices}

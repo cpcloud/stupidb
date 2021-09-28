@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Callable, Iterable, Mapping, Optional
+from typing import Any, Callable, Iterable, Mapping
 
 from public import private, public
 from toolz import curry
@@ -46,7 +46,6 @@ from .core import (
     CrossJoin,
     Difference,
     DifferenceAll,
-    FullProjector,
     GroupBy,
     InnerJoin,
     Intersect,
@@ -59,12 +58,12 @@ from .core import (
     PartitionBy,
     Predicate,
     Projection,
+    Projector,
     Relation,
     RightJoin,
     Selection,
     SortBy,
     Table,
-    Tuple,
     Union,
     UnionAll,
 )
@@ -229,7 +228,7 @@ def full_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Rela
 
 @private  # type: ignore[misc]
 @shiftable
-def _order_by(order_by: Tuple[OrderBy, ...], nulls: Nulls, child: Relation) -> SortBy:
+def _order_by(order_by: tuple[OrderBy, ...], nulls: Nulls, child: Relation) -> SortBy:
     return SortBy(child, order_by, nulls)
 
 
@@ -268,12 +267,14 @@ def order_by(*order_by: OrderBy, nulls: Nulls = Nulls.FIRST) -> SortBy:
 
 @private  # type: ignore[misc]
 @shiftable
-def _select(projectors: Mapping[str, FullProjector], child: Relation) -> Projection:
+def _select(
+    projectors: Mapping[str, Projector | WindowAggregateSpecification], child: Relation
+) -> Projection:
     return Projection(child, projectors)
 
 
 @public  # type: ignore[misc]
-def select(**projectors: FullProjector) -> Projection:
+def select(**projectors: Projector | WindowAggregateSpecification) -> Projection:
     """Subset or compute new columns from `projectors`.
 
     Parameters
@@ -312,12 +313,14 @@ def select(**projectors: FullProjector) -> Projection:
 
 @private  # type: ignore[misc]
 @shiftable
-def _mutate(mutators: Mapping[str, FullProjector], child: Relation) -> Mutate:
+def _mutate(
+    mutators: Mapping[str, Projector | WindowAggregateSpecification], child: Relation
+) -> Mutate:
     return Mutate(child, mutators)
 
 
 @public  # type: ignore[misc]
-def mutate(**mutators: FullProjector) -> Mutate:
+def mutate(**mutators: Projector | WindowAggregateSpecification) -> Mutate:
     """Add new columns specified by `mutators`.
 
     Parameters
@@ -688,7 +691,7 @@ def limit(limit: int, relation: Relation, *, offset: int = 0) -> Limit:
 
 
 @public  # type: ignore[misc]
-def count(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
+def count(x: Callable[[AbstractRow], T | None]) -> AggregateSpecification:
     """Count the number of non-NULL values of `x`.
 
     Parameters
@@ -727,7 +730,7 @@ def total(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
 
 
 @public  # type: ignore[misc]
-def first(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
+def first(x: Callable[[AbstractRow], T | None]) -> AggregateSpecification:
     """Compute the first row of `x` over a window.
 
     Parameters
@@ -740,7 +743,7 @@ def first(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
 
 
 @public  # type: ignore[misc]
-def last(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
+def last(x: Callable[[AbstractRow], T | None]) -> AggregateSpecification:
     """Compute the last row of `x` over a window.
 
     Parameters
@@ -754,8 +757,8 @@ def last(x: Callable[[AbstractRow], Optional[T]]) -> AggregateSpecification:
 
 @public  # type: ignore[misc]
 def nth(
-    x: Callable[[AbstractRow], Optional[T]],
-    i: Callable[[AbstractRow], Optional[int]],
+    x: Callable[[AbstractRow], T | None],
+    i: Callable[[AbstractRow], int | None],
 ) -> AggregateSpecification:
     """Compute the `i`-th row of `x` over a window.
 
@@ -790,9 +793,9 @@ def dense_rank() -> AggregateSpecification:
 
 @public  # type: ignore[misc]
 def lead(
-    x: Callable[[AbstractRow], Optional[T]],
-    n: Callable[[AbstractRow], Optional[int]] = (lambda row: 1),
-    default: Callable[[AbstractRow], Optional[T]] = (lambda row: None),
+    x: Callable[[AbstractRow], T | None],
+    n: Callable[[AbstractRow], int | None] = (lambda row: 1),
+    default: Callable[[AbstractRow], T | None] = (lambda row: None),
 ) -> AggregateSpecification:
     """Lead a column `x` by `n` rows, using `default` for NULL values.
 
@@ -815,9 +818,9 @@ def lead(
 
 @public  # type: ignore[misc]
 def lag(
-    x: Callable[[AbstractRow], Optional[T]],
-    n: Callable[[AbstractRow], Optional[int]] = (lambda row: 1),
-    default: Callable[[AbstractRow], Optional[T]] = (lambda row: None),
+    x: Callable[[AbstractRow], T | None],
+    n: Callable[[AbstractRow], int | None] = (lambda row: 1),
+    default: Callable[[AbstractRow], T | None] = (lambda row: None),
 ) -> AggregateSpecification:
     """Lag a column `x` by `n` rows, using `default` for NULL values.
 
@@ -852,7 +855,7 @@ def mean(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
 
 
 @public  # type: ignore[misc]
-def min(x: Callable[[AbstractRow], Optional[Comparable]]) -> AggregateSpecification:
+def min(x: Callable[[AbstractRow], Comparable | None]) -> AggregateSpecification:
     """Compute the minimum of a column.
 
     Parameters
@@ -865,7 +868,7 @@ def min(x: Callable[[AbstractRow], Optional[Comparable]]) -> AggregateSpecificat
 
 
 @public  # type: ignore[misc]
-def max(x: Callable[[AbstractRow], Optional[Comparable]]) -> AggregateSpecification:
+def max(x: Callable[[AbstractRow], Comparable | None]) -> AggregateSpecification:
     """Compute the maximum of a column.
 
     Parameters

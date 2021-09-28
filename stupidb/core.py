@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """StupiDB. The stupidest database you'll ever come across.
 
 This is project designed to illustate the concepts that underly a typical
@@ -19,8 +17,7 @@ import collections
 import functools
 import itertools
 import typing
-from typing import Any, FrozenSet, Generic, Iterable, Iterator, Mapping, Tuple
-from typing import Union as Union_
+from typing import Any, Generic, Iterable, Iterator, Mapping
 
 import cytoolz as toolz
 
@@ -89,9 +86,6 @@ class Table(Relation):
         return iter(self.rows)
 
 
-FullProjector = Union_[Projector, WindowAggregateSpecification]
-
-
 class Projection(Relation):
     """A relation representing column selection.
 
@@ -106,7 +100,9 @@ class Projection(Relation):
     __slots__ = "child", "aggregations", "projections"
 
     def __init__(
-        self, child: Relation, projections: Mapping[str, FullProjector]
+        self,
+        child: Relation,
+        projections: Mapping[str, Projector | WindowAggregateSpecification],
     ) -> None:
         super().__init__()
         self.child = child
@@ -283,7 +279,7 @@ class SortBy(Relation):
     __slots__ = "child", "order_by", "null_ordering"
 
     def __init__(
-        self, child: Relation, order_by: Tuple[OrderBy, ...], null_ordering: Nulls
+        self, child: Relation, order_by: tuple[OrderBy, ...], null_ordering: Nulls
     ) -> None:
         super().__init__()
         self.child = child
@@ -399,7 +395,7 @@ class SetOperation(Relation):
     @staticmethod
     def itemize(
         mappings: Iterable[AbstractRow],
-    ) -> FrozenSet[Tuple[Tuple[str, Any], ...]]:
+    ) -> frozenset[tuple[tuple[str, Any], ...]]:
         """Return a hashable version of `mappings`."""
         return frozenset(tuple(mapping.items()) for mapping in mappings)
 

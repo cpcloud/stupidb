@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable, ClassVar, Generic, Optional, Sequence, Tuple, TypeVar
+from typing import Callable, ClassVar, Generic, Sequence, TypeVar
 
 from .row import AbstractRow
 from .typehints import Getter, Output, Result, T
@@ -31,7 +31,7 @@ class Aggregator(Generic[AggregateClass, Result], abc.ABC):
         """Initialize an aggregator from `arguments` and `cls`."""
 
     @abc.abstractmethod
-    def query(self, begin: int, end: int) -> Optional[Result]:
+    def query(self, begin: int, end: int) -> Result | None:
         """Query the aggregator over the range from `begin` to `end`."""
 
 
@@ -45,7 +45,7 @@ class Aggregate(Generic[Output], abc.ABC):
     def prepare(
         cls,
         possible_peers: Sequence[AbstractRow],
-        getters: Tuple[Getter, ...],
+        getters: tuple[Getter, ...],
         order_by_columns: Sequence[str],
     ) -> Aggregator[Aggregate[Output], Output]:
         """Prepare an aggregation of this type for computation."""
