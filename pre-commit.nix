@@ -44,6 +44,12 @@ in
         entry = lib.mkForce "prettier --check";
         types_or = lib.mkForce [ "toml" "yaml" "json" "markdown" ];
       };
+
+      pyupgrade = {
+        enable = true;
+        entry = "pyupgrade --py37-plus";
+        types_or = [ "python" ];
+      };
     };
   };
 }

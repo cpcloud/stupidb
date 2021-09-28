@@ -72,10 +72,7 @@ from typing import (
     Generic,
     Iterator,
     MutableSequence,
-    Optional,
     Sequence,
-    Tuple,
-    Type,
     TypeVar,
 )
 
@@ -93,8 +90,8 @@ AssociativeAggregate = TypeVar(
 
 
 def make_segment_tree(
-    leaf_arguments: Sequence[Tuple[T, ...]],
-    aggregate_type: Type[AssociativeAggregate],
+    leaf_arguments: Sequence[tuple[T, ...]],
+    aggregate_type: type[AssociativeAggregate],
     *,
     fanout: int,
 ) -> Sequence[AssociativeAggregate]:
@@ -166,8 +163,8 @@ class SegmentTree(
 
     def __init__(
         self,
-        leaves: Sequence[Tuple[Optional[T], ...]],
-        aggregate_type: Type[AssociativeAggregate],
+        leaves: Sequence[tuple[T | None, ...]],
+        aggregate_type: type[AssociativeAggregate],
         *,
         fanout: int,
     ) -> None:
@@ -175,7 +172,7 @@ class SegmentTree(
         self.nodes: Sequence[AssociativeAggregate] = make_segment_tree(
             leaves, aggregate_type, fanout=fanout
         )
-        self.aggregate_type: Type[AssociativeAggregate] = aggregate_type
+        self.aggregate_type: type[AssociativeAggregate] = aggregate_type
         self.fanout = fanout
         self.height = int(math.ceil(math.log(len(leaves), fanout))) + 1
         self.levels: Sequence[Sequence[AssociativeAggregate]] = list(
@@ -205,7 +202,7 @@ class SegmentTree(
     def __repr__(self) -> str:
         return indextree.reprtree(self.nodes, fanout=self.fanout)
 
-    def query(self, begin: int, end: int) -> Optional[Result]:
+    def query(self, begin: int, end: int) -> Result | None:
         """Aggregate the values between `begin` and `end` using `aggregate`.
 
         Parameters
@@ -255,7 +252,7 @@ class AbstractAssociativeAggregate(Aggregate[Output]):
         self.count = 0
 
     @abc.abstractmethod
-    def finalize(self) -> Optional[Output]:
+    def finalize(self) -> Output | None:
         """Compute the value of the aggregation from its current state."""
 
 
@@ -271,7 +268,7 @@ class UnaryAssociativeAggregate(
     __slots__ = ()
 
     @abc.abstractmethod
-    def step(self, input1: Optional[Input1]) -> None:
+    def step(self, input1: Input1 | None) -> None:
         """Perform a single step of the aggregation."""
 
     @abc.abstractmethod
@@ -287,7 +284,7 @@ class BinaryAssociativeAggregate(
     __slots__ = ()
 
     @abc.abstractmethod
-    def step(self, input1: Optional[Input1], input2: Optional[Input2]) -> None:
+    def step(self, input1: Input1 | None, input2: Input2 | None) -> None:
         """Perform a single step of the aggregation."""
 
     @abc.abstractmethod
@@ -300,7 +297,7 @@ class Count(UnaryAssociativeAggregate[Input1, int]):
 
     __slots__ = ()
 
-    def step(self, input1: Optional[Input1]) -> None:
+    def step(self, input1: Input1 | None) -> None:
         """Add one to the count if `input1` is not :data:`None`."""
         if input1 is not None:
             self.count += 1
@@ -308,7 +305,7 @@ class Count(UnaryAssociativeAggregate[Input1, int]):
     def __repr__(self) -> str:
         return f"{type(self).__name__}(count={self.count!r})"
 
-    def finalize(self) -> Optional[int]:
+    def finalize(self) -> int | None:
         """Return the count."""
         return self.count
 
@@ -332,12 +329,12 @@ class Sum(UnaryAssociativeAggregate[R1, R2]):
         name = type(self).__name__
         return f"{name}(total={total!r}, count={count!r})"
 
-    def step(self, input1: Optional[R1]) -> None:
+    def step(self, input1: R1 | None) -> None:
         if input1 is not None:
             self.total += input1
             self.count += 1
 
-    def finalize(self) -> Optional[R2]:
+    def finalize(self) -> R2 | None:
         return self.total if self.count else None
 
     def combine(self: Sum[R1, R2], other: Sum[R1, R2]) -> None:
@@ -348,14 +345,14 @@ class Sum(UnaryAssociativeAggregate[R1, R2]):
 class Total(Sum[R1, R2]):
     __slots__ = ()
 
-    def finalize(self) -> Optional[R2]:
+    def finalize(self) -> R2 | None:
         return self.total if self.count else typing.cast(R2, 0)
 
 
 class Mean(Sum[R1, R2]):
     __slots__ = ()
 
-    def finalize(self) -> Optional[R2]:
+    def finalize(self) -> R2 | None:
         count = self.count
         return self.total / count if count > 0 else None
 
@@ -374,17 +371,17 @@ class MinMax(UnaryAssociativeAggregate[Comparable, Comparable]):
         self, *, comparator: Callable[[Comparable, Comparable], Comparable]
     ) -> None:
         super().__init__()
-        self.current_value: Optional[Comparable] = None
+        self.current_value: Comparable | None = None
         self.comparator = comparator
 
-    def step(self, input1: Optional[Comparable]) -> None:
+    def step(self, input1: Comparable | None) -> None:
         if input1 is not None:
             if self.current_value is None:
                 self.current_value = input1
             else:
                 self.current_value = self.comparator(self.current_value, input1)
 
-    def finalize(self) -> Optional[Comparable]:
+    def finalize(self) -> Comparable | None:
         return self.current_value
 
     def combine(self, other: MinMax) -> None:
@@ -434,7 +431,7 @@ class Covariance(BinaryAssociativeAggregate[R1, R2, float]):
             f"cov={self.cov!r}, count={self.count!r})"
         )
 
-    def step(self, x: Optional[R1], y: Optional[R2]) -> None:
+    def step(self, x: R1 | None, y: R2 | None) -> None:
         if x is not None and y is not None:
             self.count += 1
             count = self.count
@@ -443,7 +440,7 @@ class Covariance(BinaryAssociativeAggregate[R1, R2, float]):
             self.meany += (y - self.meany) / count
             self.cov += delta_x * (y - self.meany)
 
-    def finalize(self) -> Optional[float]:
+    def finalize(self) -> float | None:
         denom = self.count - self.ddof
         return self.cov / denom if denom > 0 else None
 
@@ -481,10 +478,10 @@ class Variance(UnaryAssociativeAggregate[R, float]):
     def __init__(self, ddof: int) -> None:
         self.aggregator = Covariance[R, R](ddof=ddof)
 
-    def step(self, x: Optional[R]) -> None:
+    def step(self, x: R | None) -> None:
         self.aggregator.step(x, x)
 
-    def finalize(self) -> Optional[float]:
+    def finalize(self) -> float | None:
         return self.aggregator.finalize()
 
     def combine(self, other: Variance[R]) -> None:
@@ -508,7 +505,7 @@ class PopulationVariance(Variance[R]):
 class StandardDeviation(Variance[R]):
     __slots__ = ("aggregator",)
 
-    def finalize(self) -> Optional[float]:
+    def finalize(self) -> float | None:
         variance = super().finalize()
         return math.sqrt(variance) if variance is not None else None
 
