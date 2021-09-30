@@ -17,10 +17,10 @@
         "homepage": "",
         "owner": "nix-community",
         "repo": "poetry2nix",
-        "rev": "73f55242232e0ad4f6ece5a5753654354b4627cd",
-        "sha256": "1hviivrri51wwj64j8zrcfb1l7y4zv7pfqapka9rl2k2726hqgks",
+        "rev": "aee8f04296c39d88155e05d25cfc59dfdd41cc77",
+        "sha256": "11r27qy4pnqsqhbvxd3vn6sm1s8zl190d2q1v9k2w0r296bdrw4c",
         "type": "tarball",
-        "url": "https://github.com/nix-community/poetry2nix/archive/73f55242232e0ad4f6ece5a5753654354b4627cd.tar.gz",
+        "url": "https://github.com/nix-community/poetry2nix/archive/aee8f04296c39d88155e05d25cfc59dfdd41cc77.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "pre-commit-hooks": {
