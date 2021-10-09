@@ -29,10 +29,10 @@
         "homepage": "",
         "owner": "cachix",
         "repo": "pre-commit-hooks.nix",
-        "rev": "77b45d526e4dcc1f26ce449f5dc561f2e6eb5db6",
-        "sha256": "1j2w66b73hdr64dp2nk9pmxz63344wwxddyv8jrllgy7nv3j0rwa",
+        "rev": "475b1f7f7ddcb6415e6624a68c4fe90f55ee9e73",
+        "sha256": "052x30cf793kq1gsp5wpcvvsx1hbs9rkgx2z7760c5vrsi39l7y3",
         "type": "tarball",
-        "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/77b45d526e4dcc1f26ce449f5dc561f2e6eb5db6.tar.gz",
+        "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/475b1f7f7ddcb6415e6624a68c4fe90f55ee9e73.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
