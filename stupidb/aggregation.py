@@ -23,13 +23,13 @@ from typing import (
 )
 
 from .aggregator import Aggregate, Aggregator
-from .associative import BinaryAssociativeAggregate, UnaryAssociativeAggregate
-from .navigation import (
+from .functions.associative import BinaryAssociativeAggregate, UnaryAssociativeAggregate
+from .functions.navigation import (
     BinaryNavigationAggregate,
     TernaryNavigationAggregate,
     UnaryNavigationAggregate,
 )
-from .ranking import RankingAggregate
+from .functions.ranking import RankingAggregate
 from .row import AbstractRow
 from .typehints import Following, OrderBy, OrderingKey, PartitionBy, Preceding, T
 

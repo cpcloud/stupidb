@@ -58,7 +58,7 @@ class IndexTree:
     __slots__ = "height", "fanout", "nodes"
 
     def __init__(self, *, height: int, fanout: int) -> None:
-        """Construct an :class:`~stupidb.indextree.IndexTree`."""
+        """Construct an :class:`~stupidb.associative.indextree.IndexTree`."""
         self.height = height
         self.fanout = fanout
         self.nodes = range((fanout ** height - 1) // (fanout - 1))

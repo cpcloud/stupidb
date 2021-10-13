@@ -5,6 +5,7 @@ from __future__ import annotations
 import builtins
 import itertools
 import operator
+import sqlite3
 import statistics
 from datetime import date, timedelta
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence, TypeVar
@@ -15,12 +16,14 @@ import pytest
 from stupidb.aggregation import Window
 from stupidb.api import (
     aggregate,
+    const,
     count,
     cov_pop,
     cov_samp,
     cross_join,
     exists,
     full_join,
+    get,
     group_by,
     inner_join,
     left_join,
@@ -29,6 +32,7 @@ from stupidb.api import (
     mean,
     min,
     mutate,
+    nth,
     order_by,
     over,
     pretty,
@@ -46,11 +50,11 @@ from stupidb.api import (
 from stupidb.core import Relation, Table
 from stupidb.row import Row
 
-from .conftest import assert_rowset_equal
+from .conftest import Element, assert_rowset_equal
 
 
-def test_projection(rows):
-    expected = [
+def test_projection(rows: list[dict[str, Element]]) -> None:
+    expected: list[Mapping[str, Element]] = [
         dict(z="a", c=1, d=2),
         dict(z="b", c=2, d=-1),
         dict(z="a", c=3, d=4),
@@ -59,15 +63,13 @@ def test_projection(rows):
         dict(z="b", c=2, d=-3),
         dict(z="b", c=3, d=-3),
     ]
-    pipeline = table(rows) >> select(
-        c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"]
-    )
+    pipeline = table(rows) >> select(c=get("a"), d=get("b"), z=get("z"))
     result = list(pipeline)
     assert_rowset_equal(result, expected)
 
 
-def test_selection(rows):
-    expected = [
+def test_selection(rows: list[dict[str, Element]]) -> None:
+    expected: list[Mapping[str, Element]] = [
         dict(z="a", c=1, d=2),
         dict(z="a", c=1, d=-3),
         dict(z="a", c=4, d=-3),
@@ -84,8 +86,8 @@ def test_selection(rows):
     assert_rowset_equal(selection, expected)
 
 
-def test_group_by(rows):
-    expected = [
+def test_group_by(rows: list[dict[str, Element]]) -> None:
+    expected: list[Mapping[str, Element]] = [
         {"c": 1, "mean": -0.5, "total": -1, "z": "a"},
         {"c": 2, "mean": -2.0, "total": -4, "z": "b"},
         {"c": 3, "mean": 4.0, "total": 4, "z": "a"},
@@ -112,16 +114,18 @@ def subclasses(cls: type) -> frozenset[type]:
     )
 
 
-@pytest.mark.parametrize(
+@pytest.mark.parametrize(  # type: ignore[misc]
     "cls",
     (cls for cls in subclasses(Relation) if cls is not Relation and cls is not Table),
 )
-def test_from_iterable_is_invalid(cls):
+def test_from_iterable_is_invalid(cls: Relation) -> None:
     with pytest.raises(AttributeError):
         cls.from_iterable([dict(a=1)])
 
 
-def test_cross_join(left, right):
+def test_cross_join(
+    left: list[dict[str, Element]], right: list[dict[str, Element]]
+) -> None:
     join = (
         table(left)
         >> cross_join(table(right))
@@ -137,7 +141,11 @@ def test_cross_join(left, right):
     assert_rowset_equal(result, expected)
 
 
-def test_inner_join(left, right, con):
+def test_inner_join(
+    left: list[dict[str, Element]],
+    right: list[dict[str, Element]],
+    con: sqlite3.Connection,
+) -> None:
     join = (
         table(left)
         >> inner_join(
@@ -172,7 +180,11 @@ ON t.z = 'a'
     assert_rowset_equal(result, expected)
 
 
-def test_left_join(left, right, con):
+def test_left_join(
+    left: list[dict[str, Element]],
+    right: list[dict[str, Element]],
+    con: sqlite3.Connection,
+) -> None:
     join = (
         table(left)
         >> left_join(table(right), lambda left, right: left["z"] == right["z"])
@@ -191,7 +203,11 @@ ON t.z = s.z"""
     assert_rowset_equal(result, expected)
 
 
-def test_right_join(left, right, con):
+def test_right_join(
+    left: list[dict[str, Element]],
+    right: list[dict[str, Element]],
+    con: sqlite3.Connection,
+) -> None:
     join = (
         table(left)
         >> right_join(table(right), lambda left, right: left["z"] == right["z"])
@@ -210,11 +226,15 @@ ON t.z = s.z"""
     assert_rowset_equal(result, expected)
 
 
-@pytest.mark.xfail(
+@pytest.mark.xfail(  # type: ignore[misc]
     raises=NotImplementedError,
     reason="full outer joins are not yet supported",
 )
-def test_full_join(employee, department, con):
+def test_full_join(
+    employee: list[dict[str, Element]],
+    department: list[dict[str, Element]],
+    con: sqlite3.Connection,
+) -> None:  # pragma: no cover
     join = (
         table(employee)
         >> full_join(
@@ -262,7 +282,7 @@ SELECT * FROM right_outer
     assert_rowset_equal(result, expected)
 
 
-def test_semi_join():
+def test_semi_join() -> None:
     rows = [
         dict(z="a", a=1, b=2),
         dict(z="b", a=2, b=-1),
@@ -286,7 +306,7 @@ def test_semi_join():
     assert result == rows
 
 
-def test_semi_join_not_all_rows_match():
+def test_semi_join_not_all_rows_match() -> None:
     rows = [
         dict(z="a", a=1, b=2),
         dict(z="b", a=2, b=-1),
@@ -326,7 +346,7 @@ def test_invalid_limit(
         table(rows) >> limit(lim, offset=offset)
 
 
-def test_right_shiftable(rows):
+def test_right_shiftable(rows: list[dict[str, Element]]) -> None:
     pipeline = (
         table(rows)
         >> select(c=lambda r: r["a"], d=lambda r: r["b"], z=lambda r: r["z"])
@@ -340,7 +360,7 @@ def test_right_shiftable(rows):
         )
     )
 
-    expected = [
+    expected: list[Mapping[str, Element]] = [
         {
             "c": 1,
             "mean": -0.5,
@@ -386,7 +406,7 @@ def test_right_shiftable(rows):
     assert_rowset_equal(result, expected)
 
 
-def test_rows_window(rows):
+def test_rows_window(rows: list[dict[str, Element]]) -> None:
     pipeline = (
         table(rows)
         >> mutate(
@@ -420,7 +440,7 @@ def test_rows_window(rows):
     assert_rowset_equal(result, expected)
 
 
-def test_rows_window_partition(rows):
+def test_rows_window_partition(rows: list[dict[str, Element]]) -> None:
     pipeline = (
         table(rows)
         >> mutate(
@@ -448,7 +468,9 @@ def test_rows_window_partition(rows):
     assert_rowset_equal(result, expected)
 
 
-def test_range_window_with_multiple_ordering_keys_fails(rows):
+def test_range_window_with_multiple_ordering_keys_fails(
+    rows: list[dict[str, Element]]
+) -> None:
     with pytest.raises(ValueError):
         table(rows) >> mutate(
             my_agg=sum(lambda r: r["a"])
@@ -463,7 +485,7 @@ def test_range_window_with_multiple_ordering_keys_fails(rows):
         )
 
 
-def test_range_window(rows):
+def test_range_window(rows: list[dict[str, Element]]) -> None:
     pipeline = (
         table(rows)
         >> mutate(
@@ -486,13 +508,13 @@ def test_range_window(rows):
         )
     )
     result = list(pipeline)
-    expected_a = [
+    expected_a: list[Mapping[str, Element]] = [
         {"a": 1, "e": 1, "my_agg": 1, "z": "a"},
         {"a": 3, "e": 3, "my_agg": 4, "z": "a"},
         {"a": 4, "e": 4, "my_agg": 7, "z": "a"},
         {"a": 1, "e": 5, "my_agg": 8, "z": "a"},
     ]
-    expected_b = [
+    expected_b: list[Mapping[str, Element]] = [
         {"a": 2, "e": 2, "my_agg": 2, "z": "b"},
         {"a": 2, "e": 6, "my_agg": 2, "z": "b"},
         {"a": 3, "e": 7, "my_agg": 5, "z": "b"},
@@ -504,7 +526,9 @@ def test_range_window(rows):
     assert_rowset_equal(result, expected)
 
 
-def test_temporal_range_window(t_table, t_rows):
+def test_temporal_range_window(
+    t_table: Table, t_rows: list[dict[str, Element]]
+) -> None:
     query = t_table >> mutate(
         avg_balance=mean(lambda r: r["balance"])
         >> over(
@@ -517,7 +541,7 @@ def test_temporal_range_window(t_table, t_rows):
         )
     )
     result = list(query)
-    expected = [
+    expected: list[Mapping[str, Element]] = [
         {
             "avg_balance": 2.0,
             "balance": 2,
@@ -564,7 +588,7 @@ def test_temporal_range_window(t_table, t_rows):
     assert_rowset_equal(result, expected)
 
 
-def test_agg(rows):
+def test_agg(rows: list[dict[str, Element]]) -> None:
     pipeline = table(rows) >> aggregate(
         sum=sum(lambda r: r["e"]),
         mean=mean(lambda r: r["e"]),
@@ -575,7 +599,7 @@ def test_agg(rows):
     assert result["mean"] == result["sum"] / result["count"]
 
 
-def test_invalid_agg(rows):
+def test_invalid_agg(rows: list[dict[str, Element]]) -> None:
     with pytest.raises(TypeError, match="Invalid projection"):
         select(
             not_an_agg=lambda r: r["e"],
@@ -599,11 +623,11 @@ def cumagg(seq: Iterable[T], combine: Callable[[T, T], T]) -> Iterator[T]:
         yield result
 
 
-def test_cumagg(rows):
-    window = Window.rows(order_by=[lambda r: r.e])
+def test_cumagg(rows: list[dict[str, Element]]) -> None:
+    window = Window.rows(order_by=[get("e")])
     query = table(rows) >> select(
-        cumsum=sum(lambda r: r.e) >> over(window),
-        cumcount=count(lambda r: r.e) >> over(window),
+        cumsum=sum(get("e")) >> over(window),
+        cumcount=count(get("e")) >> over(window),
     )
     result = list(query)
     expected = [
@@ -613,7 +637,7 @@ def test_cumagg(rows):
     assert_rowset_equal(result, expected)
 
 
-def test_total_vs_sum():
+def test_total_vs_sum() -> None:
     rows = [dict(value=None), dict(value=None)]
     query = table(rows) >> aggregate(
         sum=sum(lambda r: r.value), total=total(lambda r: r.value)
@@ -623,15 +647,15 @@ def test_total_vs_sum():
     assert result_row.total == 0
 
 
-def test_minmax(rows):
+def test_minmax(rows: list[dict[str, Element]]) -> None:
     query = table(rows) >> aggregate(min=min(lambda r: r.e), max=max(lambda r: r.e))
     result = list(query)
-    e = [r["e"] for r in rows]
+    e = list(map(get("e"), rows))
     expected = [dict(min=builtins.min(e), max=builtins.max(e))]
     assert_rowset_equal(result, expected)
 
 
-def test_min_max_window(t_rows):
+def test_min_max_window(t_rows: list[dict[str, Element]]) -> None:
     window = Window.range(partition_by=[lambda r: r.name])
     query = table(t_rows) >> select(
         min_date=min(lambda r: r.date) >> over(window),
@@ -650,14 +674,14 @@ def test_min_max_window(t_rows):
     assert_rowset_equal(result, expected)
 
 
-def test_variance_window(t_rows):
-    window = Window.range(partition_by=[lambda r: r.name])
+def test_variance_window(t_rows: list[dict[str, Element]]) -> None:
+    window = Window.range(partition_by=[get("name")])
     query = table(t_rows) >> select(
-        name=lambda r: r.name,
-        var=var_samp(lambda r: r.balance) >> over(window),
-        std=stdev_samp(lambda r: r.balance) >> over(window),
-        popvar=var_pop(lambda r: r.balance) >> over(window),
-        popstd=stdev_pop(lambda r: r.balance) >> over(window),
+        name=get("name"),
+        var=var_samp(get("balance")) >> over(window),
+        std=stdev_samp(get("balance")) >> over(window),
+        popvar=var_pop(get("balance")) >> over(window),
+        popstd=stdev_pop(get("balance")) >> over(window),
     )
     result = list(query)
     alice = [row["balance"] for row in t_rows if row["name"] == "alice"]
@@ -671,7 +695,6 @@ def test_variance_window(t_rows):
                 popvar=statistics.pvariance(alice),
                 popstd=statistics.pstdev(alice),
             ),
-            _id=1,
         ),
         Row(
             dict(
@@ -681,7 +704,6 @@ def test_variance_window(t_rows):
                 popvar=statistics.pvariance(bob),
                 popstd=statistics.pstdev(bob),
             ),
-            _id=2,
         ),
     }
     assert set(result) == expected
@@ -733,3 +755,26 @@ def test_pretty_fmt(t_rows):
 ╘════════════╧════════════╛"""
     result = query >> pretty(tablefmt="fancy_grid")
     assert result == expected
+
+
+def test_multiple_windows(t_rows: list[dict[str, Element]]) -> None:
+    query = table(t_rows) >> select(
+        nth_date=(
+            nth(get("date"), const(1)) >> over(Window.range(partition_by=[get("name")]))
+        ),
+        max_balance=(
+            max(get("balance"))
+            >> over(Window.range(partition_by=[lambda r: r.balance > 0]))
+        ),
+    )
+    result = list(query)
+    expected = [
+        dict(nth_date=date(2018, 1, 4), max_balance=4),
+        dict(nth_date=date(2018, 1, 4), max_balance=4),
+        dict(nth_date=date(2018, 1, 4), max_balance=-1),
+        dict(nth_date=date(2018, 1, 4), max_balance=-1),
+        dict(nth_date=date(2018, 1, 3), max_balance=-1),
+        dict(nth_date=date(2018, 1, 3), max_balance=-1),
+        dict(nth_date=date(2018, 1, 3), max_balance=-1),
+    ]
+    assert_rowset_equal(result, expected)

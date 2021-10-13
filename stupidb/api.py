@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import inspect
+import operator
 from typing import Any, Callable, Iterable, Mapping
 
 import tabulate
@@ -27,20 +28,6 @@ from .aggregation import (
     FrameClause,
     Nulls,
     WindowAggregateSpecification,
-)
-from .associative import (
-    Count,
-    Max,
-    Mean,
-    Min,
-    PopulationCovariance,
-    PopulationStandardDeviation,
-    PopulationVariance,
-    SampleCovariance,
-    SampleStandardDeviation,
-    SampleVariance,
-    Sum,
-    Total,
 )
 from .core import (
     Aggregation,
@@ -68,11 +55,37 @@ from .core import (
     Union,
     UnionAll,
 )
-from .navigation import First, Lag, Last, Lead, Nth
+from .functions.associative import (
+    Count,
+    Max,
+    Mean,
+    Min,
+    PopulationCovariance,
+    PopulationStandardDeviation,
+    PopulationVariance,
+    SampleCovariance,
+    SampleStandardDeviation,
+    SampleVariance,
+    Sum,
+    Total,
+)
+from .functions.navigation import First, Lag, Last, Lead, Nth
+from .functions.ranking import DenseRank, Rank, RowNumber
 from .protocols import Comparable
-from .ranking import DenseRank, Rank, RowNumber
 from .row import AbstractRow
 from .typehints import R1, R2, OrderBy, R, T
+
+
+@public  # type: ignore[misc]
+def const(x: T | None) -> Callable[[AbstractRow], T | None]:
+    """Return a function that returns `x` regardless of input."""
+    return lambda _: x
+
+
+@public  # type: ignore[misc]
+def get(name: str) -> Callable[[AbstractRow], T | None]:
+    """Return a function that gets the `name` field from a row."""
+    return operator.itemgetter(name)
 
 
 @private  # type: ignore[misc]
@@ -705,7 +718,7 @@ def count(x: Callable[[AbstractRow], T | None]) -> AggregateSpecification:
 
 
 @public  # type: ignore[misc]
-def sum(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
+def sum(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
     """Compute the sum of `x`, with an empty column summing to NULL.
 
     Parameters
@@ -718,7 +731,7 @@ def sum(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
 
 
 @public  # type: ignore[misc]
-def total(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
+def total(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
     """Compute the sum of `x`, with an empty column summing to zero.
 
     Parameters
@@ -795,8 +808,8 @@ def dense_rank() -> AggregateSpecification:
 @public  # type: ignore[misc]
 def lead(
     x: Callable[[AbstractRow], T | None],
-    n: Callable[[AbstractRow], int | None] = (lambda row: 1),
-    default: Callable[[AbstractRow], T | None] = (lambda row: None),
+    n: Callable[[AbstractRow], int | None] = const(1),
+    default: Callable[[AbstractRow], T | None] = const(None),
 ) -> AggregateSpecification:
     """Lead a column `x` by `n` rows, using `default` for NULL values.
 
@@ -820,8 +833,8 @@ def lead(
 @public  # type: ignore[misc]
 def lag(
     x: Callable[[AbstractRow], T | None],
-    n: Callable[[AbstractRow], int | None] = (lambda row: 1),
-    default: Callable[[AbstractRow], T | None] = (lambda row: None),
+    n: Callable[[AbstractRow], int | None] = const(1),
+    default: Callable[[AbstractRow], T | None] = const(None),
 ) -> AggregateSpecification:
     """Lag a column `x` by `n` rows, using `default` for NULL values.
 
@@ -843,7 +856,7 @@ def lag(
 
 
 @public  # type: ignore[misc]
-def mean(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
+def mean(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
     """Compute the average of a column.
 
     Parameters
@@ -883,7 +896,7 @@ def max(x: Callable[[AbstractRow], Comparable | None]) -> AggregateSpecification
 
 @public  # type: ignore[misc]
 def cov_samp(
-    x: Callable[[AbstractRow], R1], y: Callable[[AbstractRow], R2]
+    x: Callable[[AbstractRow], R1 | None], y: Callable[[AbstractRow], R2 | None]
 ) -> AggregateSpecification:
     """Compute the sample covariance of two columns.
 
@@ -899,7 +912,7 @@ def cov_samp(
 
 
 @public  # type: ignore[misc]
-def var_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
+def var_samp(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
     """Compute the sample variance of a column.
 
     Parameters
@@ -912,7 +925,7 @@ def var_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
 
 
 @public  # type: ignore[misc]
-def stdev_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
+def stdev_samp(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
     """Compute the sample standard deviation of a column.
 
     Parameters
@@ -926,7 +939,7 @@ def stdev_samp(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
 
 @public  # type: ignore[misc]
 def cov_pop(
-    x: Callable[[AbstractRow], R1], y: Callable[[AbstractRow], R2]
+    x: Callable[[AbstractRow], R1 | None], y: Callable[[AbstractRow], R2 | None]
 ) -> AggregateSpecification:
     """Compute the population covariance of two columns.
 
@@ -955,7 +968,7 @@ def var_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
 
 
 @public  # type: ignore[misc]
-def stdev_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
+def stdev_pop(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
     """Compute the population standard deviation of a column.
 
     Parameters

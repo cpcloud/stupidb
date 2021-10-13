@@ -10,11 +10,11 @@ from .bitset import BitSet
 
 
 class BitGraph:
-    """A graph whose vertices are unsigned integers."""
+    """An immutable graph whose vertices are unsigned integers."""
 
     __slots__ = "_nodes", "_predecessors"
 
-    def __init__(self, nodes: Mapping[int, AbstractSet[int]]) -> None:
+    def __init__(self, nodes: Mapping[int, Iterable[int]]) -> None:
         self._nodes: Mapping[int, AbstractSet[int]] = toolz.valmap(BitSet, nodes)
         self._predecessors: MutableMapping[int, int] = {}
 

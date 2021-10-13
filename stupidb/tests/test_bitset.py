@@ -1,9 +1,9 @@
 import pytest
 
-from stupidb.bitset import BitSet
+from stupidb.associative.bitset import BitSet
 
 
-def test_construction():
+def test_construction() -> None:
     bs = BitSet()
     assert not bs
     assert len(bs) == 0
@@ -16,7 +16,7 @@ def test_construction():
         BitSet({2, -1})
 
 
-def test_repr():
+def test_repr() -> None:
     bs = BitSet()
     assert repr(bs) == "BitSet()"
 
@@ -24,7 +24,7 @@ def test_repr():
     assert repr(bs) == "BitSet({1, 2})"
 
 
-def test_add():
+def test_add() -> None:
     bs = BitSet()
     assert 0 not in bs
 
@@ -41,7 +41,7 @@ def test_add():
         bs.add(-42)
 
 
-def test_remove():
+def test_remove() -> None:
     bs = BitSet()
     assert 0 not in bs
 
@@ -65,7 +65,7 @@ def test_remove():
         bs.remove(-1)
 
 
-def test_discard():
+def test_discard() -> None:
     bs = BitSet()
     assert 0 not in bs
 
@@ -88,7 +88,7 @@ def test_discard():
         bs.discard(-1)
 
 
-def test_iter():
+def test_iter() -> None:
     bs = BitSet()
     assert list(bs) == []
 
@@ -108,7 +108,7 @@ def test_iter():
     assert list(bs) == [3]
 
 
-def test_len():
+def test_len() -> None:
     bs = BitSet()
     assert len(bs) == 0
 

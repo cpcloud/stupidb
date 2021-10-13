@@ -1,16 +1,31 @@
+from __future__ import annotations
+
 from datetime import date
+from typing import Mapping
 
-from stupidb.api import Window, first, lag, last, lead, nth, over, select, table
+from stupidb.api import (
+    Window,
+    const,
+    first,
+    get,
+    lag,
+    last,
+    lead,
+    nth,
+    over,
+    select,
+    table,
+)
 
-from .conftest import assert_rowset_equal
+from .conftest import Element, assert_rowset_equal
 
 
-def test_first_last(t_rows):
-    window = Window.range(partition_by=[lambda r: r.name])
+def test_first_last(t_rows: list[dict[str, Element]]) -> None:
+    window = Window.range(partition_by=[get("name")])
     query = table(t_rows) >> select(
-        first_date=first(lambda r: r.date) >> over(window),
-        last_date=last(lambda r: r.date) >> over(window),
-        first_date_nulls=first(lambda r: None) >> over(window),
+        first_date=first(get("date")) >> over(window),
+        last_date=last(get("date")) >> over(window),
+        first_date_nulls=first(const(None)) >> over(window),
     )
     result = list(query)
     expected = [
@@ -53,10 +68,10 @@ def test_first_last(t_rows):
     assert_rowset_equal(result, expected)
 
 
-def test_nth(t_rows):
+def test_nth(t_rows: list[dict[str, Element]]) -> None:
     query = table(t_rows) >> select(
-        nth_date=nth(lambda r: r.date, lambda r: 1)
-        >> over(Window.range(partition_by=[lambda r: r.name]))
+        nth_date=nth(get("date"), const(1))
+        >> over(Window.range(partition_by=[get("name")]))
     )
     result = list(query)
     expected = [
@@ -71,10 +86,10 @@ def test_nth(t_rows):
     assert_rowset_equal(result, expected)
 
 
-def test_nth_past_frame(t_rows):
+def test_nth_past_frame(t_rows: list[dict[str, Element]]) -> None:
     query = table(t_rows) >> select(
-        nth_date=nth(lambda r: r.date, lambda r: 4000)
-        >> over(Window.range(partition_by=[lambda r: r.name]))
+        nth_date=nth(get("date"), const(4000))
+        >> over(Window.range(partition_by=[get("name")]))
     )
     result = list(query)
     expected = [
@@ -89,14 +104,14 @@ def test_nth_past_frame(t_rows):
     assert_rowset_equal(result, expected)
 
 
-def test_nth_past_frame_preceding_following(t_rows):
+def test_nth_past_frame_preceding_following(t_rows: list[dict[str, Element]]) -> None:
     query = table(t_rows) >> select(
-        nth_date=nth(lambda r: r.date, lambda r: 4000)
+        nth_date=nth(get("date"), const(4000))
         >> over(
             Window.range(
-                partition_by=[lambda r: r.name],
-                preceding=lambda r: 200,
-                following=lambda r: 1000,
+                partition_by=[get("name")],
+                preceding=const(200),
+                following=const(1000),
             )
         )
     )
@@ -113,14 +128,14 @@ def test_nth_past_frame_preceding_following(t_rows):
     assert_rowset_equal(result, expected)
 
 
-def test_lead_lag(t_rows):
-    window = Window.range(partition_by=[lambda r: r.name])
+def test_lead_lag(t_rows: list[dict[str, Element]]) -> None:
+    window = Window.range(partition_by=[get("name")])
     query = table(t_rows) >> select(
-        lead_date=lead(lambda r: r.date, lambda r: 1) >> over(window),
-        lag_date=lag(lambda r: r.date, lambda r: 1) >> over(window),
+        lead_date=lead(get("date"), const(1)) >> over(window),
+        lag_date=lag(get("date"), const(1)) >> over(window),
     )
     result = list(query)
-    expected = [
+    expected: list[Mapping[str, Element]] = [
         dict(lead_date=date(2018, 1, 4), lag_date=None),
         dict(lead_date=date(2018, 1, 6), lag_date=date(2018, 1, 1)),
         dict(lead_date=date(2018, 1, 7), lag_date=date(2018, 1, 4)),

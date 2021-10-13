@@ -1,13 +1,19 @@
+from __future__ import annotations
+
 import sqlite3
 from datetime import date
+from typing import Mapping, Sequence, Union
 
 import pytest
 
 from stupidb.api import table
+from stupidb.core import Table
+
+Element = Union[date, float, int, str, None]
 
 
-@pytest.fixture(scope="session")
-def rows():
+@pytest.fixture(scope="session")  # type: ignore[misc]
+def rows() -> list[dict[str, Element]]:
     return [
         dict(z="a", a=1, b=2, e=1),
         dict(z="b", a=2, b=-1, e=2),
@@ -19,13 +25,13 @@ def rows():
     ]
 
 
-@pytest.fixture(scope="session")
-def left(rows):
+@pytest.fixture(scope="session")  # type: ignore[misc]
+def left(rows: list[dict[str, Element]]) -> list[dict[str, Element]]:
     return rows
 
 
-@pytest.fixture(scope="session")
-def right(rows):
+@pytest.fixture(scope="session")  # type: ignore[misc]
+def right(rows: list[dict[str, Element]]) -> list[dict[str, Element]]:
     return [
         dict(z="a", a=1, b=2, e=1),
         dict(z="c", a=2, b=-1, e=2),
@@ -37,16 +43,19 @@ def right(rows):
     ]
 
 
-def tupleize(row):
+def tupleize(row: Mapping[str, Element]) -> frozenset[tuple[str, Element]]:
     return frozenset(row.items())
 
 
-def assert_rowset_equal(left, right):
+def assert_rowset_equal(
+    left: Sequence[Mapping[str, Element]],
+    right: Sequence[Mapping[str, Element]],
+) -> None:
     assert set(map(tupleize, left)) == set(map(tupleize, right))
 
 
-@pytest.fixture(scope="session")
-def t_rows():
+@pytest.fixture(scope="session")  # type: ignore[misc]
+def t_rows() -> list[dict[str, Element]]:
     return [
         dict(name="alice", date=date(2018, 1, 1), balance=2),
         dict(name="alice", date=date(2018, 1, 4), balance=4),
@@ -58,35 +67,41 @@ def t_rows():
     ]
 
 
-@pytest.fixture(scope="session")
-def t_table(t_rows):
+@pytest.fixture(scope="session")  # type: ignore[misc]
+def t_table(t_rows: list[dict[str, Element]]) -> Table:
     return table(t_rows)
 
 
-@pytest.fixture(scope="session")
-def employee():
+@pytest.fixture(scope="session")  # type: ignore[misc]
+def employee() -> list[dict[str, Element]]:
     return [
-        {"last_name": "Rafferty", "department_id": 31},
-        {"last_name": "Jones", "department_id": 33},
-        {"last_name": "Heisenberg", "department_id": 33},
-        {"last_name": "Robinson", "department_id": 34},
-        {"last_name": "Smith", "department_id": 34},
-        {"last_name": "Williams", "department_id": None},
+        dict(last_name="Rafferty", department_id=1),
+        dict(last_name="Jones", department_id=2),
+        dict(last_name="Heisenberg", department_id=2),
+        dict(last_name="Robinson", department_id=3),
+        dict(last_name="Smith", department_id=3),
+        dict(last_name="Williams", department_id=None),
     ]
 
 
-@pytest.fixture(scope="session")
-def department():
+@pytest.fixture(scope="session")  # type: ignore[misc]
+def department() -> list[dict[str, Element]]:
     return [
-        {"department_id": 31, "department_name": "Sales"},
-        {"department_id": 33, "department_name": "Engineering"},
-        {"department_id": 34, "department_name": "Clerical"},
-        {"department_id": 35, "department_name": "Marketing"},
+        dict(department_id=1, department_name="Sales"),
+        dict(department_id=2, department_name="Engineering"),
+        dict(department_id=3, department_name="Clerical"),
+        dict(department_id=4, department_name="Marketing"),
     ]
 
 
-@pytest.fixture(scope="session")
-def con(rows, left, right, employee, department):
+@pytest.fixture(scope="session")  # type: ignore[misc]
+def con(
+    rows: list[dict[str, Element]],
+    left: list[dict[str, Element]],
+    right: list[dict[str, Element]],
+    employee: list[dict[str, Element]],
+    department: list[dict[str, Element]],
+) -> sqlite3.Connection:
     connection = sqlite3.connect(":memory:")
 
     connection.execute("CREATE TABLE rows (z text, a integer, b integer, e integer)")
@@ -104,17 +119,32 @@ def con(rows, left, right, employee, department):
         "INSERT INTO right VALUES (?, ?, ?, ?)", (tuple(row.values()) for row in right)
     )
 
-    connection.execute("CREATE TABLE employee (last_name text, department_id integer)")
-    connection.executemany(
-        "INSERT INTO employee VALUES (?, ?)", (tuple(row.values()) for row in employee)
-    )
-
     connection.execute(
-        "CREATE TABLE department (department_id integer, department_name text)"
+        """
+        CREATE TABLE department (
+            department_id INTEGER PRIMARY KEY,
+            department_name TEXT NOT NULL
+        )
+        """
     )
     connection.executemany(
         "INSERT INTO department VALUES (?, ?)",
         (tuple(row.values()) for row in department),
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE employee (
+            employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            last_name TEXT NOT NULL,
+            department_id INTEGER,
+            FOREIGN KEY (department_id) REFERENCES department (department_id)
+        )
+        """
+    )
+    connection.executemany(
+        "INSERT INTO employee (last_name, department_id) VALUES (?, ?)",
+        (tuple(row.values()) for row in employee),
     )
 
     return connection

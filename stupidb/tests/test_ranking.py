@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from stupidb.api import (
     Window,
     dense_rank,
@@ -8,12 +10,12 @@ from stupidb.api import (
     select,
     table,
 )
-from stupidb.ranking import Sentinel
+from stupidb.functions.ranking import Sentinel
 
 from .conftest import assert_rowset_equal
 
 
-def test_row_number(t_rows):
+def test_row_number(t_rows: list[dict]) -> None:
     window = Window.range(partition_by=[lambda r: r.name])
     query = table(t_rows) >> select(row_id=row_number() >> over(window))
     result = list(query)
@@ -29,7 +31,7 @@ def test_row_number(t_rows):
     assert_rowset_equal(result, expected)
 
 
-def test_rank():
+def test_rank() -> None:
     rows = [
         dict(name="apple"),
         dict(name="apple"),
@@ -45,7 +47,7 @@ def test_rank():
     assert result == expected
 
 
-def test_rank_with_nulls():
+def test_rank_with_nulls() -> None:
     rows = [dict(name="a"), dict(name=None), dict(name=None), dict(name="b")]
     window = Window.rows(order_by=[lambda r: r.name])
     query = (
@@ -58,7 +60,7 @@ def test_rank_with_nulls():
     assert result == expected
 
 
-def test_dense_rank():
+def test_dense_rank() -> None:
     rows = [
         dict(name="apple"),
         dict(name="apple"),
@@ -76,7 +78,7 @@ def test_dense_rank():
     assert result == expected
 
 
-def test_dense_rank_with_nulls():
+def test_dense_rank_with_nulls() -> None:
     rows = [dict(name="a"), dict(name=None), dict(name=None), dict(name="b")]
     window = Window.rows(order_by=[lambda r: r.name])
     query = (
@@ -89,7 +91,7 @@ def test_dense_rank_with_nulls():
     assert result == expected
 
 
-def test_sentinel():
+def test_sentinel() -> None:
     sen = Sentinel()
     assert repr(sen) == "Sentinel()"
     assert sen == sen

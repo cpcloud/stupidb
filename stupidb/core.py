@@ -27,7 +27,7 @@ from .aggregation import (
     WindowAggregateSpecification,
     row_key_compare,
 )
-from .associative import AssociativeAggregate
+from .functions.associative.core import AssociativeAggregate
 from .row import AbstractRow, JoinedRow, Row
 from .typehints import (
     JoinPredicate,
