@@ -1,17 +1,10 @@
 """Navigation and simple window function interface and implementation."""
 
+from __future__ import annotations
+
 import abc
 import operator
-from typing import (
-    Callable,
-    ClassVar,
-    Generic,
-    MutableMapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-)
+from typing import Callable, ClassVar, Generic, MutableMapping, Sequence
 
 from .aggregator import Aggregate, Aggregator
 from .reversed import Reversed
@@ -36,14 +29,14 @@ class NavigationAggregator(Aggregator["NavigationAggregate", Result]):
 
     def __init__(
         self,
-        inputs: Sequence[Tuple[T, ...]],
-        aggregate_type: Type["NavigationAggregate"],
+        inputs: Sequence[tuple[T, ...]],
+        aggregate_type: type[NavigationAggregate],
     ) -> None:
-        self.aggregate: "NavigationAggregate" = aggregate_type(  # type: ignore
+        self.aggregate: NavigationAggregate = aggregate_type(  # type: ignore
             *zip(*inputs)
         )
 
-    def query(self, begin: int, end: int) -> Optional[Result]:
+    def query(self, begin: int, end: int) -> Result | None:
         return self.aggregate.execute(begin, end)
 
 
@@ -56,7 +49,7 @@ class NavigationAggregate(Aggregate[Output]):
     ] = NavigationAggregator
 
     @abc.abstractmethod
-    def execute(self, begin: int, end: int) -> Optional[Output]:
+    def execute(self, begin: int, end: int) -> Output | None:
         """Execute the aggregation over the range from `begin` to `end`."""
 
 
@@ -65,7 +58,7 @@ class UnaryNavigationAggregate(Generic[Input1, Output], NavigationAggregate[Outp
 
     __slots__ = ("inputs1",)
 
-    def __init__(self, inputs1: Sequence[Optional[Input1]]) -> None:
+    def __init__(self, inputs1: Sequence[Input1 | None]) -> None:
         self.inputs1 = inputs1
 
 
@@ -78,8 +71,8 @@ class BinaryNavigationAggregate(
 
     def __init__(
         self,
-        inputs1: Sequence[Optional[Input1]],
-        inputs2: Sequence[Optional[Input2]],
+        inputs1: Sequence[Input1 | None],
+        inputs2: Sequence[Input2 | None],
     ) -> None:
         self.inputs1 = inputs1
         self.inputs2 = inputs2
@@ -94,9 +87,9 @@ class TernaryNavigationAggregate(
 
     def __init__(
         self,
-        inputs1: Sequence[Optional[Input1]],
-        inputs2: Sequence[Optional[Input2]],
-        inputs3: Sequence[Optional[Input3]],
+        inputs1: Sequence[Input1 | None],
+        inputs2: Sequence[Input2 | None],
+        inputs3: Sequence[Input3 | None],
     ) -> None:
         self.inputs1 = inputs1
         self.inputs2 = inputs2
@@ -114,20 +107,20 @@ class LeadLag(TernaryNavigationAggregate[Input1, int, Input1, Input1]):
     offset_operation: ClassVar[Callable[[int, int], int]]
 
     @classmethod
-    def offset(cls, index: int, offset: Optional[int]) -> int:
+    def offset(cls, index: int, offset: int | None) -> int:
         return -1 if offset is None else cls.offset_operation(index, offset)
 
     def __init__(
         self,
-        inputs: Sequence[Optional[Input1]],
-        offsets: Sequence[Optional[int]],
-        defaults: Sequence[Optional[Input1]],
+        inputs: Sequence[Input1 | None],
+        offsets: Sequence[int | None],
+        defaults: Sequence[Input1 | None],
     ) -> None:
         super().__init__(inputs, offsets, defaults)
         self.index = 0
         self.ninputs = len(inputs)
 
-    def execute(self, begin: int, end: int) -> Optional[Input1]:
+    def execute(self, begin: int, end: int) -> Input1 | None:
         """Compute the value of the navigation function `lead` or `lag`.
 
         Notes
@@ -142,7 +135,7 @@ class LeadLag(TernaryNavigationAggregate[Input1, int, Input1, Input1]):
         # if we asked for a null offset or we're out of bounds then return a
         # null
         if offset < 0 or offset >= self.ninputs:
-            result: Optional[Input1] = default if default is not None else None
+            result: Input1 | None = default if default is not None else None
         else:
             result = self.inputs1[offset]
 
@@ -173,17 +166,17 @@ class FirstLast(UnaryNavigationAggregate[Input1, Input1]):
 
     __slots__ = ("cache",)
 
-    def __init__(self, inputs1: Sequence[Optional[Input1]]) -> None:
+    def __init__(self, inputs1: Sequence[Input1 | None]) -> None:
         super().__init__(inputs1)
-        self.cache: MutableMapping[Tuple[int, int], Optional[Input1]] = {}
+        self.cache: MutableMapping[tuple[int, int], Input1 | None] = {}
 
-    def execute(self, begin: int, end: int) -> Optional[Input1]:
+    def execute(self, begin: int, end: int) -> Input1 | None:
         try:
             return self.cache[begin, end]
         except KeyError:
             inputs = (self.inputs1[i] for i in range(begin, end))
             try:
-                value: Optional[Input1] = next(arg for arg in inputs if arg is not None)
+                value: Input1 | None = next(arg for arg in inputs if arg is not None)
             except StopIteration:
                 value = None
             self.cache[begin, end] = value
@@ -197,7 +190,7 @@ class First(FirstLast[Input1]):
 class Last(FirstLast[Input1]):
     __slots__ = ()
 
-    def __init__(self, inputs1: Sequence[Optional[Input1]]) -> None:
+    def __init__(self, inputs1: Sequence[Input1 | None]) -> None:
         super().__init__(Reversed(inputs1))
 
 
@@ -208,14 +201,14 @@ class Nth(BinaryNavigationAggregate[Input1, int, Input1]):
 
     def __init__(
         self,
-        inputs1: Sequence[Optional[Input1]],
-        inputs2: Sequence[Optional[int]],
+        inputs1: Sequence[Input1 | None],
+        inputs2: Sequence[int | None],
     ) -> None:
         super().__init__(inputs1, inputs2)
         self.index = 0
-        self.cache: MutableMapping[Tuple[int, int], Optional[Input1]] = {}
+        self.cache: MutableMapping[tuple[int, int], Input1 | None] = {}
 
-    def execute(self, begin: int, end: int) -> Optional[Input1]:
+    def execute(self, begin: int, end: int) -> Input1 | None:
         # Assert invariants:
         # 1. The start of the range must be less than or equal to the end,
         #    which must be less than or equal to the number of input rows

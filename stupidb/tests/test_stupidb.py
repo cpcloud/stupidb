@@ -1,21 +1,13 @@
 """Tests for `stupidb` package."""
 
+from __future__ import annotations
+
 import builtins
 import itertools
 import operator
 import statistics
 from datetime import date, timedelta
-from typing import (
-    Any,
-    Callable,
-    FrozenSet,
-    Iterable,
-    Iterator,
-    Mapping,
-    Sequence,
-    Type,
-    TypeVar,
-)
+from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence, TypeVar
 
 import cytoolz as toolz
 import pytest
@@ -111,7 +103,7 @@ def test_group_by(rows):
     assert_rowset_equal(result, expected)
 
 
-def subclasses(cls: Type) -> FrozenSet[Type]:
+def subclasses(cls: type) -> frozenset[type]:
     classes = cls.__subclasses__()
     return (
         frozenset({cls})

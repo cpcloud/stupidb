@@ -1,5 +1,7 @@
 """Algorithms for aggregation."""
 
+from __future__ import annotations
+
 import abc
 import bisect
 import collections
@@ -14,13 +16,9 @@ from typing import (
     Hashable,
     Iterable,
     Iterator,
-    List,
     MutableMapping,
     NamedTuple,
-    Optional,
     Sequence,
-    Tuple,
-    Type,
     TypeVar,
 )
 
@@ -43,9 +41,6 @@ class StartStop(NamedTuple):
     stop: int
 
 
-Ranges = Tuple[StartStop, StartStop, StartStop]
-
-
 @enum.unique
 class Nulls(enum.Enum):
     """An enumeration indicating how to handle null values when sorting."""
@@ -63,8 +58,8 @@ class FrameClause(abc.ABC):
         self,
         order_by: Sequence[OrderBy],
         partition_by: Sequence[PartitionBy],
-        preceding: Optional[Preceding],
-        following: Optional[Following],
+        preceding: Preceding | None,
+        following: Following | None,
         nulls: Nulls,
     ) -> None:
         self.order_by = order_by
@@ -78,7 +73,7 @@ class FrameClause(abc.ABC):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[OrderingKey],
+        current_row_order_by_value: OrderingKey | None,
         order_by_values: Sequence[OrderingKey],
     ) -> int:
         """Find the beginning of a window in a partition.
@@ -106,7 +101,7 @@ class FrameClause(abc.ABC):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[OrderingKey],
+        current_row_order_by_value: OrderingKey | None,
         order_by_values: Sequence[OrderingKey],
     ) -> int:
         """Find the end of a window in a partition.
@@ -135,7 +130,7 @@ class FrameClause(abc.ABC):
         possible_peers: Sequence[AbstractRow],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
-    ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:
+    ) -> tuple[OrderingKey, Sequence[OrderingKey]]:
         """Compute the current row's ordering keys."""
 
     def compute_window_frame(
@@ -160,7 +155,7 @@ class FrameClause(abc.ABC):
 
         Returns
         -------
-        Ranges
+        StartStop
             The start and stop of the window frame.
 
         """
@@ -223,7 +218,7 @@ class RowsMode(FrameClause):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[OrderingKey],
+        current_row_order_by_value: OrderingKey | None,
         order_by_values: Sequence[OrderingKey],
     ) -> int:  # noqa: D102
         preceding = self.preceding
@@ -234,7 +229,7 @@ class RowsMode(FrameClause):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_value: Optional[OrderingKey],
+        current_row_order_by_value: OrderingKey | None,
         order_by_values: Sequence[OrderingKey],
     ) -> int:  # noqa: D102
         following = self.following
@@ -246,7 +241,7 @@ class RowsMode(FrameClause):
         possible_peers: Sequence[AbstractRow],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
-    ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:  # noqa: D102
+    ) -> tuple[OrderingKey, Sequence[OrderingKey]]:  # noqa: D102
         cols = [
             tuple(map(peer.__getitem__, order_by_columns)) for peer in possible_peers
         ]
@@ -271,8 +266,8 @@ class RangeMode(FrameClause):
         self,
         order_by: Sequence[OrderBy],
         partition_by: Sequence[PartitionBy],
-        preceding: Optional[Preceding],
-        following: Optional[Following],
+        preceding: Preceding | None,
+        following: Following | None,
         nulls: Nulls,
     ) -> None:
         n_order_by = len(order_by)
@@ -288,7 +283,7 @@ class RangeMode(FrameClause):
         possible_peers: Sequence[AbstractRow],
         current_row: AbstractRow,
         order_by_columns: Sequence[str],
-    ) -> Tuple[OrderingKey, Sequence[OrderingKey]]:  # noqa: D102
+    ) -> tuple[OrderingKey, Sequence[OrderingKey]]:  # noqa: D102
         # range mode allows no order by
         if not order_by_columns:
             return (), [()]
@@ -304,7 +299,7 @@ class RangeMode(FrameClause):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_values: Optional[OrderingKey],
+        current_row_order_by_values: OrderingKey | None,
         order_by_values: Sequence[OrderingKey],
     ) -> int:  # noqa: D102
         assert (
@@ -323,7 +318,7 @@ class RangeMode(FrameClause):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_values: Optional[OrderingKey],
+        current_row_order_by_values: OrderingKey | None,
         order_by_values: Sequence[OrderingKey],
     ) -> int:  # noqa: D102
         assert (
@@ -348,8 +343,8 @@ class Window:
     def rows(
         order_by: Sequence[OrderBy] = (),
         partition_by: Sequence[PartitionBy] = (),
-        preceding: Optional[Preceding] = None,
-        following: Optional[Following] = None,
+        preceding: Preceding | None = None,
+        following: Following | None = None,
         nulls: Nulls = Nulls.FIRST,
     ) -> FrameClause:
         """Construct a ``ROWS`` mode frame clause.
@@ -368,8 +363,8 @@ class Window:
     def range(
         order_by: Sequence[OrderBy] = (),
         partition_by: Sequence[PartitionBy] = (),
-        preceding: Optional[Preceding] = None,
-        following: Optional[Following] = None,
+        preceding: Preceding | None = None,
+        following: Following | None = None,
         nulls: Nulls = Nulls.FIRST,
     ) -> FrameClause:
         """Construct a ``RANGE`` mode frame clause.
@@ -417,16 +412,16 @@ class AggregateSpecification(Generic[ConcreteAggregate]):
 
     def __init__(
         self,
-        aggregate_type: Type[ConcreteAggregate],
-        getters: Tuple[Getter, ...],
+        aggregate_type: type[ConcreteAggregate],
+        getters: tuple[Getter, ...],
     ) -> None:
-        self.aggregate_type: Type[ConcreteAggregate] = aggregate_type
+        self.aggregate_type: type[ConcreteAggregate] = aggregate_type
         self.getters = getters
 
 
 def compute_partition_key(
     row: AbstractRow, partition_by: Iterable[PartitionBy]
-) -> Tuple[Hashable, ...]:
+) -> tuple[Hashable, ...]:
     """Compute a partition key from `row` and `partition_by`.
 
     Parameters
@@ -518,15 +513,15 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
 
     def __init__(
         self,
-        aggregate_type: Type[ConcreteAggregate],
-        getters: Tuple[Getter, ...],
+        aggregate_type: type[ConcreteAggregate],
+        getters: tuple[Getter, ...],
         frame_clause: FrameClause,
     ) -> None:
-        self.aggregate_type: Type[ConcreteAggregate] = aggregate_type
+        self.aggregate_type: type[ConcreteAggregate] = aggregate_type
         self.getters = getters
         self.frame_clause = frame_clause
 
-    def compute(self, rows: Iterable[AbstractRow]) -> Iterator[Optional[T]]:
+    def compute(self, rows: Iterable[AbstractRow]) -> Iterator[T | None]:
         """Aggregate `rows` over a window, producing an iterator of results.
 
         Parameters
@@ -542,7 +537,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         # A mapping from each row's partition key to a list of rows in that
         # partition.
         partitions: MutableMapping[
-            Tuple[Hashable, ...], List[AbstractRow]
+            tuple[Hashable, ...], list[AbstractRow]
         ] = collections.defaultdict(list)
 
         # Generate names for temporary order by columns, users never see these.
@@ -577,7 +572,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             partitions[partition_key].sort(key=key)
 
         # (row_id, value) pairs containing the aggregation results
-        results: List[Tuple[int, Optional[T]]] = []
+        results: list[tuple[int, T | None]] = []
 
         # Aggregate over each partition
         aggregate_type = self.aggregate_type
