@@ -31,14 +31,14 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           global: true
-          name: github-actions
-          email: github-actions@github.com
+          name: github-actions[bot]
+          email: 41898282+github-actions[bot]@users.noreply.github.com
 
       - name: commit generated file and push to pull request
         uses: EndBug/add-and-commit@v7
         with:
           add: requirements.txt
-          author_name: github-actions
-          author_email: github-actions@github.com
+          author_name: github-actions[bot]
+          author_email: 41898282+github-actions[bot]@users.noreply.github.com
           message: "chore(requirements.txt): update"
           push: true
