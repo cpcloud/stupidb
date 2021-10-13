@@ -1,0 +1,37 @@
+on:
+  pull_request:
+    paths:
+      - pyproject.toml
+      - poetry.lock
+
+name: Update requirements.txt
+
+jobs:
+  check_requirements:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+
+      - name: install poetry
+        run: pip install poetry
+
+      - name: generate requirements.txt
+        run: poetry export --dev --without-hashes > requirements.txt
+
+      - name: commit generated file and push to pull request
+        uses: EndBug/add-and-commit@v7
+        with:
+          add: requirements.txt
+          author_name: github-actions
+          author_email: github-actions@github.com
+          branch: ${{ github.ref }}
+          message: "chore(requirements.txt): update"
+          push: true
