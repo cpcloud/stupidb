@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v6.0.0 (2021-10-13)
+### Breaking
+* Modules are named differently  ([`fc1bbf8`](https://github.com/cpcloud/stupidb/commit/fc1bbf8c52b8858182637112a1748e0cb2aa7dd0))
+
 ## v5.1.0 (2021-10-13)
 ### Feature
 * Add pretty printing functionality ([`c61873c`](https://github.com/cpcloud/stupidb/commit/c61873c318f6b9d505e7be7747a1d8a907c91578))
