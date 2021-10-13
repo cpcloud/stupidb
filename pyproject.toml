@@ -31,7 +31,7 @@ pydot = { version = "^1.4.2", optional = true }
 Sphinx = "^4.2.0"
 black = "21.9b0"
 coverage = "^5.5"
-flake8 = "^3.9.2"
+flake8 = "^4.0.0"
 isort = "^5.9.3"
 mypy = "0.812"
 pydocstyle = "^6.1.1"
