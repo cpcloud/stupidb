@@ -1013,21 +1013,13 @@ def pretty(
 
 @public  # type: ignore[misc]
 @shiftable
-def show(
-    rows: Relation,
-    *,
-    n: int = 5,
-    **kwargs: Any,
-) -> None:
+def show(rows: Relation, **kwargs: Any) -> None:
     """Pretty-print a relation.
 
     Parameters
     ----------
     rows
         The relation to print
-    n
-        The number of rows to display; A value of `None` will pretty format all
-        rows
     kwargs
         Additional keyword arguments passed to the `stupidb.api.pretty`
         function
@@ -1036,4 +1028,4 @@ def show(
     --------
     stupidb.api.pretty
     """
-    print(pretty(rows, n=n, **kwargs))
+    print(pretty(rows, **kwargs))
