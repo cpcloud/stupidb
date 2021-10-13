@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v5.1.0 (2021-10-13)
+### Feature
+* Add pretty printing functionality ([`c61873c`](https://github.com/cpcloud/stupidb/commit/c61873c318f6b9d505e7be7747a1d8a907c91578))
+
+### Fix
+* Add test for arguments ([`2e344c7`](https://github.com/cpcloud/stupidb/commit/2e344c74c5e795bc417cd091939392fe4dbe636a))
+
 ## v5.0.2 (2021-09-24)
 
 
