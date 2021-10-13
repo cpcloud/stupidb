@@ -10,10 +10,11 @@ from typing import BinaryIO, Iterator, MutableMapping, MutableSequence, Sequence
 
 import pydot
 
+from ..functions.associative import Sum
 from . import indextree
-from .associative import SegmentTree, Sum
 from .bitgraph import BitGraph
 from .bitset import BitSet
+from .segmenttree import SegmentTree
 
 
 class SegmentTreeAnimator:
@@ -22,7 +23,7 @@ class SegmentTreeAnimator:
     __slots__ = ("segment_tree",)
 
     def __init__(self, segment_tree: SegmentTree) -> None:
-        """Construct a :class:`~stupidb.animate.SegmentTreeAnimator`."""
+        """Construct a instance of a segment tree animation class."""
         self.segment_tree = segment_tree
 
     def make_graph(self, *, font: str) -> pydot.Dot:

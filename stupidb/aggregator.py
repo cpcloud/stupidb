@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable, ClassVar, Generic, Sequence, TypeVar
+from typing import Generic, Sequence, TypeVar
 
 from .row import AbstractRow
 from .typehints import Getter, Output, Result, T
 
-AggregateClass = TypeVar("AggregateClass", covariant=True)
+AggClass = TypeVar("AggClass", covariant=True)
 
 
-class Aggregator(Generic[AggregateClass, Result], abc.ABC):
+class Aggregator(Generic[AggClass, Result], abc.ABC):
     """Interface for aggregators.
 
     Aggregators must implement the :meth:`~stupidb.aggregator.Aggregator.query`
@@ -21,13 +21,13 @@ class Aggregator(Generic[AggregateClass, Result], abc.ABC):
 
     See Also
     --------
-    stupidb.associative.SegmentTree
-    stupidb.navigation.NavigationAggregator
+    stupidb.associative.segmenttree.SegmentTree
+    stupidb.functions.navigation.core.NavigationAggregator
 
     """
 
     @abc.abstractmethod
-    def __init__(self, arguments: Sequence[T], cls: AggregateClass) -> None:
+    def __init__(self, arguments: Sequence[T], cls: AggClass) -> None:
         """Initialize an aggregator from `arguments` and `cls`."""
 
     @abc.abstractmethod
@@ -39,7 +39,6 @@ class Aggregate(Generic[Output], abc.ABC):
     """An aggregate or window function."""
 
     __slots__ = ()
-    aggregator_class: ClassVar[Callable[..., Aggregator]]
 
     @classmethod
     def prepare(
@@ -52,4 +51,11 @@ class Aggregate(Generic[Output], abc.ABC):
         arguments = [
             tuple(getter(peer) for getter in getters) for peer in possible_peers
         ]
-        return cls.aggregator_class(arguments, cls)
+        return cls.aggregator_class(arguments)
+
+    @classmethod
+    @abc.abstractmethod
+    def aggregator_class(
+        cls, inputs: Sequence[tuple[T | None, ...]]
+    ) -> Aggregator[Aggregate[Output], Output]:  # pragma: no cover
+        ...

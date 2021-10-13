@@ -1,10 +1,10 @@
 import pytest
 
-from stupidb.bitgraph import BitGraph
-from stupidb.bitset import BitSet
+from stupidb.associative.bitgraph import BitGraph
+from stupidb.associative.bitset import BitSet
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def g() -> BitGraph:
     return BitGraph({0: {1, 2}, 1: {}, 2: {}})
 

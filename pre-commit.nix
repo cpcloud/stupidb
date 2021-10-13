@@ -50,6 +50,12 @@ in
         entry = "pyupgrade --py37-plus";
         types_or = [ "python" ];
       };
+
+      mypy = {
+        enable = false;
+        entry = "mypy";
+        types_or = [ "python" ];
+      };
     };
   };
 }

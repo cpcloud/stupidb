@@ -1,7 +1,7 @@
 """Various type definitions used throughout stupidb."""
 
 from numbers import Real
-from typing import Any, Callable, Hashable, Optional, Tuple, TypeVar
+from typing import Callable, Hashable, Optional, Tuple, TypeVar
 
 from .protocols import AdditiveWithInverse, Comparable
 from .row import AbstractRow
@@ -30,4 +30,4 @@ Predicate = Callable[[AbstractRow], Optional[bool]]
 
 Projector = Callable[[AbstractRow], AbstractRow]
 Result = TypeVar("Result")
-Getter = Callable[[AbstractRow], Any]
+Getter = Callable[[AbstractRow], T]
