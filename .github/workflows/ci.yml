@@ -33,7 +33,6 @@ jobs:
       matrix:
         os:
           - macos-latest
-          - macos-11
           - ubuntu-latest
         python-version:
           - "3.7"
