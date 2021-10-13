@@ -41,4 +41,5 @@ jobs:
           author_name: github-actions[bot]
           author_email: 41898282+github-actions[bot]@users.noreply.github.com
           message: "chore(requirements.txt): update"
+          pull: "--rebase"
           push: true
