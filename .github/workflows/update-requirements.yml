@@ -7,7 +7,7 @@ on:
 name: Update requirements.txt
 
 jobs:
-  check_requirements:
+  update:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
