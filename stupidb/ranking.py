@@ -1,7 +1,9 @@
 """Navigation and simple window function interface and implementation."""
 
+from __future__ import annotations
+
 import abc
-from typing import Any, Callable, ClassVar, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Callable, ClassVar, Sequence, Union
 
 from .aggregator import Aggregate, Aggregator
 from .protocols import Comparable
@@ -27,12 +29,12 @@ class RankingAggregator(Aggregator["RankingAggregate", Result]):
 
     def __init__(
         self,
-        order_by_values: Sequence[Tuple[Optional[Comparable], ...]],
-        aggregate_type: Type["RankingAggregate"],
+        order_by_values: Sequence[tuple[Comparable | None, ...]],
+        aggregate_type: type[RankingAggregate],
     ) -> None:
-        self.aggregate: "RankingAggregate" = aggregate_type(order_by_values)
+        self.aggregate: RankingAggregate = aggregate_type(order_by_values)
 
-    def query(self, begin: int, end: int) -> Optional[Result]:
+    def query(self, begin: int, end: int) -> Result | None:
         """Compute the aggregation over the range of rows between `begin` and `end`."""
         return self.aggregate.execute(begin, end)
 
@@ -44,20 +46,20 @@ class RankingAggregate(Aggregate[Output]):
     aggregator_class: ClassVar[Callable[..., RankingAggregator]] = RankingAggregator
 
     def __init__(
-        self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
+        self, order_by_values: Sequence[tuple[Comparable | None, ...]]
     ) -> None:
         super().__init__()
         self.order_by_values = order_by_values
 
     @abc.abstractmethod
-    def execute(self, begin: int, end: int) -> Optional[Output]:
+    def execute(self, begin: int, end: int) -> Output | None:
         """Compute an abstract row rank value for rows between `begin` and `end`."""
 
     @classmethod
     def prepare(
         cls,
         possible_peers: Sequence[AbstractRow],
-        getters: Tuple[Getter, ...],
+        getters: tuple[Getter, ...],
         order_by_columns: Sequence[str],
     ) -> RankingAggregator[Output]:
         """Construct the aggregator for ranking."""
@@ -74,7 +76,7 @@ class RowNumber(RankingAggregate[int]):
     __slots__ = ("row_number",)
 
     def __init__(
-        self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
+        self, order_by_values: Sequence[tuple[Comparable | None, ...]]
     ) -> None:
         super().__init__(order_by_values)
         self.row_number = 0
@@ -114,10 +116,10 @@ class AbstractRank(RowNumber):
     __slots__ = ("previous_value",)
 
     def __init__(
-        self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
+        self, order_by_values: Sequence[tuple[Comparable | None, ...]]
     ) -> None:
         super().__init__(order_by_values)
-        self.previous_value: Optional[Either] = Sentinel()
+        self.previous_value: Either | None = Sentinel()
 
     @abc.abstractmethod
     def rank(self, current_order_by_value: Comparable, current_row_number: int) -> int:
@@ -142,7 +144,7 @@ class Rank(AbstractRank):
     __slots__ = ("previous_rank",)
 
     def __init__(
-        self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
+        self, order_by_values: Sequence[tuple[Comparable | None, ...]]
     ) -> None:
         super().__init__(order_by_values)
         self.previous_rank = -1
@@ -163,7 +165,7 @@ class DenseRank(AbstractRank):
     __slots__ = ("current_rank",)
 
     def __init__(
-        self, order_by_values: Sequence[Tuple[Optional[Comparable], ...]]
+        self, order_by_values: Sequence[tuple[Comparable | None, ...]]
     ) -> None:
         super().__init__(order_by_values)
         self.current_rank = -1
