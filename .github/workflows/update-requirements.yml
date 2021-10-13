@@ -26,6 +26,14 @@ jobs:
       - name: generate requirements.txt
         run: poetry export --dev --without-hashes > requirements.txt
 
+      - name: setup git credentials
+        uses: OleksiyRudenko/gha-git-credentials@v2.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          global: true
+          name: github-actions
+          email: github-actions@github.com
+
       - name: commit generated file and push to pull request
         uses: EndBug/add-and-commit@v7
         with:
