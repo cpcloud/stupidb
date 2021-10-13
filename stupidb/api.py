@@ -17,6 +17,7 @@ from __future__ import annotations
 import inspect
 from typing import Any, Callable, Iterable, Mapping
 
+import tabulate
 from public import private, public
 from toolz import curry
 
@@ -964,3 +965,75 @@ def stdev_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
 
     """
     return AggregateSpecification(PopulationStandardDeviation, (x,))
+
+
+@public  # type: ignore[misc]
+@shiftable
+def pretty(
+    rows: Relation,
+    *,
+    n: int | None = 10,
+    tablefmt: str = "simple",
+    headers: str = "keys",
+    **kwargs: Any,
+) -> str:
+    """Pretty-format a relation.
+
+    Parameters
+    ----------
+    rows
+        The relation to print
+    n
+        The number of rows to format; A value of `None` will pretty format all
+        rows
+    tablefmt
+        The kind of table to use for formatting
+    headers
+        A string indicating how to compute column names
+    kwargs
+        Additional keyword arguments passed to the `tabulate.tabulate`
+        function
+
+    Returns
+    -------
+    str
+        Pretty-formatted relation
+
+    See Also
+    --------
+    stupidb.api.show
+    """
+    return tabulate.tabulate(
+        (rows >> limit(n)) if n is not None else rows,
+        tablefmt="simple",
+        headers="keys",
+        **kwargs,
+    )
+
+
+@public  # type: ignore[misc]
+@shiftable
+def show(
+    rows: Relation,
+    *,
+    n: int = 5,
+    **kwargs: Any,
+) -> None:
+    """Pretty-print a relation.
+
+    Parameters
+    ----------
+    rows
+        The relation to print
+    n
+        The number of rows to display; A value of `None` will pretty format all
+        rows
+    kwargs
+        Additional keyword arguments passed to the `stupidb.api.pretty`
+        function
+
+    See Also
+    --------
+    stupidb.api.pretty
+    """
+    print(pretty(rows, n=n, **kwargs))

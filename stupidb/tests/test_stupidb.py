@@ -39,6 +39,7 @@ from stupidb.api import (
     mutate,
     order_by,
     over,
+    pretty,
     right_join,
     select,
     sift,
@@ -692,3 +693,23 @@ def test_variance_window(t_rows):
         ),
     }
     assert set(result) == expected
+
+
+def test_pretty(t_rows):
+    window = Window.range(partition_by=[lambda r: r.name])
+    query = table(t_rows) >> select(
+        min_date=min(lambda r: r.date) >> over(window),
+        max_date=max(lambda r: r.date) >> over(window),
+    )
+    expected = """\
+min_date    max_date
+----------  ----------
+2018-01-01  2018-01-07
+2018-01-01  2018-01-07
+2018-01-01  2018-01-07
+2018-01-01  2018-01-07
+2018-01-02  2018-01-04
+2018-01-02  2018-01-04
+2018-01-02  2018-01-04"""
+    result = query >> pretty()
+    assert result == expected
