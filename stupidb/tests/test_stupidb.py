@@ -713,3 +713,31 @@ min_date    max_date
 2018-01-02  2018-01-04"""
     result = query >> pretty()
     assert result == expected
+
+
+def test_pretty_fmt(t_rows):
+    window = Window.range(partition_by=[lambda r: r.name])
+    query = table(t_rows) >> select(
+        min_date=min(lambda r: r.date) >> over(window),
+        max_date=max(lambda r: r.date) >> over(window),
+    )
+    expected = """\
+╒════════════╤════════════╕
+│ min_date   │ max_date   │
+╞════════════╪════════════╡
+│ 2018-01-01 │ 2018-01-07 │
+├────────────┼────────────┤
+│ 2018-01-01 │ 2018-01-07 │
+├────────────┼────────────┤
+│ 2018-01-01 │ 2018-01-07 │
+├────────────┼────────────┤
+│ 2018-01-01 │ 2018-01-07 │
+├────────────┼────────────┤
+│ 2018-01-02 │ 2018-01-04 │
+├────────────┼────────────┤
+│ 2018-01-02 │ 2018-01-04 │
+├────────────┼────────────┤
+│ 2018-01-02 │ 2018-01-04 │
+╘════════════╧════════════╛"""
+    result = query >> pretty(tablefmt="fancy_grid")
+    assert result == expected
