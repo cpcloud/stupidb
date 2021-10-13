@@ -1005,8 +1005,8 @@ def pretty(
     """
     return tabulate.tabulate(
         (rows >> limit(n)) if n is not None else rows,
-        tablefmt="simple",
-        headers="keys",
+        tablefmt=tablefmt,
+        headers=headers,
         **kwargs,
     )
 
