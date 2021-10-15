@@ -292,7 +292,9 @@ class SortBy(Relation):
                 self.child,
                 key=functools.cmp_to_key(
                     functools.partial(
-                        row_key_compare, self.order_by, self.null_ordering
+                        row_key_compare,
+                        toolz.juxt(*self.order_by),
+                        self.null_ordering,
                     )
                 ),
             )
