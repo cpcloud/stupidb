@@ -531,13 +531,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         partitions = toolz.groupby(
             toolz.juxt(*frame_clause.partition_by), rows_for_partition
         )
-
-        # sort
-        key_func = make_key_func(order_by, frame_clause.nulls)
-        num_elements = 0
-        for partition in partitions.values():
-            num_elements += len(partition)
-            partition.sort(key=key_func)
+        num_elements = sum(map(len, partitions.values()))
 
         # aggregation results, preallocated to avoid the need to sort
         # before returning: we later assign elements to this list using
@@ -547,7 +541,11 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         # Aggregate over each partition
         aggregate_type = self.aggregate_type
         getters = self.getters
+        key_func = make_key_func(order_by, frame_clause.nulls)
         for partition_key, possible_peers in partitions.items():
+            # sort the partition according to the ordering key
+            possible_peers.sort(key=key_func)
+
             # Construct an aggregator for the function being computed
             #
             # For navigation functions like lead, lag, first, last and nth, we
