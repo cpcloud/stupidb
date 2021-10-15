@@ -511,7 +511,6 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
 
         """
         frame_clause = self.frame_clause
-        partition_by = frame_clause.partition_by
         order_by = frame_clause.order_by
 
         # Generate names for temporary order by columns, users never see these.
@@ -529,7 +528,9 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             row.merge(dict(zip(order_by_columns, order_func(row)))) for row in rows
         )
 
-        partitions = toolz.groupby(toolz.juxt(*partition_by), rows_for_partition)
+        partitions = toolz.groupby(
+            toolz.juxt(*frame_clause.partition_by), rows_for_partition
+        )
 
         # sort
         key_func = make_key_func(order_by, frame_clause.nulls)
