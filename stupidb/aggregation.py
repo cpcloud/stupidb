@@ -28,6 +28,7 @@ from .functions.navigation import (
     UnaryNavigationAggregate,
 )
 from .functions.ranking import RankingAggregate
+from .protocols import Comparable
 from .row import AbstractRow
 from .typehints import Following, OrderBy, OrderingKey, PartitionBy, Preceding, T
 
@@ -418,7 +419,7 @@ class AggregateSpecification(Generic[ConcreteAggregate]):
 
 
 def row_key_compare(
-    order_by: Iterable[OrderBy],
+    order_func: Callable[[AbstractRow], tuple[Comparable[T], ...]],
     null_ordering: Nulls,
     left_row: AbstractRow,
     right_row: AbstractRow,
@@ -430,7 +431,6 @@ def row_key_compare(
     ``NULL`` ordering is handled using `null_ordering`.
 
     """
-    order_func = toolz.juxt(*order_by)
     for left_key, right_key in zip(order_func(left_row), order_func(right_row)):
         if left_key is None and right_key is not None:
             return null_ordering.value
@@ -449,7 +449,8 @@ def row_key_compare(
 
 
 def make_key_func(
-    order_by: Iterable[OrderBy], nulls: Nulls
+    order_func: Callable[[AbstractRow], tuple[Comparable[T], ...]],
+    nulls: Nulls,
 ) -> Callable[[AbstractRow], OrderingKey[T]]:
     """Make a function usable with the key argument to sorting functions.
 
@@ -463,7 +464,7 @@ def make_key_func(
         :class:`~stupidb.row.AbstractRow`.
 
     """
-    return functools.cmp_to_key(functools.partial(row_key_compare, order_by, nulls))
+    return functools.cmp_to_key(functools.partial(row_key_compare, order_func, nulls))
 
 
 class WindowAggregateSpecification(Generic[ConcreteAggregate]):
@@ -549,7 +550,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         # Aggregate over each partition
         aggregate_type = self.aggregate_type
         getters = self.getters
-        key_func = make_key_func(order_by, frame_clause.nulls)
+        key_func = make_key_func(order_func, frame_clause.nulls)
         for possible_peers in partitions:
             # sort the partition according to the ordering key
             possible_peers.sort(key=key_func)
