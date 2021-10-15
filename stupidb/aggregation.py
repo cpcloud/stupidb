@@ -532,14 +532,15 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         partitions = toolz.groupby(toolz.juxt(*partition_by), rows_for_partition)
 
         # sort
-        key = make_key_func(order_by, frame_clause.nulls)
+        key_func = make_key_func(order_by, frame_clause.nulls)
         num_elements = 0
         for partition in partitions.values():
             num_elements += len(partition)
-            partition.sort(key=key)
+            partition.sort(key=key_func)
 
         # aggregation results, preallocated to avoid the need to sort
-        # before returning
+        # before returning: we later assign elements to this list using
+        # the original row id
         results: list[T | None] = [None] * num_elements
 
         # Aggregate over each partition
@@ -570,9 +571,9 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
                 start, stop = frame_clause.compute_window_frame(
                     possible_peers, row, row_id_in_partition, order_by_columns
                 )
+                # Assign the result to the position of the original row id
+                # because we processed them in partition order, which might not
+                # be the same as the input order.
                 results[row._id] = aggregator.query(start, stop)
 
-        # Sort the results in order of the child relation, because we processed
-        # them in partition order, which might not be the same. Pull out the
-        # second element of each element in the result.
         return iter(results)
