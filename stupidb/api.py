@@ -19,10 +19,9 @@ import operator
 from typing import Any, Callable, Iterable, Mapping
 
 import tabulate
-from cytoolz import curry
+import toolz
 from public import private, public
 
-from .aggregation import Window  # noqa: F401
 from .aggregation import (
     AggregateSpecification,
     FrameClause,
@@ -89,7 +88,7 @@ def get(name: str) -> Callable[[AbstractRow], T | None]:
 
 
 @private  # type: ignore[misc]
-class shiftable(curry):
+class shiftable(toolz.curry):
     """Shiftable curry."""
 
     @property
@@ -121,7 +120,12 @@ def table(rows: Iterable[Mapping[str, Any]]) -> Table:
     ... ]
     >>> t = table(rows)
     >>> t  # doctest: +ELLIPSIS
-    <stupidb.core.Relation object at 0x...>
+    name      balance
+    ------  ---------
+    Bob          -300
+    Bob          -100
+    Alice         400
+    Alice         700
 
     """
     return Table.from_iterable(rows)
@@ -151,8 +155,24 @@ def cross_join(right: Relation, left: Relation) -> Join:
     >>> t = table(rows)
     >>> s = table(rows)
     >>> crossed = cross_join(t, s)
-    >>> crossed  # doctest: +ELLIPSIS
-    <stupidb.core.CrossJoin object at 0x...>
+    >>> crossed >> select(
+    ...     left_name=lambda row: row.left["name"],
+    ...     left_balance=lambda row: row.left["balance"],
+    ...     right_name=lambda row: row.right["name"],
+    ...     right_balance=lambda row: row.right["balance"]
+    ... )
+    left_name      left_balance  right_name      right_balance
+    -----------  --------------  ------------  ---------------
+    Bob                    -300  Bob                      -300
+    Bob                    -300  Bob                      -100
+    Bob                    -300  Alice                     400
+    Bob                    -300  Alice                     700
+    Bob                    -100  Bob                      -300
+    Bob                    -100  Bob                      -100
+    Bob                    -100  Alice                     400
+    Bob                    -100  Alice                     700
+    Alice                   400  Bob                      -300
+    Alice                   400  Bob                      -100
 
     """
     return CrossJoin(left, right)
@@ -183,9 +203,18 @@ def inner_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Joi
     ... ]
     >>> t = table(rows)
     >>> s = table(rows)
-    >>> crossed = cross_join(t, s)
-    >>> crossed  # doctest: +ELLIPSIS
-    <stupidb.core.CrossJoin object at 0x...>
+    >>> t >> inner_join(
+    ...     s,
+    ...     lambda left, right: left["balance"] < right["balance"]
+    ... ) >> select(name=lambda r: r.left["name"], bal=lambda r: r.left["balance"])
+    name      bal
+    ------  -----
+    Bob      -300
+    Bob      -300
+    Bob      -300
+    Bob      -100
+    Bob      -100
+    Alice     400
 
     """
     return InnerJoin(left, right, predicate)
@@ -506,12 +535,14 @@ def over(
     ...     balance=lambda r: r.balance,
     ...     date=lambda r: r.date,
     ... ) >> order_by(lambda r: r.name, lambda r: r.date)
-    >>> pprint(list(avg_balance_per_person), width=79)  # noqa: E501
-    [Row({'name': 'Alice', 'balance': 400, 'date': datetime.date(2019, 2, 9), 'avg_balance': 400.0}),
-     Row({'name': 'Alice', 'balance': 300, 'date': datetime.date(2019, 2, 10), 'avg_balance': 350.0}),
-     Row({'name': 'Alice', 'balance': 100, 'date': datetime.date(2019, 2, 11), 'avg_balance': 266.6666666666667}),
-     Row({'name': 'Bob', 'balance': -150, 'date': datetime.date(2019, 2, 5), 'avg_balance': -150.0}),
-     Row({'name': 'Bob', 'balance': 200, 'date': datetime.date(2019, 2, 6), 'avg_balance': 25.0})]
+    >>> avg_balance_per_person
+    name      balance  date          avg_balance
+    ------  ---------  ----------  -------------
+    Alice         400  2019-02-09        400
+    Alice         300  2019-02-10        350
+    Alice         100  2019-02-11        266.667
+    Bob          -150  2019-02-05       -150
+    Bob           200  2019-02-06         25
 
     """
     return WindowAggregateSpecification(child.aggregate_type, child.getters, window)
@@ -680,7 +711,7 @@ def difference_all(right: Relation, left: Relation) -> DifferenceAll:
 
 @public  # type: ignore[misc]
 @shiftable
-def limit(limit: int, relation: Relation, *, offset: int = 0) -> Limit:
+def limit(limit: int | None, relation: Relation, *, offset: int = 0) -> Limit:
     """Return the rows in `relation` starting from `offset` up to `limit`.
 
     Parameters
@@ -695,8 +726,8 @@ def limit(limit: int, relation: Relation, *, offset: int = 0) -> Limit:
     """
     if offset < 0:
         raise ValueError(f"invalid offset, must be non-negative: {offset}")
-    if limit < 0:
-        raise ValueError(f"invalid limit, must be non-negative: {limit}")
+    if limit is not None and limit < 0:
+        raise ValueError(f"invalid limit, must be non-negative or None: {limit}")
     return Limit(relation, offset=offset, limit=limit)
 
 
@@ -1014,10 +1045,7 @@ def pretty(
 
     """
     return tabulate.tabulate(
-        limit(n, rows) if n is not None else rows,
-        tablefmt=tablefmt,
-        headers=headers,
-        **kwargs,
+        limit(n, rows), tablefmt=tablefmt, headers=headers, **kwargs
     )
 
 
