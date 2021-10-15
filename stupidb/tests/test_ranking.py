@@ -1,15 +1,6 @@
 from __future__ import annotations
 
-from stupidb.api import (
-    Window,
-    dense_rank,
-    order_by,
-    over,
-    rank,
-    row_number,
-    select,
-    table,
-)
+from stupidb import Window, dense_rank, order_by, over, rank, row_number, select, table
 from stupidb.functions.ranking import Sentinel
 
 from .conftest import assert_rowset_equal

@@ -3,19 +3,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Mapping
 
-from stupidb.api import (
-    Window,
-    const,
-    first,
-    get,
-    lag,
-    last,
-    lead,
-    nth,
-    over,
-    select,
-    table,
-)
+from stupidb import Window, const, first, get, lag, last, lead, nth, over, select, table
 
 from .conftest import Element, assert_rowset_equal
 
