@@ -528,21 +528,29 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             row.merge(dict(zip(order_by_columns, order_func(row)))) for row in rows
         )
 
+        # divide the input rows into partitions
+        #
+        # we only need the values once we've grouped, so there's no need to
+        # store a possibly expensive key like a tuple, so we store just the
+        # integer result of hash in the dict
+        #
+        # we also only need the partition values once the rows have
+        # been partitioned
         partitions = toolz.groupby(
-            toolz.juxt(*frame_clause.partition_by), rows_for_partition
-        )
-        num_elements = sum(map(len, partitions.values()))
+            toolz.compose(hash, toolz.juxt(*frame_clause.partition_by)),
+            rows_for_partition,
+        ).values()
 
         # aggregation results, preallocated to avoid the need to sort
         # before returning: we later assign elements to this list using
         # the original row id
-        results: list[T | None] = [None] * num_elements
+        results: list[T | None] = [None] * sum(map(len, partitions))
 
         # Aggregate over each partition
         aggregate_type = self.aggregate_type
         getters = self.getters
         key_func = make_key_func(order_by, frame_clause.nulls)
-        for partition_key, possible_peers in partitions.items():
+        for possible_peers in partitions:
             # sort the partition according to the ordering key
             possible_peers.sort(key=key_func)
 
