@@ -68,6 +68,11 @@ class Relation(abc.ABC):
 
         """
 
+    def __repr__(self) -> str:
+        from stupidb.api import pretty
+
+        return pretty(self)
+
 
 class Table(Relation):
     __slots__ = ("rows",)
