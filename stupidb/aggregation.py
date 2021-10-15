@@ -411,7 +411,7 @@ class AggregateSpecification(Generic[ConcreteAggregate]):
     def __init__(
         self,
         aggregate_type: type[ConcreteAggregate],
-        getters: tuple[Getter, ...],
+        *getters: Getter,
     ) -> None:
         self.aggregate_type: type[ConcreteAggregate] = aggregate_type
         self.getters = getters

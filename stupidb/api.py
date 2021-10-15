@@ -710,7 +710,7 @@ def count(x: Callable[[AbstractRow], T | None]) -> AggregateSpecification:
         A column getter.
 
     """
-    return AggregateSpecification(Count, (x,))
+    return AggregateSpecification(Count, x)
 
 
 @public  # type: ignore[misc]
@@ -723,7 +723,7 @@ def sum(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
         A column getter.
 
     """
-    return AggregateSpecification(Sum, (x,))
+    return AggregateSpecification(Sum, x)
 
 
 @public  # type: ignore[misc]
@@ -736,7 +736,7 @@ def total(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
         A column getter.
 
     """
-    return AggregateSpecification(Total, (x,))
+    return AggregateSpecification(Total, x)
 
 
 @public  # type: ignore[misc]
@@ -749,7 +749,7 @@ def first(x: Callable[[AbstractRow], T | None]) -> AggregateSpecification:
         A column getter.
 
     """
-    return AggregateSpecification(First, (x,))
+    return AggregateSpecification(First, x)
 
 
 @public  # type: ignore[misc]
@@ -762,7 +762,7 @@ def last(x: Callable[[AbstractRow], T | None]) -> AggregateSpecification:
         A column getter.
 
     """
-    return AggregateSpecification(Last, (x,))
+    return AggregateSpecification(Last, x)
 
 
 @public  # type: ignore[misc]
@@ -780,25 +780,25 @@ def nth(
         Callable to compute the row offset of the window to return.
 
     """
-    return AggregateSpecification(Nth, (x, i))
+    return AggregateSpecification(Nth, x, i)
 
 
 @public  # type: ignore[misc]
 def row_number() -> AggregateSpecification:
     """Compute the row number over a window."""
-    return AggregateSpecification(RowNumber, ())
+    return AggregateSpecification(RowNumber)
 
 
 @public  # type: ignore[misc]
 def rank() -> AggregateSpecification:
     """Rank the rows of a relation based on the ordering key given in `over`."""
-    return AggregateSpecification(Rank, ())
+    return AggregateSpecification(Rank)
 
 
 @public  # type: ignore[misc]
 def dense_rank() -> AggregateSpecification:
     """Rank the rows of a relation based on the ordering key given in `over`."""
-    return AggregateSpecification(DenseRank, ())
+    return AggregateSpecification(DenseRank)
 
 
 @public  # type: ignore[misc]
@@ -823,7 +823,7 @@ def lead(
         input and thus the default can be computed relative to the current row.
 
     """
-    return AggregateSpecification(Lead, (x, n, default))
+    return AggregateSpecification(Lead, x, n, default)
 
 
 @public  # type: ignore[misc]
@@ -848,7 +848,7 @@ def lag(
         input and thus the default can be computed relative to the current row.
 
     """
-    return AggregateSpecification(Lag, (x, n, default))
+    return AggregateSpecification(Lag, x, n, default)
 
 
 @public  # type: ignore[misc]
@@ -861,7 +861,7 @@ def mean(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
         A column selector.
 
     """
-    return AggregateSpecification(Mean, (x,))
+    return AggregateSpecification(Mean, x)
 
 
 @public  # type: ignore[misc]
@@ -874,7 +874,7 @@ def min(x: Callable[[AbstractRow], Comparable | None]) -> AggregateSpecification
         A column selector.
 
     """
-    return AggregateSpecification(Min, (x,))
+    return AggregateSpecification(Min, x)
 
 
 @public  # type: ignore[misc]
@@ -887,7 +887,7 @@ def max(x: Callable[[AbstractRow], Comparable | None]) -> AggregateSpecification
         A column selector.
 
     """
-    return AggregateSpecification(Max, (x,))
+    return AggregateSpecification(Max, x)
 
 
 @public  # type: ignore[misc]
@@ -904,7 +904,7 @@ def cov_samp(
         A column selector.
 
     """
-    return AggregateSpecification(SampleCovariance, (x, y))
+    return AggregateSpecification(SampleCovariance, x, y)
 
 
 @public  # type: ignore[misc]
@@ -917,7 +917,7 @@ def var_samp(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
         A column selector.
 
     """
-    return AggregateSpecification(SampleVariance, (x,))
+    return AggregateSpecification(SampleVariance, x)
 
 
 @public  # type: ignore[misc]
@@ -930,7 +930,7 @@ def stdev_samp(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
         A column selector.
 
     """
-    return AggregateSpecification(SampleStandardDeviation, (x,))
+    return AggregateSpecification(SampleStandardDeviation, x)
 
 
 @public  # type: ignore[misc]
@@ -947,7 +947,7 @@ def cov_pop(
         A column selector.
 
     """
-    return AggregateSpecification(PopulationCovariance, (x, y))
+    return AggregateSpecification(PopulationCovariance, x, y)
 
 
 @public  # type: ignore[misc]
@@ -960,7 +960,7 @@ def var_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
         A column selector.
 
     """
-    return AggregateSpecification(PopulationVariance, (x,))
+    return AggregateSpecification(PopulationVariance, x)
 
 
 @public  # type: ignore[misc]
@@ -973,7 +973,7 @@ def stdev_pop(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
         A column selector.
 
     """
-    return AggregateSpecification(PopulationStandardDeviation, (x,))
+    return AggregateSpecification(PopulationStandardDeviation, x)
 
 
 @public  # type: ignore[misc]
@@ -1036,5 +1036,6 @@ def show(rows: Relation, **kwargs: Any) -> None:
     See Also
     --------
     stupidb.api.pretty
+
     """
     print(pretty(rows, **kwargs))
