@@ -4,23 +4,21 @@ from __future__ import annotations
 
 import abc
 import bisect
-import collections
 import enum
 import functools
-import operator
 import typing
 from typing import (
     Any,
     Callable,
     Generic,
-    Hashable,
     Iterable,
     Iterator,
-    MutableMapping,
     NamedTuple,
     Sequence,
     TypeVar,
 )
+
+import cytoolz as toolz
 
 from .aggregator import Aggregate, Aggregator
 from .functions.associative import BinaryAssociativeAggregate, UnaryAssociativeAggregate
@@ -35,7 +33,7 @@ from .typehints import Following, OrderBy, OrderingKey, PartitionBy, Preceding, 
 
 
 class StartStop(NamedTuple):
-    """A class to hold start and stop values for a range."""
+    """A class to hold start and stop values for a range of rows."""
 
     start: int
     stop: int
@@ -419,26 +417,8 @@ class AggregateSpecification(Generic[ConcreteAggregate]):
         self.getters = getters
 
 
-def compute_partition_key(
-    row: AbstractRow, partition_by: Iterable[PartitionBy]
-) -> tuple[Hashable, ...]:
-    """Compute a partition key from `row` and `partition_by`.
-
-    Parameters
-    ----------
-    row
-        An :class:`~stupidb.row.AbstractRow` instance.
-    partition_by
-        An iterable of :class:`~typing.Callable` taking a single
-        :class:`~stupidb.row.AbstractRow` argument and returning a
-        :class:`Hashable` object.
-
-    """
-    return tuple(partition_func(row) for partition_func in partition_by)
-
-
 def row_key_compare(
-    order_by: Sequence[OrderBy],
+    order_by: Iterable[OrderBy],
     null_ordering: Nulls,
     left_row: AbstractRow,
     right_row: AbstractRow,
@@ -450,8 +430,8 @@ def row_key_compare(
     ``NULL`` ordering is handled using `null_ordering`.
 
     """
-    keys = ((order_func(left_row), order_func(right_row)) for order_func in order_by)
-    for left_key, right_key in keys:
+    order_func = toolz.juxt(*order_by)
+    for left_key, right_key in zip(order_func(left_row), order_func(right_row)):
         if left_key is None and right_key is not None:
             return null_ordering.value
         if left_key is not None and right_key is None:
@@ -469,7 +449,7 @@ def row_key_compare(
 
 
 def make_key_func(
-    order_by: Sequence[OrderBy], nulls: Nulls
+    order_by: Iterable[OrderBy], nulls: Nulls
 ) -> Callable[[AbstractRow], OrderingKey[T]]:
     """Make a function usable with the key argument to sorting functions.
 
@@ -534,12 +514,6 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         partition_by = frame_clause.partition_by
         order_by = frame_clause.order_by
 
-        # A mapping from each row's partition key to a list of rows in that
-        # partition.
-        partitions: MutableMapping[
-            tuple[Hashable, ...], list[AbstractRow]
-        ] = collections.defaultdict(list)
-
         # Generate names for temporary order by columns, users never see these.
         #
         # TODO: If we had static schema information these wouldn't be necessary
@@ -550,29 +524,23 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
         # Add computed order by columns that are used when evaluating window
         # functions in range mode
         # TODO: check that if in range mode we only have single order by
+        order_func = toolz.juxt(*order_by)
         rows_for_partition = (
-            row.merge(
-                dict(
-                    zip(
-                        order_by_columns,
-                        (order_func(row) for order_func in order_by),
-                    )
-                )
-            )
-            for row in rows
+            row.merge(dict(zip(order_by_columns, order_func(row)))) for row in rows
         )
 
-        # partition
-        for row in rows_for_partition:
-            partitions[compute_partition_key(row, partition_by)].append(row)
+        partitions = toolz.groupby(toolz.juxt(*partition_by), rows_for_partition)
 
         # sort
         key = make_key_func(order_by, frame_clause.nulls)
-        for partition_key in partitions.keys():
-            partitions[partition_key].sort(key=key)
+        num_elements = 0
+        for partition in partitions.values():
+            num_elements += len(partition)
+            partition.sort(key=key)
 
-        # (row_id, value) pairs containing the aggregation results
-        results: list[tuple[int, T | None]] = []
+        # aggregation results, preallocated to avoid the need to sort
+        # before returning
+        results: list[T | None] = [None] * num_elements
 
         # Aggregate over each partition
         aggregate_type = self.aggregate_type
@@ -602,10 +570,9 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
                 start, stop = frame_clause.compute_window_frame(
                     possible_peers, row, row_id_in_partition, order_by_columns
                 )
-                result = aggregator.query(start, stop)
-                results.append((row._id, result))
+                results[row._id] = aggregator.query(start, stop)
 
         # Sort the results in order of the child relation, because we processed
         # them in partition order, which might not be the same. Pull out the
         # second element of each element in the result.
-        return map(operator.itemgetter(1), sorted(results, key=operator.itemgetter(0)))
+        return iter(results)
