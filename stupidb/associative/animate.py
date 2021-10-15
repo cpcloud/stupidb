@@ -133,8 +133,9 @@ class SegmentTreeAnimator:
         Examples
         --------
         >>> import os
-        >>> from stupidb.associative import SegmentTree, Sum
-        >>> from stupidb.animate import SegmentTreeAnimator
+        >>> from stupidb.associative.segmenttree import SegmentTree
+        >>> from stupidb.functions.associative import Sum
+        >>> from stupidb.associative.animate import SegmentTreeAnimator
         >>> segment_tree = SegmentTree([(1,), (2,), (3,), (4,)], Sum, fanout=2)
         >>> animator = SegmentTreeAnimator(segment_tree)
         >>> with open(os.devnull, "wb") as devnull:
