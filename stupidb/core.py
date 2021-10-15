@@ -304,14 +304,20 @@ class SortBy(Relation):
 class Limit(Relation):
     __slots__ = "child", "offset", "limit"
 
-    def __init__(self, child: Relation, *, offset: int, limit: int) -> None:
+    def __init__(self, child: Relation, *, offset: int, limit: int | None) -> None:
         super().__init__()
         self.child = child
         self.offset = offset
         self.limit = limit
 
     def _produce(self) -> Iterator[AbstractRow]:
-        return itertools.islice(self.child, self.offset, self.offset + self.limit, None)
+        limit = self.limit
+        offset = self.offset
+        return itertools.islice(
+            self.child,
+            offset,
+            None if limit is None else offset + limit,
+        )
 
 
 class Join(Relation):
