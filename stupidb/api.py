@@ -19,8 +19,8 @@ import operator
 from typing import Any, Callable, Iterable, Mapping
 
 import tabulate
+from cytoolz import curry
 from public import private, public
-from toolz import curry
 
 from .aggregation import Window  # noqa: F401
 from .aggregation import (
@@ -91,10 +91,6 @@ def get(name: str) -> Callable[[AbstractRow], T | None]:
 @private  # type: ignore[misc]
 class shiftable(curry):
     """Shiftable curry."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.__annotations__ = self.func.__annotations__
 
     @property
     def __signature__(self) -> inspect.Signature:
