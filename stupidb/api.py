@@ -1011,9 +1011,10 @@ def pretty(
     See Also
     --------
     stupidb.api.show
+
     """
     return tabulate.tabulate(
-        (rows >> limit(n)) if n is not None else rows,
+        limit(n, rows) if n is not None else rows,
         tablefmt=tablefmt,
         headers=headers,
         **kwargs,
