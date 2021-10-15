@@ -22,7 +22,7 @@ let
 
       checkPhase = ''
         runHook preCheck
-        pytest --numprocesses auto
+        pytest --doctest-modules --numprocesses auto
         runHook postCheck
       '';
 
