@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v6.0.1 (2021-10-27)
+### Fix
+* Remove poetry-core version constraint ([`3342f49`](https://github.com/cpcloud/stupidb/commit/3342f49c6b1e5cc8e63314ed4e9bdcf7c095170a))
+
+### Documentation
+* Use autosummary for docs ([`9e189a1`](https://github.com/cpcloud/stupidb/commit/9e189a121222b24c9cbbe0dadba2053c4ea21c59))
+* Don't make segment tree leaves into a doctest ([`92d7ba9`](https://github.com/cpcloud/stupidb/commit/92d7ba913af58b9716c7b9b153a8000de043e2b5))
+
 ## v6.0.0 (2021-10-13)
 ### Breaking
 * Modules are named differently  ([`fc1bbf8`](https://github.com/cpcloud/stupidb/commit/fc1bbf8c52b8858182637112a1748e0cb2aa7dd0))
