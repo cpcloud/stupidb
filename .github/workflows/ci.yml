@@ -106,7 +106,7 @@ jobs:
 
   release:
     needs:
-      - docs
+      - doctests
       - lint
       - nix
       - windows
