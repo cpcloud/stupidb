@@ -56,6 +56,25 @@ jobs:
       - name: build package and run tests
         run: nix build -L --argstr python ${{ matrix.python-version }} --keep-going
 
+  doctests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install nix
+        uses: cachix/install-nix-action@v14
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: stupidb
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: run doctests
+        run: nix-shell --pure --run 'make -C docs doctest' --keep-going
+
   windows:
     strategy:
       matrix:
@@ -87,9 +106,10 @@ jobs:
 
   release:
     needs:
+      - docs
+      - lint
       - nix
       - windows
-      - lint
     runs-on: ubuntu-latest
     concurrency: release
     if: ${{ github.event_name == 'push' }}

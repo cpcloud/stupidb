@@ -104,3 +104,4 @@ ENV/
 .pre-commit-config.yaml
 result
 result-*
+_autosummary

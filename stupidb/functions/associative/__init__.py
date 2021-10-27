@@ -30,7 +30,7 @@ following leaves and a fanout of 2::
 Blue indicates that a node was just aggregated into its parent, and red
 indicates a node that contains the aggregate value of all of its children.
 
-.. image:: _static/main.gif
+.. image:: ../_static/main.gif
    :align: center
 
 .. note::
