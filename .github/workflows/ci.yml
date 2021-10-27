@@ -75,6 +75,25 @@ jobs:
       - name: run doctests
         run: nix-shell --pure --run 'make -C docs doctest' --keep-going
 
+  docbuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install nix
+        uses: cachix/install-nix-action@v14
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: stupidb
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: run doctests
+        run: nix-shell --pure --run 'make -C docs html' --keep-going
+
   windows:
     strategy:
       matrix:
@@ -107,6 +126,7 @@ jobs:
   release:
     needs:
       - doctests
+      - docbuild
       - lint
       - nix
       - windows
