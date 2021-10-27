@@ -145,7 +145,7 @@ def cross_join(right: Relation, left: Relation) -> Join:
 
     Examples
     --------
-    >>> from stupidb import cross_join, table
+    >>> from stupidb import cross_join, select, table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
     ...     dict(name="Bob", balance=-100),
@@ -194,7 +194,7 @@ def inner_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Joi
 
     Examples
     --------
-    >>> from stupidb import cross_join, table
+    >>> from stupidb import inner_join, table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
     ...     dict(name="Bob", balance=-100),

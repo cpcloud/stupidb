@@ -15,7 +15,6 @@ list of mappings
 .. testsetup:: *
 
    from stupidb import *
-   from pprint import pprint
    from datetime import date, timedelta
    today = date(2019, 2, 9)
    days = timedelta(days=1)
@@ -32,7 +31,6 @@ list of mappings
 .. doctest::
 
    >>> from stupidb import *
-   >>> from pprint import pprint
    >>> from datetime import date, timedelta
    >>> today = date(2019, 2, 9)
    >>> days = timedelta(days=1)
@@ -44,12 +42,14 @@ list of mappings
    ...     {"name": "Bob", "balance": 200, "date": today - 3 * days},
    ... ]
    >>> t = table(rows)
-   >>> pprint(list(t))
-   [Row({'name': 'Alice', 'balance': 400, 'date': datetime.date(2019, 2, 9)}),
-    Row({'name': 'Alice', 'balance': 300, 'date': datetime.date(2019, 2, 10)}),
-    Row({'name': 'Alice', 'balance': 100, 'date': datetime.date(2019, 2, 11)}),
-    Row({'name': 'Bob', 'balance': -150, 'date': datetime.date(2019, 2, 5)}),
-    Row({'name': 'Bob', 'balance': 200, 'date': datetime.date(2019, 2, 6)})]
+   >>> t
+   name      balance  date
+   ------  ---------  ----------
+   Alice         400  2019-02-09
+   Alice         300  2019-02-10
+   Alice         100  2019-02-11
+   Bob          -150  2019-02-05
+   Bob           200  2019-02-06
 
 Since every :class:`~stupidb.stupidb.Relation` in StupiDB implements the
 `iterator protocol
@@ -102,12 +102,14 @@ Projection (``SELECT``)
    ...     table(rows) >> select(n=lambda r: r.name, b=lambda r: r.balance)
    ... )
    >>> bal_times_2 = name_and_bal >> mutate(bal2=lambda r: r.b * 2)
-   >>> pprint(list(bal_times_2))
-   [Row({'n': 'Alice', 'b': 400, 'bal2': 800}),
-    Row({'n': 'Alice', 'b': 300, 'bal2': 600}),
-    Row({'n': 'Alice', 'b': 100, 'bal2': 200}),
-    Row({'n': 'Bob', 'b': -150, 'bal2': -300}),
-    Row({'n': 'Bob', 'b': 200, 'bal2': 400})]
+   >>> bal_times_2
+   n         b    bal2
+   -----  ----  ------
+   Alice   400     800
+   Alice   300     600
+   Alice   100     200
+   Bob    -150    -300
+   Bob     200     400
 
 The :func:`~stupidb.api.mutate` function preserves the child table in the
 result, while :func:`~stupidb.api.select` does not.
@@ -119,10 +121,12 @@ Filtering rows is done with the :func:`~stupidb.api.sift` function.
 .. doctest::
 
    >>> alice = table(rows) >> sift(lambda r: r.name == "Alice")
-   >>> pprint(list(alice))
-   [Row({'name': 'Alice', 'balance': 400, 'date': datetime.date(2019, 2, 9)}),
-    Row({'name': 'Alice', 'balance': 300, 'date': datetime.date(2019, 2, 10)}),
-    Row({'name': 'Alice', 'balance': 100, 'date': datetime.date(2019, 2, 11)})]
+   >>> alice
+   name      balance  date
+   ------  ---------  ----------
+   Alice         400  2019-02-09
+   Alice         300  2019-02-10
+   Alice         100  2019-02-11
 
 Simple Aggregation
 ------------------
@@ -132,8 +136,10 @@ Simple Aggregation
    ...     my_sum=sum(lambda r: r.balance),
    ...     my_avg=mean(lambda r: r.balance)
    ... )
-   >>> pprint(list(agg))
-   [Row({'my_sum': 850, 'my_avg': 170.0})]
+   >>> agg
+     my_sum    my_avg
+   --------  --------
+        850       170
 
 ``GROUP BY``
 ------------
@@ -143,9 +149,11 @@ Simple Aggregation
    ...     table(rows) >> group_by(name=lambda r: r.name)
    ...                 >> aggregate(bal_over_time=sum(lambda r: r.balance))
    ... )
-   >>> pprint(list(gb))
-   [Row({'name': 'Alice', 'bal_over_time': 800}),
-    Row({'name': 'Bob', 'bal_over_time': 50})]
+   >>> gb
+   name      bal_over_time
+   ------  ---------------
+   Alice               800
+   Bob                  50
 
 ``ORDER BY``
 ------------
@@ -154,12 +162,14 @@ To sort in ascending order of the specified columns:
 .. doctest::
 
    >>> ob = table(rows) >> order_by(lambda r: r.name, lambda r: r.date)
-   >>> pprint(list(ob))
-   [Row({'name': 'Alice', 'balance': 400, 'date': datetime.date(2019, 2, 9)}),
-    Row({'name': 'Alice', 'balance': 300, 'date': datetime.date(2019, 2, 10)}),
-    Row({'name': 'Alice', 'balance': 100, 'date': datetime.date(2019, 2, 11)}),
-    Row({'name': 'Bob', 'balance': -150, 'date': datetime.date(2019, 2, 5)}),
-    Row({'name': 'Bob', 'balance': 200, 'date': datetime.date(2019, 2, 6)})]
+   >>> ob
+   name      balance  date
+   ------  ---------  ----------
+   Alice         400  2019-02-09
+   Alice         300  2019-02-10
+   Alice         100  2019-02-11
+   Bob          -150  2019-02-05
+   Bob           200  2019-02-06
 
 Currently there is no convenient way to sort descending if your order by values
 are not numeric.

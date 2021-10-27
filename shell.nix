@@ -39,4 +39,5 @@ pkgs.mkShell {
     (mkPoetryEnv pkgs.${name})
     prettier
   ];
+  PYTHONPATH = builtins.toPath ./.;
 }

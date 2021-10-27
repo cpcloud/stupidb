@@ -1,8 +1,7 @@
 [tool.poetry]
 name = "stupidb"
 version = "6.0.0"
-packages = [{ include = "stupidb" }]
-# don't ship tests with the install
+packages = [{ include = "stupidb" }, { include = "tests" }]
 homepage = "https://github.com/cpcloud/stupidb"
 repository = "https://github.com/cpcloud/stupidb"
 documentation = "https://stupidb.readthedocs.io"
@@ -34,7 +33,7 @@ black = "21.9b0"
 coverage = "^5.5"
 flake8 = "^4.0.1"
 isort = "^5.9.3"
-mypy = "0.812"
+mypy = "^0.910"
 pydocstyle = "^6.1.1"
 pytest = "^6.2.5"
 pytest-cov = "^3.0.0"
@@ -76,5 +75,5 @@ add_ignore = ["D105", "D213", "D203"]
 match-dir = "stupidb"
 
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry-core>=1.1"]
+build-backend = "poetry.core.masonry.api"
