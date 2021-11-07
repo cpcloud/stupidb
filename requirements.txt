@@ -9,7 +9,7 @@ charset-normalizer==2.0.7; python_full_version >= "3.6.0" and python_version >= 
 click==8.0.3; python_version >= "3.6" and python_full_version >= "3.6.2"
 colorama==0.4.4; sys_platform == "win32" and python_version >= "3.6" and python_full_version >= "3.6.2" and platform_system == "Windows" and (python_version >= "3.6" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.6" and python_full_version >= "3.5.0")
 coverage==5.5; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0" and python_version < "4")
-cytoolz==0.11.0
+cytoolz==0.11.2
 docutils==0.17.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 execnet==1.9.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 flake8==4.0.1; python_version >= "3.6"
