@@ -10,7 +10,7 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - name: Generate a GitHub token
+      - name: generate a gh token
         uses: tibdex/github-app-token@v1
         id: generate_token
         with:
