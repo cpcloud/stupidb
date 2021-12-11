@@ -5,6 +5,8 @@ from __future__ import annotations
 import abc
 from typing import Generic, Sequence, TypeVar
 
+import cytoolz as toolz
+
 from .row import AbstractRow
 from .typehints import Getter, Output, Result, T
 
@@ -35,7 +37,7 @@ class Aggregator(Generic[AggClass, Result], abc.ABC):
         """Query the aggregator over the range from `begin` to `end`."""
 
 
-class Aggregate(Generic[Output], abc.ABC):
+class AggregateFunction(Generic[Output], abc.ABC):
     """An aggregate or window function."""
 
     __slots__ = ()
@@ -46,16 +48,13 @@ class Aggregate(Generic[Output], abc.ABC):
         possible_peers: Sequence[AbstractRow],
         getters: tuple[Getter, ...],
         order_by_columns: Sequence[str],
-    ) -> Aggregator[Aggregate[Output], Output]:
+    ) -> Aggregator[AggregateFunction[Output], Output]:
         """Prepare an aggregation of this type for computation."""
-        arguments = [
-            tuple(getter(peer) for getter in getters) for peer in possible_peers
-        ]
-        return cls.aggregator_class(arguments)
+        return cls.aggregator_class(list(map(toolz.juxt(*getters), possible_peers)))
 
     @classmethod
     @abc.abstractmethod
     def aggregator_class(
         cls, inputs: Sequence[tuple[T | None, ...]]
-    ) -> Aggregator[Aggregate[Output], Output]:  # pragma: no cover
+    ) -> Aggregator[AggregateFunction[Output], Output]:  # pragma: no cover
         ...

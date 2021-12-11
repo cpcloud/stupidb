@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 from typing import Sequence
 
-from ...aggregator import Aggregate, Aggregator
+from ...aggregator import AggregateFunction, Aggregator
 from ...protocols import Comparable
 from ...row import AbstractRow
 from ...typehints import Getter, Output, Result, T
@@ -37,7 +37,7 @@ class RankingAggregator(Aggregator["RankingAggregate", Result]):
         return self.aggregate.execute(begin, end)
 
 
-class RankingAggregate(Aggregate[Output]):
+class RankingAggregate(AggregateFunction[Output]):
     """Base ranking aggregation class."""
 
     __slots__ = ("order_by_values",)

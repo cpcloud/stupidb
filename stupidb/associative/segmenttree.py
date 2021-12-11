@@ -96,15 +96,9 @@ class SegmentTree(
         )
         self.aggregate_type: type[AssociativeAggregate] = aggregate_type
         self.fanout = fanout
-        self.height = int(math.ceil(math.log(len(leaves), fanout))) + 1
-        self.levels: Sequence[Sequence[AssociativeAggregate]] = list(
-            self.iterlevels(self.nodes, fanout=fanout)
-        )
+        self.height = int(math.ceil(math.log(len(self.nodes), fanout)))
 
-    @staticmethod
-    def iterlevels(
-        nodes: Sequence[AssociativeAggregate], *, fanout: int
-    ) -> Iterator[Sequence[AssociativeAggregate]]:
+    def iterlevels(self) -> Iterator[Sequence[AssociativeAggregate]]:
         """Iterate over every level in the tree.
 
         Parameters
@@ -115,8 +109,9 @@ class SegmentTree(
             The number child nodes per interior node
 
         """
-        height = int(math.ceil(math.log(len(nodes), fanout)))
-        for level in range(height):
+        nodes = self.nodes
+        fanout = self.fanout
+        for level in range(self.height - 1, -1, -1):
             start = indextree.first_node(level, fanout=fanout)
             stop = indextree.last_node(level, fanout=fanout)
             yield nodes[start:stop]
@@ -125,7 +120,7 @@ class SegmentTree(
         return indextree.reprtree(self.nodes, fanout=self.fanout)
 
     def query(self, begin: int, end: int) -> Result | None:
-        """Aggregate the values between `begin` and `end` using `aggregate`.
+        """Aggregate the values between `begin` and `end`.
 
         Parameters
         ----------
@@ -138,7 +133,7 @@ class SegmentTree(
         fanout = self.fanout
         aggregate: AssociativeAggregate = self.aggregate_type()
 
-        for level in reversed(self.levels):
+        for level in self.iterlevels():
             parent_begin = begin // fanout
             parent_end = end // fanout
             if parent_begin == parent_end:

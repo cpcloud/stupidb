@@ -20,7 +20,7 @@ from typing import (
 
 import cytoolz as toolz
 
-from .aggregator import Aggregate, Aggregator
+from .aggregator import AggregateFunction, Aggregator
 from .functions.associative import BinaryAssociativeAggregate, UnaryAssociativeAggregate
 from .functions.navigation import (
     BinaryNavigationAggregate,
@@ -568,7 +568,7 @@ class WindowAggregateSpecification(Generic[ConcreteAggregate]):
             # the interior nodes. Each node (both leaves and non-leaves) is a
             # state of the aggregation. The leaves are the initial states, the
             # root is the final state.
-            aggregator: Aggregator[Aggregate, T] = aggregate_type.prepare(
+            aggregator: Aggregator[AggregateFunction, T] = aggregate_type.prepare(
                 possible_peers, getters, order_by_columns
             )
 

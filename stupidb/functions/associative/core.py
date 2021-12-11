@@ -3,14 +3,14 @@ from __future__ import annotations
 import abc
 from typing import Generic, Sequence, TypeVar
 
-from ...aggregator import Aggregate, Aggregator
+from ...aggregator import AggregateFunction, Aggregator
 from ...typehints import Input1, Input2, Output, T
 
 UA = TypeVar("UA", bound="UnaryAssociativeAggregate")
 BA = TypeVar("BA", bound="BinaryAssociativeAggregate")
 
 
-class AbstractAssociativeAggregate(Aggregate[Output]):
+class AbstractAssociativeAggregate(AggregateFunction[Output]):
     """Base class for aggregations with an associative binary operation."""
 
     __slots__ = ("count",)
@@ -26,7 +26,7 @@ class AbstractAssociativeAggregate(Aggregate[Output]):
     @classmethod
     def aggregator_class(
         cls, values: Sequence[tuple[T | None, ...]]
-    ) -> Aggregator[Aggregate[Output], Output]:
+    ) -> Aggregator[AggregateFunction[Output], Output]:
         from ...associative.segmenttree import SegmentTree
 
         return SegmentTree(values, cls, fanout=4)

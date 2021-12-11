@@ -20,6 +20,7 @@ from typing import Any, Callable, Iterable, Mapping
 
 import tabulate
 import toolz
+from cytoolz import compose
 from public import private, public
 
 from .aggregation import (
@@ -83,8 +84,20 @@ def const(x: T | None) -> Callable[[AbstractRow], T | None]:
 
 @public  # type: ignore[misc]
 def get(name: str) -> Callable[[AbstractRow], T | None]:
-    """Return a function that gets the `name` field from a row."""
+    """Return a function that gets `name` from a row."""
     return operator.itemgetter(name)
+
+
+@public  # type: ignore[misc]
+def left(name: str) -> Callable[[AbstractRow], T | None]:
+    """Return a function that gets `name` from the left side of a joined row."""
+    return compose(operator.itemgetter(name), operator.attrgetter("left"))
+
+
+@public  # type: ignore[misc]
+def right(name: str) -> Callable[[AbstractRow], T | None]:
+    """Return a function that gets `name` from the right side of a joined row."""
+    return compose(operator.itemgetter(name), operator.attrgetter("right"))
 
 
 @private  # type: ignore[misc]
@@ -119,7 +132,7 @@ def table(rows: Iterable[Mapping[str, Any]]) -> Table:
     ...     dict(name="Alice", balance=700),
     ... ]
     >>> t = table(rows)
-    >>> t  # doctest: +ELLIPSIS
+    >>> t
     name      balance
     ------  ---------
     Bob          -300
@@ -145,7 +158,7 @@ def cross_join(right: Relation, left: Relation) -> Join:
 
     Examples
     --------
-    >>> from stupidb import cross_join, select, table
+    >>> from stupidb import cross_join, left, right, select, table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
     ...     dict(name="Bob", balance=-100),
@@ -156,10 +169,10 @@ def cross_join(right: Relation, left: Relation) -> Join:
     >>> s = table(rows)
     >>> crossed = cross_join(t, s)
     >>> crossed >> select(
-    ...     left_name=lambda row: row.left["name"],
-    ...     left_balance=lambda row: row.left["balance"],
-    ...     right_name=lambda row: row.right["name"],
-    ...     right_balance=lambda row: row.right["balance"]
+    ...     left_name=left("name"),
+    ...     left_balance=left("balance"),
+    ...     right_name=right("name"),
+    ...     right_balance=right("balance"),
     ... )
     left_name      left_balance  right_name      right_balance
     -----------  --------------  ------------  ---------------
@@ -206,7 +219,7 @@ def inner_join(right: Relation, predicate: JoinPredicate, left: Relation) -> Joi
     >>> t >> inner_join(
     ...     s,
     ...     lambda left, right: left["balance"] < right["balance"]
-    ... ) >> select(name=lambda r: r.left["name"], bal=lambda r: r.left["balance"])
+    ... ) >> select(name=left("name"), bal=left("balance"))
     name      bal
     ------  -----
     Bob      -300
@@ -982,7 +995,7 @@ def cov_pop(
 
 
 @public  # type: ignore[misc]
-def var_pop(x: Callable[[AbstractRow], R]) -> AggregateSpecification:
+def var_pop(x: Callable[[AbstractRow], R | None]) -> AggregateSpecification:
     """Compute the population variance of a column.
 
     Parameters
@@ -1045,7 +1058,10 @@ def pretty(
 
     """
     return tabulate.tabulate(
-        limit(n, rows), tablefmt=tablefmt, headers=headers, **kwargs
+        limit(n, rows),
+        tablefmt=tablefmt,
+        headers=headers,
+        **kwargs,
     )
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 from typing import Generic, Sequence
 
-from ...aggregator import Aggregate, Aggregator
+from ...aggregator import AggregateFunction, Aggregator
 from ...typehints import Input1, Input2, Input3, Output, Result, T
 
 
@@ -34,7 +34,7 @@ class NavigationAggregator(Aggregator["NavigationAggregate", Result]):
         return self.aggregate.execute(begin, end)
 
 
-class NavigationAggregate(Aggregate[Output]):
+class NavigationAggregate(AggregateFunction[Output]):
     """Base class for navigation aggregate functions."""
 
     __slots__ = ()
