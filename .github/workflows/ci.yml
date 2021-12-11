@@ -59,7 +59,6 @@ jobs:
 
       - name: lint
         run: nix develop --print-build-logs --keep-going -c pre-commit run --all-files
-
   nix:
     strategy:
       matrix:
@@ -92,7 +91,6 @@ jobs:
 
       - name: build package and run tests
         run: nix build --print-build-logs --keep-going '.#stupidb${{ matrix.python-version }}'
-
   doctests:
     runs-on: ubuntu-latest
     steps:
@@ -115,7 +113,6 @@ jobs:
 
       - name: run doctests
         run: nix develop --print-build-logs --keep-going -c make -C docs doctest
-
   docbuild:
     runs-on: ubuntu-latest
     steps:
@@ -138,7 +135,6 @@ jobs:
 
       - name: run doctests
         run: nix develop --print-build-logs --keep-going -c make -C docs html
-
   windows:
     strategy:
       matrix:
@@ -167,7 +163,6 @@ jobs:
 
       - name: run tests
         run: poetry run pytest --numprocesses auto
-
   release:
     needs:
       - doctests
