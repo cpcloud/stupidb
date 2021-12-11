@@ -170,9 +170,10 @@ jobs:
     needs:
       - doctests
       - docbuild
-      - lint
+      - commitlint
       - nix
       - windows
+      - pre-commit
     runs-on: ubuntu-latest
     concurrency: release
     if: ${{ github.event_name == 'push' }}
