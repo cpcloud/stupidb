@@ -5,7 +5,7 @@ from __future__ import annotations
 import abc
 from typing import Any, Hashable, Iterator, Mapping
 
-import cytoolz as toolz
+import toolz
 
 
 class AbstractRow(Mapping[str, Any], Hashable, abc.ABC):

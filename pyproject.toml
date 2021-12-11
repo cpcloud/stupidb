@@ -23,7 +23,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.7"
 atpublic = "^2.3"
-cytoolz = "^0.11.0"
+toolz = "^0.11"
 pydot = { version = "^1.4.2", optional = true }
 tabulate = "^0.8.9"
 
