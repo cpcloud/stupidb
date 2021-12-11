@@ -57,7 +57,7 @@
 
                     checkPhase = ''
                       runHook preCheck
-                      pytest
+                      pytest --numprocesses auto
                       runHook postCheck
                     '';
 
