@@ -57,10 +57,12 @@ xfail_strict = true
 addopts = [
   "--ignore=site-packages",
   "--ignore=dist-packages",
-  "--strict-markers"
+  "--ignore=.direnv",
+  "--strict-markers",
+  "--doctest-modules",
 ]
 markers = ["animate"]
-norecursedirs = ["site-packages", "dist-packages"]
+norecursedirs = ["site-packages", "dist-packages", ".direnv"]
 
 [tool.black]
 line_length = 88

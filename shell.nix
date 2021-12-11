@@ -1,43 +1,10 @@
-{ python ? "3.9" }:
-let
-  pkgs = import ./nix;
-  inherit (pkgs) lib;
-  prettier = with pkgs; writeShellScriptBin "prettier" ''
-    ${nodePackages.prettier}/bin/prettier \
-    --plugin-search-dir "${nodePackages.prettier-plugin-toml}/lib" \
-    "$@"
-  '';
-  mkPoetryEnv = python: pkgs.poetry2nix.mkPoetryEnv {
-    inherit python;
-    pyproject = ./pyproject.toml;
-    poetrylock = ./poetry.lock;
-    editablePackageSources = {
-      stupidb = ./stupidb;
-    };
-    overrides = pkgs.poetry2nix.overrides.withDefaults (
-      import ./poetry-overrides.nix { inherit pkgs; }
-    );
-  };
-  name = "python${builtins.replaceStrings [ "." ] [ "" ] python}";
-in
-pkgs.mkShell {
-  name = "stupidb-dev-${name}";
-  shellHook = ''
-    ${(import ./pre-commit.nix).pre-commit-check.shellHook}
-  '';
-  buildInputs = (
-    with pkgs; [
-      git
-      gnumake
-      graphviz-nox
-      imagemagick_light
-      niv
-      nix-linter
-      poetry
-    ]
-  ) ++ [
-    (mkPoetryEnv pkgs.${name})
-    prettier
-  ];
-  PYTHONPATH = builtins.toPath ./.;
-}
+(import
+  (
+    fetchTarball {
+      url = "https://github.com/edolstra/flake-compat/archive/99f1c2157fba4bfe6211a321fd0ee43199025dbf.tar.gz";
+      sha256 = "0x2jn3vrawwv9xp15674wjz9pixwjyj3j771izayl962zziivbx2";
+    }
+  )
+  {
+    src = ./.;
+  }).shellNix
