@@ -167,7 +167,6 @@ jobs:
     needs:
       - doctests
       - docbuild
-      - commitlint
       - nix
       - windows
       - pre-commit
