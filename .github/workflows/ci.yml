@@ -165,7 +165,7 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
 
       - name: Python Semantic Release
-        uses: relekang/python-semantic-release@v7.19.2
+        uses: relekang/python-semantic-release@v7.23.0
         with:
           github_token: ${{ steps.generate_token.outputs.token }}
           pypi_token: ${{ secrets.PYPI_TOKEN }}
