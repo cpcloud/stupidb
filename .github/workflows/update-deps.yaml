@@ -3,6 +3,11 @@ on:
   schedule:
     - cron: "20 */6 * * *"
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   niv-update:
     runs-on: ubuntu-latest
