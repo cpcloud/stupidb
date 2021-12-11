@@ -2,6 +2,11 @@
 
 <!--next-version-placeholder-->
 
+## v6.0.2 (2021-12-11)
+### Fix
+* Remove commitlint constraint on release ([`9a73615`](https://github.com/cpcloud/stupidb/commit/9a7361554a788143d8caf46258b5266eac1d5b7a))
+* Move to flakes ([`e71c661`](https://github.com/cpcloud/stupidb/commit/e71c6611320c2ceb4eda90d689b6289ce6e735af))
+
 ## v6.0.1 (2021-10-27)
 ### Fix
 * Remove poetry-core version constraint ([`3342f49`](https://github.com/cpcloud/stupidb/commit/3342f49c6b1e5cc8e63314ed4e9bdcf7c095170a))
