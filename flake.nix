@@ -50,6 +50,11 @@
                       import ./poetry-overrides.nix { inherit pkgs; }
                     );
 
+                    checkInputs = with pkgs; [
+                      graphviz-nox
+                      imagemagick_light
+                    ];
+
                     checkPhase = ''
                       runHook preCheck
                       pytest
