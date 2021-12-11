@@ -19,7 +19,7 @@ import itertools
 import typing
 from typing import Any, Generic, Iterable, Iterator, Mapping
 
-import cytoolz as toolz
+import toolz
 
 from .aggregation import (
     AggregateSpecification,

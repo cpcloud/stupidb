@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import AbstractSet, Any, Iterable, Iterator, Mapping, MutableMapping
 
-import cytoolz as toolz
+import toolz
 
 from .bitset import BitSet
 

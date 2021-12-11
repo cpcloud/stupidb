@@ -18,7 +18,7 @@ from typing import (
     TypeVar,
 )
 
-import cytoolz as toolz
+import toolz
 
 from .aggregator import Aggregate, Aggregator
 from .functions.associative import BinaryAssociativeAggregate, UnaryAssociativeAggregate
