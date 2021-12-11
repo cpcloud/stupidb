@@ -1,34 +1,10 @@
-{ python ? "3.9" }:
-let
-  pkgs = import ./nix;
-  drv =
-    { poetry2nix
-    , python
-    , graphviz-nox
-    , imagemagick_light
-    }:
-
-    poetry2nix.mkPoetryApplication {
-      inherit python;
-
-      projectDir = ./.;
-      overrides = pkgs.poetry2nix.overrides.withDefaults (
-        import ./poetry-overrides.nix { inherit pkgs; }
-      );
-
-      buildInputs = [ graphviz-nox imagemagick_light ];
-
-      checkInputs = [ graphviz-nox imagemagick_light ];
-
-      checkPhase = ''
-        runHook preCheck
-        pytest --doctest-modules --numprocesses auto
-        runHook postCheck
-      '';
-
-      pythonImportsCheck = [ "stupidb" ];
-    };
-in
-pkgs.callPackage drv {
-  python = pkgs."python${builtins.replaceStrings [ "." ] [ "" ] python}";
-}
+(import
+  (
+    fetchTarball {
+      url = "https://github.com/edolstra/flake-compat/archive/99f1c2157fba4bfe6211a321fd0ee43199025dbf.tar.gz";
+      sha256 = "0x2jn3vrawwv9xp15674wjz9pixwjyj3j771izayl962zziivbx2";
+    }
+  )
+  {
+    src = ./.;
+  }).defaultNix
