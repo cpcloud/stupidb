@@ -1,7 +1,7 @@
+.direnv
 .mypy_cache
-.pytest_cache
 .pre-commit-config.yaml
-nix/sources.json
+CHANGELOG.md
+.pytest_cache
 result
 result-*
-CHANGELOG.md
