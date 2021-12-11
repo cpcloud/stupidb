@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: install nix
         uses: cachix/install-nix-action@v16
