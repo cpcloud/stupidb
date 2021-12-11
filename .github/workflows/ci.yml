@@ -17,6 +17,9 @@ jobs:
 
       - name: install nix
         uses: cachix/install-nix-action@v16
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
 
       - name: setup cachix
         uses: cachix/cachix-action@v10
@@ -26,18 +29,19 @@ jobs:
           extraPullNames: nix-community,poetry2nix
 
       - name: lint
-        run: nix-shell --pure --run 'pre-commit run --all-files' --keep-going
+        run: nix develop --print-build-logs --keep-going -c pre-commit run --all-files
 
   nix:
     strategy:
       matrix:
         os:
-          - macos-latest
+          - macos-11
+          - macos-10.15
           - ubuntu-latest
         python-version:
-          - "3.7"
-          - "3.8"
-          - "3.9"
+          - "37"
+          - "38"
+          - "39"
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
@@ -45,6 +49,9 @@ jobs:
 
       - name: install nix
         uses: cachix/install-nix-action@v16
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
 
       - name: setup cachix
         uses: cachix/cachix-action@v10
@@ -54,7 +61,7 @@ jobs:
           extraPullNames: nix-community,poetry2nix
 
       - name: build package and run tests
-        run: nix build -L --argstr python ${{ matrix.python-version }} --keep-going
+        run: nix build --print-build-logs --keep-goin '.#stupidb${{ matrix.python-version }}'
 
   doctests:
     runs-on: ubuntu-latest
@@ -64,6 +71,9 @@ jobs:
 
       - name: install nix
         uses: cachix/install-nix-action@v16
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
 
       - name: setup cachix
         uses: cachix/cachix-action@v10
@@ -73,7 +83,7 @@ jobs:
           extraPullNames: nix-community,poetry2nix
 
       - name: run doctests
-        run: nix-shell --pure --run 'make -C docs doctest' --keep-going
+        run: nix develop --print-build-logs --keep-going -c make -C docs doctest
 
   docbuild:
     runs-on: ubuntu-latest
@@ -83,6 +93,9 @@ jobs:
 
       - name: install nix
         uses: cachix/install-nix-action@v16
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
 
       - name: setup cachix
         uses: cachix/cachix-action@v10
@@ -92,7 +105,7 @@ jobs:
           extraPullNames: nix-community,poetry2nix
 
       - name: run doctests
-        run: nix-shell --pure --run 'make -C docs html' --keep-going
+        run: nix develop --print-build-logs --keep-going -c make -C docs html
 
   windows:
     strategy:
