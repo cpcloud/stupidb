@@ -72,7 +72,7 @@ from ..associative.core import BinaryAssociativeAggregate, UnaryAssociativeAggre
 
 
 class Count(UnaryAssociativeAggregate[Input1, int]):
-    """Count elements."""
+    """Count column values."""
 
     __slots__ = ("count",)
 
@@ -96,7 +96,7 @@ class Count(UnaryAssociativeAggregate[Input1, int]):
 
 
 class Sum(UnaryAssociativeAggregate[R1, R2]):
-    """A sum aggregate."""
+    """Sum column values, ignoring nulls."""
 
     __slots__ = "count", "total"
 
@@ -125,6 +125,8 @@ class Sum(UnaryAssociativeAggregate[R1, R2]):
 
 
 class Total(Sum[R1, R2]):
+    """Sum column values, preserving nulls."""
+
     __slots__ = ()
 
     def finalize(self) -> R2 | None:
@@ -132,6 +134,8 @@ class Total(Sum[R1, R2]):
 
 
 class Mean(Sum[R1, R2]):
+    """Average values in a column."""
+
     __slots__ = ()
 
     def finalize(self) -> R2 | None:
@@ -150,6 +154,8 @@ C = TypeVar("C", bound=Comparable)
 
 
 class MinMax(UnaryAssociativeAggregate[C, C]):
+    """Base class modeling min/max order statistics."""
+
     __slots__ = "current_value", "comparator"
 
     def __init__(self, *, comparator: Callable[[C, C], C]) -> None:
@@ -184,6 +190,8 @@ class MinMax(UnaryAssociativeAggregate[C, C]):
 
 
 class Min(MinMax):
+    """Minimum of column values."""
+
     __slots__ = ()
 
     def __init__(self) -> None:
@@ -191,6 +199,8 @@ class Min(MinMax):
 
 
 class Max(MinMax):
+    """Maximum of column values."""
+
     __slots__ = ()
 
     def __init__(self) -> None:
@@ -198,6 +208,8 @@ class Max(MinMax):
 
 
 class Covariance(BinaryAssociativeAggregate[R1, R2, float]):
+    """Base class modeling the covariance of two columns."""
+
     __slots__ = "count", "mean_x", "mean_y", "cov", "ddof"
 
     def __init__(self, *, ddof: int) -> None:
@@ -243,6 +255,8 @@ class Covariance(BinaryAssociativeAggregate[R1, R2, float]):
 
 
 class SampleCovariance(Covariance[R1, R2]):
+    """Sample covariance of two columns."""
+
     __slots__ = ()
 
     def __init__(self) -> None:
@@ -250,6 +264,8 @@ class SampleCovariance(Covariance[R1, R2]):
 
 
 class PopulationCovariance(Covariance[R1, R2]):
+    """Population covariance of two columns."""
+
     __slots__ = ()
 
     def __init__(self) -> None:
@@ -257,6 +273,8 @@ class PopulationCovariance(Covariance[R1, R2]):
 
 
 class Variance(UnaryAssociativeAggregate[R, float]):
+    """Base class modeling the variance of a column."""
+
     __slots__ = ("aggregator",)
 
     def __init__(self, ddof: int) -> None:
@@ -273,6 +291,8 @@ class Variance(UnaryAssociativeAggregate[R, float]):
 
 
 class SampleVariance(Variance[R]):
+    """Sample variance of a column."""
+
     __slots__ = ()
 
     def __init__(self) -> None:
@@ -280,6 +300,8 @@ class SampleVariance(Variance[R]):
 
 
 class PopulationVariance(Variance[R]):
+    """Population variance of a column."""
+
     __slots__ = ()
 
     def __init__(self) -> None:
@@ -287,6 +309,8 @@ class PopulationVariance(Variance[R]):
 
 
 class StandardDeviation(Variance[R]):
+    """Base class modeling the standard deviation of a column."""
+
     __slots__ = ("aggregator",)
 
     def finalize(self) -> float | None:
@@ -295,6 +319,8 @@ class StandardDeviation(Variance[R]):
 
 
 class SampleStandardDeviation(StandardDeviation[R]):
+    """Sample standard deviation of a column."""
+
     __slots__ = ()
 
     def __init__(self) -> None:
@@ -302,6 +328,8 @@ class SampleStandardDeviation(StandardDeviation[R]):
 
 
 class PopulationStandardDeviation(StandardDeviation[R]):
+    """Population standard deviation of a column."""
+
     __slots__ = ()
 
     def __init__(self) -> None:
