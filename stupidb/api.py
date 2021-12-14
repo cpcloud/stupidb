@@ -373,7 +373,6 @@ def mutate(**mutators: Projector | WindowAggregateSpecification) -> Mutate:
 
     Examples
     --------
-    >>> from pprint import pprint
     >>> from stupidb import mutate, table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
@@ -382,11 +381,13 @@ def mutate(**mutators: Projector | WindowAggregateSpecification) -> Mutate:
     ...     dict(name="Alice", balance=700),
     ... ]
     >>> rows = table(rows) >> mutate(lower_name=lambda r: r.name.lower())
-    >>> pprint(list(rows))
-    [Row({'name': 'Bob', 'balance': -300, 'lower_name': 'bob'}),
-     Row({'name': 'Alice', 'balance': 400, 'lower_name': 'alice'}),
-     Row({'name': 'Bob', 'balance': -100, 'lower_name': 'bob'}),
-     Row({'name': 'Alice', 'balance': 700, 'lower_name': 'alice'})]
+    >>> rows
+    name      balance  lower_name
+    ------  ---------  ------------
+    Bob          -300  bob
+    Alice         400  alice
+    Bob          -100  bob
+    Alice         700  alice
 
     See Also
     --------
@@ -409,7 +410,6 @@ def sift(predicate: Predicate, child: Relation) -> Selection:
 
     Examples
     --------
-    >>> from pprint import pprint
     >>> from stupidb import sift, table
     >>> rows = [
     ...     dict(name="Bob", balance=-300),
@@ -418,9 +418,11 @@ def sift(predicate: Predicate, child: Relation) -> Selection:
     ...     dict(name="Alice", balance=700),
     ... ]
     >>> rows = table(rows) >> sift(lambda r: r.name.lower().startswith("a"))
-    >>> pprint(list(rows), width=79)
-    [Row({'name': 'Alice', 'balance': 400}),
-     Row({'name': 'Alice', 'balance': 700})]
+    >>> rows
+    name      balance
+    ------  ---------
+    Alice         400
+    Alice         700
 
     """
     return Selection(child, predicate)
@@ -458,7 +460,6 @@ def aggregate(**aggregations: AggregateSpecification) -> Aggregation:
     --------
     Compute the average of a column:
 
-    >>> from pprint import pprint
     >>> from stupidb import aggregate, group_by, mean, table
     >>> rows = [
     ...     dict(name="Bob", age=30, timezone="America/New_York"),
@@ -467,8 +468,10 @@ def aggregate(**aggregations: AggregateSpecification) -> Aggregation:
     ...     dict(name="Alice", age=39, timezone="America/Los_Angeles"),
     ... ]
     >>> average_age = table(rows) >> aggregate(avg_age=mean(lambda r: r.age))
-    >>> pprint(list(average_age), width=79)
-    [Row({'avg_age': 32.5})]
+    >>> average_age
+      avg_age
+    ---------
+         32.5
 
     Compute the average a column, grouped by another column:
 
@@ -476,9 +479,11 @@ def aggregate(**aggregations: AggregateSpecification) -> Aggregation:
     ...     table(rows) >> group_by(tz=lambda r: r.timezone)
     ...                 >> aggregate(avg_age=mean(lambda r: r.age))
     ... )
-    >>> pprint(list(average_age_by_timezone), width=79)
-    [Row({'tz': 'America/New_York', 'avg_age': 25.0}),
-     Row({'tz': 'America/Los_Angeles', 'avg_age': 40.0})]
+    >>> average_age_by_timezone
+    tz                     avg_age
+    -------------------  ---------
+    America/New_York            25
+    America/Los_Angeles         40
 
     See Also
     --------
@@ -573,7 +578,6 @@ def group_by(**group_by: PartitionBy) -> GroupBy:
 
     Examples
     --------
-    >>> from pprint import pprint
     >>> from stupidb import aggregate, group_by, mean, table
     >>> rows = [
     ...     dict(name="Bob", age=30, timezone="America/New_York"),
@@ -585,9 +589,11 @@ def group_by(**group_by: PartitionBy) -> GroupBy:
     ...     table(rows) >> group_by(tz=lambda r: r.timezone)
     ...                 >> aggregate(avg_age=mean(lambda r: r.age))
     ... )
-    >>> pprint(list(average_age_by_timezone), width=79)
-    [Row({'tz': 'America/New_York', 'avg_age': 25.0}),
-     Row({'tz': 'America/Los_Angeles', 'avg_age': 40.0})]
+    >>> average_age_by_timezone
+    tz                     avg_age
+    -------------------  ---------
+    America/New_York            25
+    America/Los_Angeles         40
 
     See Also
     --------
