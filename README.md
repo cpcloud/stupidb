@@ -19,9 +19,6 @@ what implementing the core of a relational database like PostgreSQL would look
 like just by tinkering with and reading the source code, so I decided to write
 my own.
 
-- Free software: Apache Software License 2.0
-- Documentation: https://stupidb.readthedocs.io.
-
 ## Features
 
 - Stupid joins
