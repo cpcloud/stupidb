@@ -78,7 +78,7 @@
                   };
                 }
               ])
-            [ "3.7" "3.8" "3.9" ]
+            [ "3.7" "3.8" "3.9" "3.10" ]
         )))
       ];
     } // (
@@ -95,8 +95,9 @@
           packages.stupidb37 = pkgs.stupidb37;
           packages.stupidb38 = pkgs.stupidb38;
           packages.stupidb39 = pkgs.stupidb39;
+          packages.stupidb310 = pkgs.stupidb310;
 
-          defaultPackage = packages.stupidb39;
+          defaultPackage = packages.stupidb310;
 
           checks = {
             pre-commit-check = pre-commit-hooks.lib.${system}.run {
@@ -164,7 +165,6 @@
               nativeBuildInputs = with pkgs; [
                 commitizen
                 git
-                gnumake
                 graphviz-nox
                 imagemagick_light
                 nix-linter
@@ -172,7 +172,7 @@
                 prettierTOML
                 shellcheck
                 shfmt
-                stupidbDevEnv39
+                stupidbDevEnv310
               ];
               shellHook = self.checks.${system}.pre-commit-check.shellHook;
             };
