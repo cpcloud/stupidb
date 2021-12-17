@@ -2,6 +2,15 @@
 
 <!--next-version-placeholder-->
 
+## v6.1.0 (2021-12-17)
+### Feature
+* Add support for python 3.10 ([`36bd5fd`](https://github.com/cpcloud/stupidb/commit/36bd5fd3f12a55e3c61a532a649e76f8a5994fd2))
+
+### Documentation
+* Remove lines from README.md ([`d90eec5`](https://github.com/cpcloud/stupidb/commit/d90eec58ef18bab690d9457fe4bd949eed7f6ad7))
+* Document some associative function classes ([`548b29d`](https://github.com/cpcloud/stupidb/commit/548b29d51a2e8a1e5427f1b330eb7897688228e1))
+* Remove pprint usage in doctests ([`f3ac09c`](https://github.com/cpcloud/stupidb/commit/f3ac09ce6a796a43ed9ad473fe2b4403d72463d0))
+
 ## v6.0.2 (2021-12-11)
 ### Fix
 * Remove commitlint constraint on release ([`9a73615`](https://github.com/cpcloud/stupidb/commit/9a7361554a788143d8caf46258b5266eac1d5b7a))
