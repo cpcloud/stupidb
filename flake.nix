@@ -160,22 +160,22 @@
             };
           };
 
-          devShell = pkgs.mkShell
-            {
-              nativeBuildInputs = with pkgs; [
-                commitizen
-                git
-                graphviz-nox
-                imagemagick_light
-                nix-linter
-                poetry
-                prettierTOML
-                shellcheck
-                shfmt
-                stupidbDevEnv310
-              ];
-              shellHook = self.checks.${system}.pre-commit-check.shellHook;
-            };
+          devShell = pkgs.mkShell {
+            name = "stupidb";
+            nativeBuildInputs = with pkgs; [
+              commitizen
+              git
+              graphviz-nox
+              imagemagick_light
+              nix-linter
+              poetry
+              prettierTOML
+              shellcheck
+              shfmt
+              stupidbDevEnv310
+            ];
+            shellHook = self.checks.${system}.pre-commit-check.shellHook;
+          };
         }
       )
     );
