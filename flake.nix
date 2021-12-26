@@ -52,7 +52,7 @@
 
                     checkInputs = with pkgs; [
                       graphviz-nox
-                      imagemagick_light
+                      imagemagick
                     ];
 
                     checkPhase = ''
@@ -166,7 +166,7 @@
               commitizen
               git
               graphviz-nox
-              imagemagick_light
+              imagemagick
               nix-linter
               poetry
               prettierTOML
