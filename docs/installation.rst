@@ -38,7 +38,7 @@ Or download and unpack the `tarball`_:
 
 .. code-block:: console
 
-   $ curl -sL https://github.com/cpcloud/stupidb/tarball/master | tar xvzf
+   $ curl -sL https://github.com/cpcloud/stupidb/tarball/main | tar xvzf
 
 Once you have a copy of the source, ``cd`` into source directory and install
 ``stupidb``:
@@ -49,5 +49,5 @@ Once you have a copy of the source, ``cd`` into source directory and install
 
 
 .. _GitHub repository: https://github.com/cpcloud/stupidb
-.. _tarball: https://github.com/cpcloud/stupidb/tarball/master
+.. _tarball: https://github.com/cpcloud/stupidb/tarball/main
 .. _poetry: https://python-poetry.org

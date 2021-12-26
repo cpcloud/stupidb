@@ -1,7 +1,7 @@
 # StupiDB
 
 [![PyPI](https://img.shields.io/pypi/v/stupidb.svg)](https://pypi.python.org/pypi/stupidb)
-[![CI](https://github.com/cpcloud/stupidb/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/cpcloud/stupidb/actions/workflows/ci.yml)
+[![CI](https://github.com/cpcloud/stupidb/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/cpcloud/stupidb/actions/workflows/ci.yml)
 [![Docs](https://readthedocs.org/projects/stupidb/badge/?version=latest)](https://stupidb.readthedocs.io/en/latest/?badge=latest)
 
 Pronounced in at least two ways:

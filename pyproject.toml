@@ -48,7 +48,7 @@ animation = ["pydot"]
 [tool.semantic_release]
 version_toml = "pyproject.toml:tool.poetry.version"
 version_variable = ["stupidb/__init__.py:__version__", "docs/conf.py:version"]
-branch = "master"
+branch = "main"
 upload_to_pypi = true
 build_command = "pip install poetry && poetry build"
 
