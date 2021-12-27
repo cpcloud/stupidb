@@ -1,48 +1,40 @@
+name: Update requirements.txt
+
 on:
   pull_request:
     paths:
       - pyproject.toml
       - poetry.lock
 
-name: Update requirements.txt
-
 jobs:
-  update:
+  update-requirements:
     runs-on: ubuntu-latest
     steps:
-      - name: generate a gh token
-        uses: tibdex/github-app-token@v1
+      - uses: tibdex/github-app-token@v1
         id: generate_token
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
 
-      - name: checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
         with:
           token: ${{ steps.generate_token.outputs.token }}
 
-      - name: setup python
-        uses: actions/setup-python@v2
+      - uses: actions/setup-python@v2
         with:
           python-version: "3.x"
 
-      - name: install poetry
-        run: pip install poetry
+      - run: pip install poetry
+      - run: poetry export --dev --without-hashes > requirements.txt
 
-      - name: generate requirements.txt
-        run: poetry export --dev --without-hashes > requirements.txt
-
-      - name: setup git credentials
-        uses: OleksiyRudenko/gha-git-credentials@v2.1
+      - uses: OleksiyRudenko/gha-git-credentials@v2.1
         with:
           token: ${{ steps.generate_token.outputs.token }}
           global: true
           name: github-actions[bot]
           email: 41898282+github-actions[bot]@users.noreply.github.com
 
-      - name: commit generated file and push to pull request
-        uses: EndBug/add-and-commit@v7
+      - uses: EndBug/add-and-commit@v7
         with:
           add: requirements.txt
           author_name: github-actions[bot]
