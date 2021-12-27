@@ -11,7 +11,6 @@ on:
 
 jobs:
   auto-rebase:
-    name: AutoRebase
     runs-on: ubuntu-latest
     steps:
       - uses: tibdex/github-app-token@v1

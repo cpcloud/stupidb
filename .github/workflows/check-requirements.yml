@@ -1,3 +1,4 @@
+name: Check requirements.txt
 on:
   push:
     branches:
@@ -10,8 +11,6 @@ on:
       - pyproject.toml
       - poetry.lock
 
-name: Check requirements.txt
-
 concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
@@ -20,19 +19,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v2
-
-      - name: setup python
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
         with:
           python-version: "3.x"
-
-      - name: install poetry
-        run: pip install poetry
-
-      - name: generate requirements.txt
-        run: poetry export --dev --without-hashes > requirements.txt
-
-      - name: check that requirements.txt is up-to-date
-        run: git diff --exit-code requirements.txt
+      - run: pip install poetry
+      - run: poetry export --dev --without-hashes > requirements.txt
+      - run: git diff --exit-code requirements.txt
