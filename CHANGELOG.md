@@ -1,3 +1,21 @@
+# [7.0.0](https://github.com/cpcloud/stupidb/compare/v6.1.1...v7.0.0) (2022-01-04)
+
+
+### Bug Fixes
+
+* **ci:** add changelog pluging to update CHANGELOG.md ([ab34566](https://github.com/cpcloud/stupidb/commit/ab34566fcccff7ece8965cbe21a435e413969246))
+* preserve environment variables needed for poetry publish ([194d7af](https://github.com/cpcloud/stupidb/commit/194d7afb20e625ef770f387b20f81e2fad923601))
+
+
+### chore
+
+* **deps:** drop support for pythons 3.7 and 3.8 ([14d05e4](https://github.com/cpcloud/stupidb/commit/14d05e401013baccc658b02259f621754af962e0))
+
+
+### BREAKING CHANGES
+
+* **deps:** Upgrade to Python >= 3.9
+
 # Release Notes
 
 <!--next-version-placeholder-->
