@@ -23,6 +23,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.7,<3.11"
 atpublic = "^2.3"
+importlib-metadata = { version = ">=4,<5", python = "<3.8" }
 toolz = "^0.11"
 pydot = { version = "^1.4.2", optional = true }
 tabulate = "^0.8.9"
@@ -44,13 +45,6 @@ sphinx-autodoc-typehints = "^1.12.0"
 
 [tool.poetry.extras]
 animation = ["pydot"]
-
-[tool.semantic_release]
-version_toml = "pyproject.toml:tool.poetry.version"
-version_variable = ["stupidb/__init__.py:__version__", "docs/conf.py:version"]
-branch = "main"
-upload_to_pypi = true
-build_command = "pip install poetry && poetry build"
 
 [tool.pytest.ini_options]
 xfail_strict = true

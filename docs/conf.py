@@ -18,11 +18,8 @@
 # absolute, like shown here.
 #
 import datetime
-import os
-import sys
 
-sys.path.insert(0, os.path.abspath(".."))
-
+import stupidb
 
 # -- General configuration ---------------------------------------------
 
@@ -69,7 +66,7 @@ copyright = f"{datetime.date.today().year:d}, {author}"
 # the built documents.
 #
 # The short X.Y version.
-version = "6.1.0"
+version = stupidb.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 

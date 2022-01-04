@@ -192,6 +192,7 @@
           stupidbDevEnv310
         ];
         shellHook = self.checks.${system}.pre-commit-check.shellHook;
+        PYTHONPATH = builtins.toPath ./.;
       };
     }));
 }

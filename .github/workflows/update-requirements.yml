@@ -31,13 +31,13 @@ jobs:
         with:
           token: ${{ steps.generate_token.outputs.token }}
           global: true
-          name: github-actions[bot]
-          email: 41898282+github-actions[bot]@users.noreply.github.com
+          name: phillip-ground[bot]
+          email: phillip-ground[bot]@users.noreply.github.com
 
       - uses: EndBug/add-and-commit@v7
         with:
           add: requirements.txt
-          author_name: github-actions[bot]
-          author_email: 41898282+github-actions[bot]@users.noreply.github.com
+          author_name: phillip-ground[bot]
+          author_email: phillip-ground[bot]@users.noreply.github.com
           message: "chore(requirements.txt): update"
           push: true
