@@ -1,3 +1,5 @@
+# Release Notes
+
 # [7.0.0](https://github.com/cpcloud/stupidb/compare/v6.1.1...v7.0.0) (2022-01-04)
 
 
@@ -15,10 +17,6 @@
 ### BREAKING CHANGES
 
 * **deps:** Upgrade to Python >= 3.9
-
-# Release Notes
-
-<!--next-version-placeholder-->
 
 ## [6.1.1](https://github.com/cpcloud/stupidb/compare/v6.1.0...v6.1.1) (2022-01-04)
 
