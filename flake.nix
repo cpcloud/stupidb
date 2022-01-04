@@ -136,6 +136,7 @@
               enable = true;
               entry = "${pkgs.shellcheck}/bin/shellcheck";
               files = "\\.sh$";
+              types_or = [ "file" ];
             };
 
             shfmt = {
