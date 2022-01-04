@@ -2,5 +2,6 @@
   "extends": ["config:base"],
   "lockFileMaintenance": { "enabled": true },
   "automerge": true,
-  "enabledManagers": ["github-actions", "poetry"]
+  "enabledManagers": ["github-actions", "poetry"],
+  "labels": ["dependencies"]
 }
