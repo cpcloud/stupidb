@@ -45,7 +45,7 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,poetry2nix
 
-      - run: nix develop -L --keep-going -c pre-commit run --all-files
+      - run: nix develop --ignore-environment -L --keep-going -c pre-commit run --all-files
   nix:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -83,7 +83,7 @@ jobs:
           name: stupidb
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,poetry2nix
-      - run: nix develop -L --keep-going -c make -C docs doctest
+      - run: nix develop --ignore-environment -L --keep-going -c make -C docs doctest
   docbuild:
     runs-on: ubuntu-latest
     steps:
@@ -96,7 +96,7 @@ jobs:
           name: stupidb
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,poetry2nix
-      - run: nix develop -L --keep-going -c make -C docs html
+      - run: nix develop --ignore-environment -L --keep-going -c make -C docs html
   windows:
     runs-on: windows-latest
     strategy:
