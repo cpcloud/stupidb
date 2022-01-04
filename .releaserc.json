@@ -8,9 +8,10 @@
     [
       "@semantic-release/exec",
       {
-        "verifyConditionsCmd": "poetry check",
-        "prepareCmd": "poetry version ${nextRelease.version} && poetry build",
-        "publishCmd": "poetry publish"
+        "verifyConditionsCmd": "ci/release/verify.sh",
+        "prepareCmd": "ci/release/prepare.sh",
+        "verifyReleaseCmd": "ci/release/publish.sh --dry-run",
+        "publishCmd": "ci/release/publish.sh"
       }
     ],
     [
