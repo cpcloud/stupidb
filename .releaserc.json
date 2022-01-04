@@ -9,7 +9,6 @@
       {
         "verifyConditionsCmd": "ci/release/verify.sh",
         "prepareCmd": "ci/release/prepare.sh ${nextRelease.version}",
-        "verifyReleaseCmd": "ci/release/publish.sh --dry-run",
         "publishCmd": "ci/release/publish.sh"
       }
     ],

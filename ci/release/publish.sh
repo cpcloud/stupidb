@@ -4,4 +4,4 @@
 
 set -euo pipefail
 
-poetry publish "$@"
+poetry publish
