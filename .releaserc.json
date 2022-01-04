@@ -4,14 +4,19 @@
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
-    "@semantic-release/github",
     [
       "@semantic-release/exec",
       {
         "verifyConditionsCmd": "ci/release/verify.sh",
         "prepareCmd": "ci/release/prepare.sh ${nextRelease.version}",
-        "verifyReleaseCmd": "ci/release/publish.sh true",
-        "publishCmd": "ci/release/publish.sh true ${dryRun}"
+        "verifyReleaseCmd": "ci/release/publish.sh --dry-run",
+        "publishCmd": "ci/release/publish.sh"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": ["dist/*.whl"]
       }
     ],
     [
