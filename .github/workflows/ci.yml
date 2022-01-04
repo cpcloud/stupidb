@@ -123,8 +123,6 @@ jobs:
       - nix
       - windows
       - pre-commit
-    concurrency: release
-    if: ${{ github.event_name == 'push' }}
     steps:
       - uses: tibdex/github-app-token@v1
         id: generate_token
@@ -137,7 +135,31 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.generate_token.outputs.token }}
 
-      - uses: relekang/python-semantic-release@v7.23.0
+      - name: setup nodejs
+        uses: actions/setup-node@v2
         with:
-          github_token: ${{ steps.generate_token.outputs.token }}
-          pypi_token: ${{ secrets.PYPI_TOKEN }}
+          node-version: 16
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - run: pip install poetry
+
+      - name: run semantic-release
+        run: |
+          set -euo pipefail
+
+          npx \
+            -p semantic-release \
+            -p "@semantic-release/commit-analyzer" \
+            -p "@semantic-release/release-notes-generator" \
+            -p "@semantic-release/github" \
+            -p "@semantic-release/exec"\
+            -p "@semantic-release/git" \
+            semantic-release \
+            --ci
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+          GIT_CREDENTIALS: ${{ steps.generate_token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
