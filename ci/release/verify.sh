@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#!nix-shell --pure -p poetry -p git -i bash
+#!nix-shell --pure --keep POETRY_PYPI_TOKEN_PYPI -p poetry -p git -i bash
 # shellcheck shell=bash
 
 set -euo pipefail
