@@ -1,5 +1,12 @@
 # Release Notes
 
+## [7.0.1](https://github.com/cpcloud/stupidb/compare/v7.0.0...v7.0.1) (2022-01-04)
+
+
+### Bug Fixes
+
+* ensure release notes are generated properly ([8a35d00](https://github.com/cpcloud/stupidb/commit/8a35d00dc61f6f1062ade2546654a94b3bd75fa9))
+
 # [7.0.0](https://github.com/cpcloud/stupidb/compare/v6.1.1...v7.0.0) (2022-01-04)
 
 
