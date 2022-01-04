@@ -15,15 +15,13 @@ classifiers = [
   "Intended Audience :: Developers",
   "License :: OSI Approved :: Apache Software License",
   "Natural Language :: English",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.7,<3.11"
+python = ">=3.9,<3.11"
 atpublic = "^2.3"
-importlib-metadata = { version = ">=4,<5", python = "<3.8" }
 toolz = "^0.11"
 pydot = { version = "^1.4.2", optional = true }
 tabulate = "^0.8.9"

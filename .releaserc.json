@@ -9,9 +9,9 @@
       "@semantic-release/exec",
       {
         "verifyConditionsCmd": "ci/release/verify.sh",
-        "prepareCmd": "ci/release/prepare.sh",
-        "verifyReleaseCmd": "ci/release/publish.sh --dry-run",
-        "publishCmd": "ci/release/publish.sh"
+        "prepareCmd": "ci/release/prepare.sh ${nextRelease.version}",
+        "verifyReleaseCmd": "ci/release/publish.sh true",
+        "publishCmd": "ci/release/publish.sh true ${dryRun}"
       }
     ],
     [

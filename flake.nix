@@ -52,6 +52,7 @@
             --plugin-search-dir "${pkgs.nodePackages.prettier-plugin-toml}/lib" \
             "$@"
           '';
+          stupidbDevEnv = pkgs.stupidbDevEnv310;
         } // (super.lib.listToAttrs (
           super.lib.concatMap
             (py:
@@ -98,7 +99,7 @@
                   };
                 }
               ])
-            [ "3.7" "3.8" "3.9" "3.10" ]
+            [ "3.9" "3.10" ]
         )))
       ];
     } // (flake-utils.lib.eachDefaultSystem (system:
@@ -110,8 +111,6 @@
       inherit (pkgs) lib;
     in
     rec {
-      packages.stupidb37 = pkgs.stupidb37;
-      packages.stupidb38 = pkgs.stupidb38;
       packages.stupidb39 = pkgs.stupidb39;
       packages.stupidb310 = pkgs.stupidb310;
       packages.stupidb = packages.stupidb310;
@@ -153,26 +152,35 @@
 
             black = {
               enable = true;
-              entry = lib.mkForce "${pkgs.stupidbDevEnv310}/bin/black --check";
+              entry = lib.mkForce "${pkgs.stupidbDevEnv}/bin/black --check";
               types = [ "python" ];
             };
 
             isort = {
               enable = true;
-              entry = lib.mkForce "${pkgs.stupidbDevEnv310}/bin/isort --check";
+              entry = lib.mkForce "${pkgs.stupidbDevEnv}/bin/isort --check";
               types_or = [ "pyi" "python" ];
             };
 
             flake8 = {
               enable = true;
-              entry = "${pkgs.stupidbDevEnv310}/bin/flake8";
+              entry = "${pkgs.stupidbDevEnv}/bin/flake8";
               types = [ "python" ];
             };
 
             pyupgrade = {
               enable = true;
-              entry = "${pkgs.stupidbDevEnv310}/bin/pyupgrade --py37-plus";
+              entry = "${pkgs.stupidbDevEnv}/bin/pyupgrade --py37-plus";
               types = [ "python" ];
+            };
+
+            poetry = {
+              enable = true;
+              entry = "${pkgs.poetry}/bin/poetry check";
+              pass_filenames = false;
+              files = "pyproject\\.toml";
+              types = [ "file" ];
+              types_or = [ "file" ];
             };
           };
         };

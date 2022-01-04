@@ -56,8 +56,6 @@ jobs:
           - macos-11
           - ubuntu-latest
         python-version:
-          - "37"
-          - "38"
           - "39"
           - "310"
     steps:
@@ -102,8 +100,6 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.7"
-          - "3.8"
           - "3.9"
           - "3.10"
     steps:
@@ -150,6 +146,7 @@ jobs:
           node-version: 16
 
       - name: run semantic-release
+        if: ${{ github.event_name != 'pull_request' }}
         run: |
           set -euo pipefail
 
@@ -163,6 +160,29 @@ jobs:
             -p "@semantic-release/git" \
             semantic-release \
             --ci
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+          GIT_CREDENTIALS: ${{ steps.generate_token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: run semantic-release
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          set -euo pipefail
+
+          npx \
+            -p semantic-release \
+            -p "@semantic-release/commit-analyzer" \
+            -p "@semantic-release/release-notes-generator" \
+            -p "@semantic-release/changelog" \
+            -p "@semantic-release/github" \
+            -p "@semantic-release/exec"\
+            -p "@semantic-release/git" \
+            semantic-release \
+              --no-ci \
+              --branches "${{ github.head_ref }}" \
+              --repository-url "file://$PWD" \
+              --dry-run
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
           GIT_CREDENTIALS: ${{ steps.generate_token.outputs.token }}
