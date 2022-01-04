@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## [6.1.1](https://github.com/cpcloud/stupidb/compare/v6.1.0...v6.1.1) (2022-01-04)
+
+
+### Bug Fixes
+
+* run with plain semantic-release using semantic-release/exec ([71c207e](https://github.com/cpcloud/stupidb/commit/71c207eb893f61061c57872b124be70c95453651))
+
 ## v6.1.0 (2021-12-17)
 ### Feature
 * Add support for python 3.10 ([`36bd5fd`](https://github.com/cpcloud/stupidb/commit/36bd5fd3f12a55e3c61a532a649e76f8a5994fd2))
