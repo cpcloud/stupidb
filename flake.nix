@@ -189,7 +189,6 @@
       devShell = pkgs.mkShell {
         name = "stupidb";
         nativeBuildInputs = with pkgs; [
-          cz-cli
           git
           graphviz-nox
           imagemagick
