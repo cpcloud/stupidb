@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "stupidb"
-version = "7.0.1"
+version = "7.0.2"
 packages = [{ include = "stupidb" }]
 homepage = "https://github.com/cpcloud/stupidb"
 repository = "https://github.com/cpcloud/stupidb"

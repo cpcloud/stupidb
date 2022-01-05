@@ -1,5 +1,12 @@
 # Release Notes
 
+## [7.0.2](https://github.com/cpcloud/stupidb/compare/v7.0.1...v7.0.2) (2022-01-05)
+
+
+### Bug Fixes
+
+* add dry run semantic-release and move to shell scripts ([03c6930](https://github.com/cpcloud/stupidb/commit/03c69300c93f340042086069b672f4b1956c1072))
+
 ## [7.0.1](https://github.com/cpcloud/stupidb/compare/v7.0.0...v7.0.1) (2022-01-04)
 
 
