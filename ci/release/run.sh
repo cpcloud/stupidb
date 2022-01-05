@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#!nix-shell --pure --keep GITHUB_TOKEN --keep POETRY_PYPI_TOKEN_PYPI -p cacert poetry git nodejs -i bash
+#!nix-shell --pure --keep GITHUB_ACTIONS --keep GITHUB_TOKEN --keep POETRY_PYPI_TOKEN_PYPI -p cacert poetry git nodejs nix -i bash
 # shellcheck shell=bash
 
 set -euo pipefail
