@@ -140,26 +140,13 @@ jobs:
           name: stupidb
           extraPullNames: nix-community,poetry2nix
 
-      - name: setup nodejs
-        uses: actions/setup-node@v2
-        with:
-          node-version: 16
+      - name: dry run semantic-release
+        if: ${{ github.event_name == 'pull_request' }}
+        run: ./ci/release/dry_run.sh
 
       - name: run semantic-release
-        run: |
-          set -euo pipefail
-
-          npx \
-            -p semantic-release \
-            -p "@semantic-release/commit-analyzer" \
-            -p "@semantic-release/release-notes-generator" \
-            -p "@semantic-release/changelog" \
-            -p "@semantic-release/github" \
-            -p "@semantic-release/exec"\
-            -p "@semantic-release/git" \
-            semantic-release \
-            --ci
+        if: ${{ github.event_name != 'pull_request' }}
+        run: ./ci/release/run.sh
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
-          GIT_CREDENTIALS: ${{ steps.generate_token.outputs.token }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
