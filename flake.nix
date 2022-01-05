@@ -193,6 +193,7 @@
           graphviz-nox
           imagemagick
           nix-linter
+          nodejs
           poetry
           prettierTOML
           shellcheck
