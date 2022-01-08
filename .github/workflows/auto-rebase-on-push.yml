@@ -10,19 +10,13 @@ jobs:
     outputs:
       matrix: ${{ steps.get-open-prs.outputs.open-prs }}
     steps:
-      - uses: tibdex/github-app-token@v1
-        id: generate_token
-        with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
-
       - run: |
           set -euo pipefail
 
-          open_prs="$(gh api --paginate "repos/cpcloud/stupidb/pulls?per_page=100&state=open" --jq '.[] | select(.labels[].name == "autorebase:opt-in") | .number')" | jq -srcM '{pr: .}'
+          open_prs="$(gh api --paginate "repos/${{ github.repository }}/pulls?per_page=100&state=open" --jq '.[] | select(.labels[].name == "autorebase:opt-in") | .number')" | jq -srcM '{pr: .}'
           echo "::set-output name=matrix::$open_prs"
         env:
-          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   auto-rebase:
     runs-on: ubuntu-latest
