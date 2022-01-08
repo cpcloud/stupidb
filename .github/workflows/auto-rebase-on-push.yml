@@ -1,0 +1,42 @@
+name: Automatic Rebase on Push
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  get-open-prs:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.get-open-prs.outputs.open-prs }}
+    needs:
+      - get-open-prs
+    steps:
+      - run: |
+          set -euo pipefail
+
+          open_prs="$(gh api --paginate "repos/cpcloud/stupidb/pulls?per_page=100&state=open" --jq '.[] | select(.labels[].name == "autorebase:opt-in") | .number')"
+          echo "::set-output name=matrix::$open_prs"
+
+  auto-rebase:
+    runs-on: ubuntu-latest
+    needs:
+      - get-open-prs
+    strategy:
+      matrix: ${{ fromJSON(needs.get-open-prs.outputs.matrix) }}
+    steps:
+      - uses: tibdex/github-app-token@v1
+        id: generate_token
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # otherwise, you will fail to push refs to dest repo
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - uses: cirrus-actions/rebase@1.5
+        env:
+          PR_NUMBER: ${{ matrix.pr }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
