@@ -8,12 +8,13 @@ jobs:
   get-open-prs:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.get-open-prs.outputs.open-prs }}
+      matrix: ${{ steps.get-open-prs.outputs.matrix }}
     steps:
       - run: |
           set -euo pipefail
 
           open_prs="$(gh api --paginate "repos/${{ github.repository }}/pulls?per_page=100&state=open" --jq '.[] | select(.labels[].name == "autorebase:opt-in") | .number' | jq -srcM '{pr: .}')"
+          echo "$open_prs"
           echo "::set-output name=matrix::$open_prs"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
