@@ -108,7 +108,7 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - run: choco install graphviz imagemagick.tool
+      - run: choco install graphviz imagemagick
       - run: pip install poetry
       - run: poetry install --extras animation
       - run: poetry run pytest --numprocesses auto
