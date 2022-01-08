@@ -5,6 +5,12 @@ on:
       - created
 
 jobs:
+  show-comment-author-association:
+    if: ${{ github.event.issue.pull_request != '' && github.event.comment.body == '/rebase' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ${{ github.event.comment.author_association }}
+
   auto-rebase:
     if: ${{ github.event.issue.pull_request != '' && github.event.comment.body == '/rebase' && (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER') }}
     runs-on: ubuntu-latest
