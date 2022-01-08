@@ -9,8 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.get-open-prs.outputs.open-prs }}
-    needs:
-      - get-open-prs
     steps:
       - run: |
           set -euo pipefail
