@@ -98,6 +98,7 @@ jobs:
   windows:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version:
           - "3.9"
@@ -107,7 +108,7 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - run: choco install graphviz imagemagick
+      - run: choco install graphviz imagemagick.tool
       - run: pip install poetry
       - run: poetry install --extras animation
       - run: poetry run pytest --numprocesses auto
