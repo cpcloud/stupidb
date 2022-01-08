@@ -13,7 +13,7 @@ jobs:
       - run: |
           set -euo pipefail
 
-          open_prs="$(gh api --paginate "repos/${{ github.repository }}/pulls?per_page=100&state=open" --jq '.[] | select(.labels[].name == "autorebase:opt-in") | .number')" | jq -srcM '{pr: .}'
+          open_prs="$(gh api --paginate "repos/${{ github.repository }}/pulls?per_page=100&state=open" --jq '.[] | select(.labels[].name == "autorebase:opt-in") | .number' | jq -srcM '{pr: .}')"
           echo "::set-output name=matrix::$open_prs"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
