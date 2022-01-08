@@ -6,7 +6,7 @@ on:
 
 jobs:
   auto-rebase:
-    if: ${{ github.event.issue.pull_request != '' && github.event.comment.body == '/rebase' && github.event.comment.author_association == 'MEMBER' }}
+    if: ${{ github.event.issue.pull_request != '' && github.event.comment.body == '/rebase' && (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER') }}
     runs-on: ubuntu-latest
     steps:
       - uses: tibdex/github-app-token@v1
