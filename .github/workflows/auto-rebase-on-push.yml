@@ -10,7 +10,8 @@ jobs:
     outputs:
       matrix: ${{ steps.get-open-prs.outputs.matrix }}
     steps:
-      - run: |
+      - id: get-open-prs
+        run: |
           set -euo pipefail
 
           open_prs="$(gh api --paginate "repos/${{ github.repository }}/pulls?per_page=100&state=open" --jq '.[] | select(.labels[].name == "autorebase:opt-in") | .number' | jq -srcM '{pr: .}')"
@@ -24,7 +25,8 @@ jobs:
     needs:
       - get-open-prs
     strategy:
-      matrix: ${{ fromJSON(needs.get-open-prs.outputs.matrix) }}
+      fail-fast: false
+      matrix: ${{ fromJson(needs.get-open-prs.outputs.matrix) }}
     steps:
       - uses: tibdex/github-app-token@v1
         id: generate_token
