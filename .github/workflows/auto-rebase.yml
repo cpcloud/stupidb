@@ -1,12 +1,16 @@
 name: Automatic Rebase
 on:
-  issue_comment:
+  push:
+    branches-ignore:
+      # Ignore branches automatically created by github-rebase
+      - rebase-pull-request**
+      - cherry-pick-rebase-pull-request**
+  pull_request_target:
     types:
-      - created
-
+      - labeled
 jobs:
   auto-rebase:
-    if: ${{ github.event.issue.pull_request != '' && github.event.comment.body == '/rebase' && (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER' || github.event.comment.user.login == 'phillip-ground[bot]') }}
+    name: AutoRebase
     runs-on: ubuntu-latest
     steps:
       - uses: tibdex/github-app-token@v1
@@ -15,12 +19,6 @@ jobs:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v2
+      - uses: Label305/AutoRebase@v0.1
         with:
-          fetch-depth: 0 # otherwise, you will fail to push refs to dest repo
-          token: ${{ steps.generate_token.outputs.token }}
-
-      - uses: cirrus-actions/rebase@1.5
-        env:
-          PR_NUMBER: ${{ github.event.issue.number }}
-          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+          github_token: ${{ steps.generate_token.outputs.token }}
