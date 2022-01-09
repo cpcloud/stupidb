@@ -52,8 +52,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-10.15
-          - macos-11
+          - macos-latest
           - ubuntu-latest
         python-version:
           - "39"
@@ -105,14 +104,27 @@ jobs:
           - "3.10"
     steps:
       - uses: actions/checkout@v2
+
       - uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: ${{ matrix.python-version }}
+
+      - uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
+
+      - uses: syphar/restore-pip-download-cache@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
+
       - run: choco install graphviz imagemagick
       - run: pip install poetry
       - run: poetry install --extras animation
       - run: poetry run pytest --numprocesses auto
-
   dry-run-release:
     runs-on: ubuntu-latest
     steps:
@@ -131,7 +143,6 @@ jobs:
 
       - name: dry run semantic-release
         run: ./ci/release/dry_run.sh
-
   release:
     runs-on: ubuntu-latest
     needs:
