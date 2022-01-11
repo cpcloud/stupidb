@@ -1,6 +1,6 @@
 alabaster==0.7.12; python_version >= "3.7"
 atomicwrites==1.4.0; python_version >= "3.6" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.6" and python_full_version >= "3.4.0"
-atpublic==2.3; python_version >= "3.6"
+atpublic==3.0.1; python_version >= "3.7"
 attrs==21.4.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 babel==2.9.1; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
 black==21.9b0; python_full_version >= "3.6.2"
