@@ -1,5 +1,12 @@
 # Release Notes
 
+## [7.0.3](https://github.com/cpcloud/stupidb/compare/v7.0.2...v7.0.3) (2022-01-12)
+
+
+### Bug Fixes
+
+* refactor ci ([f3e598f](https://github.com/cpcloud/stupidb/commit/f3e598ff791cc859b93852bfec8495a9e26149d3))
+
 ## [7.0.2](https://github.com/cpcloud/stupidb/compare/v7.0.1...v7.0.2) (2022-01-05)
 
 
