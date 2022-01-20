@@ -34,7 +34,7 @@ jobs:
           name: phillip-ground[bot]
           email: phillip-ground[bot]@users.noreply.github.com
 
-      - uses: EndBug/add-and-commit@v7
+      - uses: EndBug/add-and-commit@v8
         with:
           add: requirements.txt
           author_name: phillip-ground[bot]
