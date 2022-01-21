@@ -1,5 +1,12 @@
 # Release Notes
 
+## [7.0.4](https://github.com/cpcloud/stupidb/compare/v7.0.3...v7.0.4) (2022-01-21)
+
+
+### Reverts
+
+* ci: delete auto release for next release ([086ab58](https://github.com/cpcloud/stupidb/commit/086ab58d218886dcc8a18b1a53782fa6046ac274))
+
 ## [7.0.3](https://github.com/cpcloud/stupidb/compare/v7.0.2...v7.0.3) (2022-01-12)
 
 
