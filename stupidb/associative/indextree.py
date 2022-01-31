@@ -44,7 +44,7 @@ def reprtree(nodes: Sequence[T], *, fanout: int, indent: str = 4 * " ") -> str:
 
 def first_node(level: int, *, fanout: int) -> int:
     """Return the first node at `level`."""
-    return (fanout ** level - 1) // (fanout - 1)
+    return (fanout**level - 1) // (fanout - 1)
 
 
 def last_node(level: int, *, fanout: int) -> int:
@@ -61,7 +61,7 @@ class IndexTree:
         """Construct an :class:`~stupidb.associative.indextree.IndexTree`."""
         self.height = height
         self.fanout = fanout
-        self.nodes = range((fanout ** height - 1) // (fanout - 1))
+        self.nodes = range((fanout**height - 1) // (fanout - 1))
 
     @property
     def leaves(self) -> range:
