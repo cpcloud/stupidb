@@ -16,16 +16,15 @@ theme:
     - search.suggest
   icon:
     repo: fontawesome/brands/github
-  # logo: static/img/logo_ibis.svg
-  # favicon: static/img/favicon.ico
   palette:
     scheme: slate
     primary: black
     accent: lime
 plugins:
   - search
-  - macros
   - autorefs
+  - awesome-pages
+  - macros
   - mkdocstrings:
       enable_inventory: true
       handlers:
@@ -39,18 +38,15 @@ plugins:
             show_root_full_path: false
             show_root_heading: true
             show_root_toc_entry: true
-            show_source: false
+            show_source: true
 markdown_extensions:
   - admonition
   - attr_list
   - def_list
-  - md_in_html # used for the hero image
-  - meta
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.highlight
-  - pymdownx.inlinehilite
   - pymdownx.saneheaders
   - pymdownx.superfences
   - pymdownx.tabbed:
@@ -58,12 +54,12 @@ markdown_extensions:
   - tables
   - toc
 nav:
-  - Home: index.md
-  - API Reference: api.md
-
+  - index.md
+  - installation.md
+  - usage.md
+  - api.md
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/cpcloud/stupidb
-
 copyright: "Copyright &copy; 2014-2022, Phillip Cloud"

@@ -46,6 +46,7 @@ mkdocs-macros-plugin = "^0.6.4"
 mkdocs-material = "^8.1.9"
 pymdown-extensions = "^9.1"
 pytkdocs = { extras = ["numpy-style"], version = "^0.15.0" }
+mkdocs-awesome-pages-plugin = "^2.6.1"
 
 [tool.poetry.extras]
 animation = ["pydot"]
