@@ -27,26 +27,24 @@ pydot = { version = "^1.4.2", optional = true }
 tabulate = "^0.8.9"
 
 [tool.poetry.dev-dependencies]
-Sphinx = "^4.2.0"
 black = "22.1.0"
 coverage = "^6"
 flake8 = "^4.0.1"
 isort = "^5.9.3"
+mkdocs = "^1.2.3"
+mkdocs-awesome-pages-plugin = "^2.6.1"
+mkdocs-macros-plugin = "^0.6.4"
+mkdocs-material = "^8.1.9"
+mkdocstrings = "^0.17.0"
 mypy = "^0.931"
 pydocstyle = "^6.1.1"
+pymdown-extensions = "^9.1"
 pytest = "^6.2.5"
 pytest-cov = "^3.0.0"
 pytest-randomly = "^3.10.1"
 pytest-xdist = "^2.3.0"
-pyupgrade = "^2.28.1"
-sphinx-autodoc-typehints = "^1.12.0"
-mkdocs = "^1.2.3"
-mkdocstrings = "^0.17.0"
-mkdocs-macros-plugin = "^0.6.4"
-mkdocs-material = "^8.1.9"
-pymdown-extensions = "^9.1"
 pytkdocs = { extras = ["numpy-style"], version = "^0.15.0" }
-mkdocs-awesome-pages-plugin = "^2.6.1"
+pyupgrade = "^2.28.1"
 
 [tool.poetry.extras]
 animation = ["pydot"]
