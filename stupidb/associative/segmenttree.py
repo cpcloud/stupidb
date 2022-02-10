@@ -24,10 +24,12 @@ def make_segment_tree(
 
     Parameters
     ----------
-    leaves
+    leaf_arguments
         A sequence of tuples that make up the leaves of the segment tree
     aggregate_type
         The aggregate class whose instances compose the tree.
+    fanout
+        Tree fanout
 
     """
     number_of_leaves = len(leaf_arguments)

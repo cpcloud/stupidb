@@ -298,38 +298,38 @@ class RangeMode(FrameClause):
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_values: OrderingKey | None,
+        current_row_order_by_value: OrderingKey | None,
         order_by_values: Sequence[OrderingKey],
     ) -> int:  # noqa: D102
         assert (
-            current_row_order_by_values is not None
+            current_row_order_by_value is not None
         ), "current_row_order_by_value is None"
         preceding = self.preceding
         assert preceding is not None, "preceding function is None"
-        if not current_row_order_by_values:
+        if not current_row_order_by_value:
             return 0
-        assert len(current_row_order_by_values) == 1
-        (current_row_order_by_value,) = current_row_order_by_values
-        value_to_find = current_row_order_by_value - preceding(current_row)
+        assert len(current_row_order_by_value) == 1
+        (current_row_order_by_val,) = current_row_order_by_value
+        value_to_find = current_row_order_by_val - preceding(current_row)
         return bisect.bisect_left(order_by_values, (value_to_find,))
 
     def find_partition_end(
         self,
         current_row: AbstractRow,
         row_id_in_partition: int,
-        current_row_order_by_values: OrderingKey | None,
+        current_row_order_by_value: OrderingKey | None,
         order_by_values: Sequence[OrderingKey],
     ) -> int:  # noqa: D102
         assert (
-            current_row_order_by_values is not None
-        ), "current_row_order_by_values is None"
+            current_row_order_by_value is not None
+        ), "current_row_order_by_value is None"
         following = self.following
         assert following is not None, "following function is None"
-        if not current_row_order_by_values:
+        if not current_row_order_by_value:
             return len(order_by_values)
-        assert len(current_row_order_by_values) == 1
-        (current_row_order_by_value,) = current_row_order_by_values
-        value_to_find = current_row_order_by_value + following(current_row)
+        assert len(current_row_order_by_value) == 1
+        (current_row_order_by_val,) = current_row_order_by_value
+        value_to_find = current_row_order_by_val + following(current_row)
         return bisect.bisect_right(order_by_values, (value_to_find,))
 
 
@@ -455,14 +455,20 @@ def make_key_func(
     """Make a function usable with the key argument to sorting functions.
 
     This return value of this function can be passed to
-    :func:`sorted`/:meth:`list.sort`.
+    [`sorted`][sorted]/[`list.sort`][list.sort].
 
     Parameters
     ----------
-    order_by_columns
+    order_func
         A sequence of :class:`str` instances referring to the keys of an
         :class:`~stupidb.row.AbstractRow`.
+    nulls
+        How to order null values
 
+    Returns
+    -------
+    Callable[[AbstractRow], OrderingKey[T]]
+        A function for sorting rows
     """
     return functools.cmp_to_key(functools.partial(row_key_compare, order_func, nulls))
 

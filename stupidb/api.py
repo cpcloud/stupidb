@@ -364,12 +364,12 @@ def mutate(**mutators: Projector | WindowAggregateSpecification) -> Mutate:
 
     Parameters
     ----------
-    projectors
-        A mapping from :class:`str` to :data:`FullProjector` instances.
+    mutators
+        A mapping from [`str`][str] to `Projector` instances.
 
     Notes
     -----
-    Columns are appended, unlike :func:`~stupidb.api.select`.
+    Columns are appended, unlike [`stupidb.api.select`][stupidb.api.select].
 
     Examples
     --------

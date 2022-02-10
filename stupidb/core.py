@@ -96,9 +96,10 @@ class Projection(Relation):
 
     Attributes
     ----------
-    child
     aggregations
+        Aggregations
     projections
+        Additional projections
 
     """
 
@@ -254,6 +255,8 @@ class GroupBy(Relation):
     group_by
         A callable that takes an :class:`~stupidb.row.AbstractRow` and returns
         an instance of :class:`typing.Hashable`.
+    partitioners
+        Functions that partition the data
 
     """
 
