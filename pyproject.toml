@@ -28,11 +28,11 @@ tabulate = "^0.8.9"
 
 [tool.poetry.dev-dependencies]
 Sphinx = "^4.2.0"
-black = "22.1.0"
+black = "^22"
 coverage = "^6"
 flake8 = "^4.0.1"
 isort = "^5.9.3"
-mypy = "^0.931"
+mypy = "^0.950"
 pydocstyle = "^6.1.1"
 pytest = "^7.0.0"
 pytest-cov = "^3.0.0"
