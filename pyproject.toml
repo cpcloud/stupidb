@@ -28,7 +28,7 @@ tabulate = "^0.8.9"
 
 [tool.poetry.dev-dependencies]
 Sphinx = "^4.2.0"
-black = "22.1.0"
+black = "22.3.0"
 coverage = "^6"
 flake8 = "^4.0.1"
 isort = "^5.9.3"
