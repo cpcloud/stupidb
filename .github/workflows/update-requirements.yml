@@ -40,4 +40,4 @@ jobs:
           author_name: phillip-ground[bot]
           author_email: phillip-ground[bot]@users.noreply.github.com
           message: "chore(requirements.txt): update"
-          push: true
+          push: origin HEAD:${{ github.head_ref }}
