@@ -1,5 +1,7 @@
-{ ... }: _: pysuper: {
-  tabulate = pysuper.tabulate.overridePythonAttrs (_: {
-    TABULATE_INSTALL = "lib-only";
+{ ... }: _: super: {
+  tabulate = super.tabulate.overridePythonAttrs (_: {
+    preBuild = ''
+      export TABULATE_INSTALL="lib-only"
+    '';
   });
 }
