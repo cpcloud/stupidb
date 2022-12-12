@@ -2,9 +2,12 @@
   description = "The stupidest of all databases";
 
   inputs = {
-    flake-utils = {
-      url = "github:numtide/flake-utils";
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
     };
+
+    flake-utils.url = "github:numtide/flake-utils";
 
     gitignore = {
       url = "github:hercules-ci/gitignore.nix";
@@ -30,14 +33,7 @@
     };
   };
 
-  outputs =
-    { self
-    , flake-utils
-    , gitignore
-    , nixpkgs
-    , poetry2nix
-    , pre-commit-hooks
-    }:
+  outputs = { self, flake-utils, gitignore, nixpkgs, poetry2nix, pre-commit-hooks, ... }:
     {
       overlay = nixpkgs.lib.composeManyExtensions [
         poetry2nix.overlay
@@ -99,66 +95,63 @@
         )))
       ];
     } // (flake-utils.lib.eachDefaultSystem (system:
-    let
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [ self.overlay ];
-      };
-      inherit (pkgs) lib;
-    in
-    rec {
-      packages.stupidb39 = pkgs.stupidb39;
-      packages.stupidb310 = pkgs.stupidb310;
-      packages.stupidb = packages.stupidb310;
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ self.overlay ];
+        };
+        inherit (pkgs) lib;
+      in
+      rec {
+        packages.stupidb39 = pkgs.stupidb39;
+        packages.stupidb310 = pkgs.stupidb310;
+        packages.stupidb = packages.stupidb310;
 
-      defaultPackage = packages.stupidb;
+        defaultPackage = packages.stupidb;
 
-      checks = {
-        pre-commit-check = pre-commit-hooks.lib.${system}.run {
-          src = ./.;
-          hooks = {
-            black.enable = true;
-            flake8.enable = true;
-            isort.enable = true;
-            nix-linter.enable = true;
-            nixpkgs-fmt.enable = true;
-            shellcheck.enable = true;
-            shfmt.enable = true;
+        checks = {
+          pre-commit-check = pre-commit-hooks.lib.${system}.run {
+            src = ./.;
+            hooks = {
+              black.enable = true;
+              flake8.enable = true;
+              isort.enable = true;
+              nix-linter.enable = true;
+              nixpkgs-fmt.enable = true;
+              shellcheck.enable = true;
+              shfmt.enable = true;
 
-            prettier = {
-              enable = true;
-              entry = lib.mkForce "${pkgs.prettierTOML}/bin/prettier --check";
-              types_or = [ "json" "toml" "yaml" ];
-            };
+              prettier = {
+                enable = true;
+                entry = lib.mkForce "${pkgs.prettierTOML}/bin/prettier --check";
+                types_or = [ "json" "toml" "yaml" ];
+              };
 
-            pyupgrade = {
-              enable = true;
-              entry = "pyupgrade --py37-plus";
-              types = [ "python" ];
+              pyupgrade = {
+                enable = true;
+                entry = "pyupgrade --py37-plus";
+                types = [ "python" ];
+              };
             };
           };
         };
-      };
 
-      devShell = pkgs.mkShell {
-        name = "stupidb";
-        nativeBuildInputs = with pkgs; [
-          git
-          graphviz-nox
-          imagemagick
-          nix-linter
-          nodejs
-          poetry
-          prettierTOML
-          shellcheck
-          shfmt
-          stupidbDevEnv310
-        ];
+        devShell = pkgs.mkShell {
+          name = "stupidb";
+          nativeBuildInputs = with pkgs; [
+            git
+            graphviz-nox
+            imagemagick
+            nodejs
+            poetry
+            prettierTOML
+            stupidbDevEnv310
+          ];
 
-        shellHook = ''
-          ${self.checks.${system}.pre-commit-check.shellHook}
-          export PYTHONPATH=$PWD''${PYTHONPATH:+:}$PYTHONPATH
-        '';
-      };
-    }));
+          shellHook = ''
+            ${self.checks.${system}.pre-commit-check.shellHook}
+            export PYTHONPATH=$PWD''${PYTHONPATH:+:}$PYTHONPATH
+          '';
+        };
+      }));
 }

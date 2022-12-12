@@ -16,6 +16,22 @@
         "type": "github"
       }
     },
+    "flake-compat_2": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1668681692,
+        "narHash": "sha256-Ht91NGdewz8IQLtWZ9LCeNXMSXHUss+9COoqu6JLmXU=",
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "rev": "009399224d5e398d03b22badca40a37ac85412a1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "locked": {
         "lastModified": 1667395993,
@@ -114,11 +130,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1670844292,
-        "narHash": "sha256-Pm8kSoBMTiHTjWFVevozVZsAg9X2CwbogUOuyJFYhww=",
+        "lastModified": 1670849056,
+        "narHash": "sha256-xigXOn8XZiZhgknc9GNx9V8CXvBUTAcmzE3fPtnCu7w=",
         "owner": "nix-community",
         "repo": "poetry2nix",
-        "rev": "22865913c2c3643b4ec0346e71c91859bb45961d",
+        "rev": "93137da71e523088f81f3b7756618020eefff632",
         "type": "github"
       },
       "original": {
@@ -129,7 +145,7 @@
     },
     "pre-commit-hooks": {
       "inputs": {
-        "flake-compat": "flake-compat",
+        "flake-compat": "flake-compat_2",
         "flake-utils": [
           "flake-utils"
         ],
@@ -155,6 +171,7 @@
     },
     "root": {
       "inputs": {
+        "flake-compat": "flake-compat",
         "flake-utils": "flake-utils",
         "gitignore": "gitignore",
         "nixpkgs": "nixpkgs",
