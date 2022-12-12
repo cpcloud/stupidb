@@ -4,15 +4,11 @@
   inputs = {
     flake-utils = {
       url = "github:numtide/flake-utils";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     gitignore = {
       url = "github:hercules-ci/gitignore.nix";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable-small";
@@ -121,28 +117,13 @@
         pre-commit-check = pre-commit-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
-            nix-linter = {
-              enable = true;
-              entry = lib.mkForce "${pkgs.nix-linter}/bin/nix-linter";
-            };
-
-            nixpkgs-fmt = {
-              enable = true;
-              entry = lib.mkForce "${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt --check";
-            };
-
-            shellcheck = {
-              enable = true;
-              entry = "${pkgs.shellcheck}/bin/shellcheck";
-              files = "\\.sh$";
-              types_or = [ "file" ];
-            };
-
-            shfmt = {
-              enable = true;
-              entry = "${pkgs.shfmt}/bin/shfmt -i 2 -sr -d -s -l";
-              files = "\\.sh$";
-            };
+            black.enable = true;
+            flake8.enable = true;
+            isort.enable = true;
+            nix-linter.enable = true;
+            nixpkgs-fmt.enable = true;
+            shellcheck.enable = true;
+            shfmt.enable = true;
 
             prettier = {
               enable = true;
@@ -150,37 +131,10 @@
               types_or = [ "json" "toml" "yaml" ];
             };
 
-            black = {
-              enable = true;
-              entry = lib.mkForce "${pkgs.stupidbDevEnv}/bin/black --check";
-              types = [ "python" ];
-            };
-
-            isort = {
-              enable = true;
-              entry = lib.mkForce "${pkgs.stupidbDevEnv}/bin/isort --check";
-              types_or = [ "pyi" "python" ];
-            };
-
-            flake8 = {
-              enable = true;
-              entry = "${pkgs.stupidbDevEnv}/bin/flake8";
-              types = [ "python" ];
-            };
-
             pyupgrade = {
               enable = true;
-              entry = "${pkgs.stupidbDevEnv}/bin/pyupgrade --py37-plus";
+              entry = "pyupgrade --py37-plus";
               types = [ "python" ];
-            };
-
-            poetry = {
-              enable = true;
-              entry = "${pkgs.poetry}/bin/poetry check";
-              pass_filenames = false;
-              files = "pyproject\\.toml";
-              types = [ "file" ];
-              types_or = [ "file" ];
             };
           };
         };
@@ -200,8 +154,11 @@
           shfmt
           stupidbDevEnv310
         ];
-        shellHook = self.checks.${system}.pre-commit-check.shellHook;
-        PYTHONPATH = builtins.toPath ./.;
+
+        shellHook = ''
+          ${self.checks.${system}.pre-commit-check.shellHook}
+          export PYTHONPATH=$PWD''${PYTHONPATH:+:}$PYTHONPATH
+        '';
       };
     }));
 }

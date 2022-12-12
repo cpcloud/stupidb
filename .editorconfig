@@ -15,3 +15,10 @@ end_of_line = crlf
 
 [LICENSE]
 insert_final_newline = false
+
+[*.sh]
+indent_style = space
+indent_size = 2
+space_redirects = true
+simplify = true
+shell_variant = bash
