@@ -127,7 +127,7 @@ jobs:
       - run: choco install graphviz imagemagick
       - run: pip install poetry
       - run: poetry install --extras animation
-      - run: poetry run pytest --numprocesses auto
+      - run: poetry run pytest
   check-poetry-lock:
     runs-on: ubuntu-latest
     steps:
