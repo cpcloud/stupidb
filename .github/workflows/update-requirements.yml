@@ -10,11 +10,11 @@ jobs:
   update-requirements:
     runs-on: ubuntu-latest
     steps:
-      - uses: tibdex/github-app-token@v1
+      - uses: actions/create-github-app-token@v1.9.0
         id: generate_token
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - uses: actions/checkout@v3
         with:
