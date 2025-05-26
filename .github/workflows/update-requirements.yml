@@ -10,7 +10,7 @@ jobs:
   update-requirements:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/create-github-app-token@v1.9.0
+      - uses: actions/create-github-app-token@v1.12.0
         id: generate_token
         with:
           app-id: ${{ secrets.APP_ID }}
